@@ -126,13 +126,17 @@ class UCCSD(Operation):
         .. code-block:: python
 
             import pennylane as qp
-            from pennylane import numpy as np
+            import numpy as np
+            import jax
+            import jax.numpy as jnp
+
+            jax.config.update("jax_enable_x64", True)
 
             # Define the molecule
             symbols  = ['H', 'H', 'H']
             geometry = np.array([[0.01076341,  0.04449877,  0.0],
                                  [0.98729513,  1.63059094,  0.0],
-                                 [1.87262415, -0.00815842,  0.0]], requires_grad = False)
+                                 [1.87262415, -0.00815842,  0.0]])
             electrons = 2
             charge = 1
 
@@ -158,15 +162,17 @@ class UCCSD(Operation):
                 return qp.expval(H)
 
             # Define the initial values of the circuit parameters
-            params = np.zeros(len(singles) + len(doubles))
+            params = jnp.zeros(len(singles) + len(doubles))
 
-            # Define the optimizer
-            optimizer = qp.GradientDescentOptimizer(stepsize=0.5)
+            # Compute gradients with JAX
+            grad_fn = qp.grad(circuit)
 
             # Optimize the circuit parameters and compute the energy
             for n in range(21):
-                params, energy = optimizer.step_and_cost(circuit, params,
-                wires=range(qubits), s_wires=s_wires, d_wires=d_wires, hf_state=hf_state)
+                gradient = grad_fn(params,
+                    wires=range(qubits), s_wires=s_wires, d_wires=d_wires, hf_state=hf_state)
+                energy = grad_fn.forward
+                params = params - 0.5 * gradient
                 if n % 2 == 0:
                     print("step = {:},  E = {:.8f} Ha".format(n, energy))
 

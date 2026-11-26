@@ -92,7 +92,7 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
         .. code-block:: python
 
             import scipy
-            import pennylane.numpy as pnp
+            import jax.numpy as jnp
 
             U = scipy.stats.unitary_group.rvs(4, random_state=12345)
 
@@ -107,8 +107,8 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
                 return qp.expval(qp.Z(1))
 
         >>> g = qp.grad(circuit)
-        >>> params = pnp.array([0.2, 0.3], requires_grad=True)
-        >>> g(params)
+        >>> params = jnp.array([0.2, 0.3])
+        >>> np.asarray(g(params), dtype=float)
         array([ 0.342..., -0.077...])
 
         However, the following example will **not** be differentiable:
@@ -121,13 +121,13 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
                 z = angles[0]
                 x = angles[1]
 
-                Z_mat = pnp.array([[pnp.exp(-1j * z / 2), 0.0], [0.0, pnp.exp(1j * z / 2)]])
+                Z_mat = jnp.array([[jnp.exp(-1j * z / 2), 0.0], [0.0, jnp.exp(1j * z / 2)]])
 
-                c = pnp.cos(x / 2)
-                s = pnp.sin(x / 2) * 1j
-                X_mat = pnp.array([[c, -s], [-s, c]])
+                c = jnp.cos(x / 2)
+                s = jnp.sin(x / 2) * 1j
+                X_mat = jnp.array([[c, -s], [-s, c]])
 
-                U = pnp.kron(Z_mat, X_mat)
+                U = jnp.kron(Z_mat, X_mat)
 
                 qp.Hadamard(wires=1)
 
@@ -138,8 +138,8 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
                 return qp.expval(qp.X(1))
 
         >>> g = qp.grad(circuit)
-        >>> params = pnp.array([0.2, 0.3], requires_grad=True)
-        >>> g(params)
+        >>> params = jnp.array([0.2, 0.3])
+        >>> np.asarray(g(params), dtype=float)
         array([nan, nan])
     """
     operations = []

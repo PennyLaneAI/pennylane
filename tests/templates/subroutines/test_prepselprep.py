@@ -412,26 +412,6 @@ class TestInterfaces:
         assert qp.math.shape(res) == (4,)
         assert np.allclose(res, self.exp_grad, atol=1e-5)
 
-    @pytest.mark.autograd
-    def test_autograd(self):
-        """Test the autograd interface"""
-
-        dev = qp.device("reference.qubit", wires=5)
-
-        @qp.qnode(dev)
-        def circuit(coeffs):
-            H = qp.ops.LinearCombination(
-                coeffs, [qp.Y(0), qp.Y(1) @ qp.Y(2), qp.X(0), -1 * qp.X(1) @ qp.X(2)]
-            )
-            qp.PrepSelPrep(H, control=(3, 4))
-            return qp.expval(qp.PauliZ(3) @ qp.PauliZ(4))
-
-        params = qp.numpy.array(self.params, requires_grad=True)
-        res = qp.grad(circuit)(params)
-
-        assert qp.math.shape(res) == (4,)
-        assert np.allclose(res, self.exp_grad, atol=1e-5)
-
     @pytest.mark.jax
     def test_jax(self):
         """Test the jax interface"""

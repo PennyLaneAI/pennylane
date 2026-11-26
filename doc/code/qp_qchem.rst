@@ -76,7 +76,7 @@ We then construct the Hamiltonian.
 >>> print(hamiltonian)
 -0.3596823592263396 * I(0) + 0.1308241430372839 * Z(0) + -0.11496335836158356 * Z(2)+ 0.10316898251630022 * (Z(0) @ Z(2)) + 0.1308241430372839 * Z(1) + 0.15405495855812648 * (Z(0) @ Z(1)) + 0.050130617426473734 * (Y(0) @ X(1) @ X(2) @ Y(3)) + -0.050130617426473734 * (Y(0) @ Y(1) @ X(2) @ X(3)) + -0.050130617426473734 * (X(0) @ X(1) @ Y(2) @ Y(3)) + 0.050130617426473734 * (X(0) @ Y(1) @ Y(2) @ X(3)) + -0.11496335836158356 * Z(3) + 0.15329959994277395 * (Z(0) @ Z(3)) + 0.10316898251630022 * (Z(1) @ Z(3)) + 0.15329959994277395 * (Z(1) @ Z(2)) + 0.16096866639866414 * (Z(2) @ Z(3))
 
-The generated Hamiltonian can be used in a circuit where the molecular geometry, the basis set
+The generated Hamiltonian can be used in a JAX circuit where the molecular geometry, the basis set
 parameters, and the circuit parameters are optimized simultaneously. Further information about
 molecular geometry optimization with PennyLane is provided in this
 `paper <https://arxiv.org/abs/2106.13840>`__ and this
@@ -84,59 +84,54 @@ molecular geometry optimization with PennyLane is provided in this
 
 .. code-block:: python3
 
+    import jax
+    import jax.numpy as jnp
+
+    jax.config.update("jax_enable_x64", True)
     dev = qp.device("default.qubit", wires=4)
-    hf_state = np.array([1, 1, 0, 0])
-    params = [np.array([0.0], requires_grad=True)] # initial values of the circuit parameters
+    hf_state = jnp.array([1, 1, 0, 0])
+    params = jnp.array([0.0])
+    geometry, alpha, coeff = (jnp.asarray(value) for value in (geometry, alpha, coeff))
 
-    def generate_circuit(mol):
-        @qp.qnode(dev)
-        def circuit(*args):
-            qp.BasisState(hf_state, wires=[0, 1, 2, 3])
-            qp.DoubleExcitation(*args[0][0], wires=[0, 1, 2, 3])
-            return qp.expval(qp.qchem.molecular_hamiltonian(mol, args=args[1:])[0])
-        return circuit
+    @qp.qnode(dev, interface="jax")
+    def circuit(params, geometry, alpha, coeff):
+        mol = qp.qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+        # JAX chemistry arguments are ordered as geometry, coefficients, exponents.
+        hamiltonian, _ = qp.qchem.molecular_hamiltonian(mol, args=[geometry, coeff, alpha])
+        qp.BasisState(hf_state, wires=[0, 1, 2, 3])
+        qp.DoubleExcitation(params[0], wires=[0, 1, 2, 3])
+        return qp.expval(hamiltonian)
 
-Now that the circuit is defined, we can create a geometry and parameter optimization loop. For
-convenience, we create a molecule object that stores the molecular parameters.
+The optimization loop evaluates the energy and all four gradients together with JAX, then updates
+each array.
 
 .. code-block:: python3
 
+    value_and_grad = jax.value_and_grad(circuit, argnums=(0, 1, 2, 3))
     for n in range(21):
+        args = (params, geometry, alpha, coeff)
+        energy, (g_params, g_coor, g_alpha, g_coeff) = value_and_grad(*args)
 
-        mol = qp.qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-        args = [params, geometry, alpha, coeff] # initial values of the differentiable parameters
+        if n % 5 == 0:
+            force = jnp.abs(g_coor).max()
+            print(f"Step: {n}, Energy: {energy:.8f}, Maximum Absolute Force: {force:.8f}")
 
-        # compute gradients with respect to the circuit parameters and update the parameters
-        g_params = qp.grad(generate_circuit(mol), argnum = 0)(*args)
-        params = params - 0.25 * g_params[0]
-
-        # compute gradients with respect to the nuclear coordinates and update geometry
-        g_coor = qp.grad(generate_circuit(mol), argnum = 1)(*args)
+        params = params - 0.25 * g_params
         geometry = geometry - 0.5 * g_coor
-
-        # compute gradients with respect to the Gaussian exponents and update the exponents
-        g_alpha = qp.grad(generate_circuit(mol), argnum = 2)(*args)
         alpha = alpha - 0.25 * g_alpha
-
-        # compute gradients with respect to the Gaussian contraction coefficients and update them
-        g_coeff = qp.grad(generate_circuit(mol), argnum = 3)(*args)
         coeff = coeff - 0.25 * g_coeff
 
-        if n%5 == 0:
-            print(f'Step: {n}, Energy: {generate_circuit(mol)(*args)}, Maximum Absolute Force: {abs(g_coor).max()}')
-
-
-Running this optimization, we get the following output in atomic units:
+Running this optimization gives the following output in atomic units:
 
 .. code-block:: text
 
-    Step: 0, Energy: -1.0491709019856188, Maximum Absolute Force: 0.1580194718925249
-    Step: 5, Energy: -1.1349862621177522, Maximum Absolute Force: 0.037660768852544046
-    Step: 10, Energy: -1.1399960666483346, Maximum Absolute Force: 0.005175323916673413
-    Step: 15, Energy: -1.140321384816611, Maximum Absolute Force: 0.0004138319900744425
-    Step: 20, Energy: -1.1403680839339787, Maximum Absolute Force: 8.223248376348913e-06
+    Step: 0, Energy: -1.04917090, Maximum Absolute Force: 0.15801947
+    Step: 5, Energy: -1.13498626, Maximum Absolute Force: 0.03766077
+    Step: 10, Energy: -1.13999607, Maximum Absolute Force: 0.00517532
+    Step: 15, Energy: -1.14032138, Maximum Absolute Force: 0.00041383
+    Step: 20, Energy: -1.14036808, Maximum Absolute Force: 0.00000822
 
-Note that the computed energy is lower than the Full-CI energy, -1.1373060483 Ha, obtained without
+The computed energy is lower than the Full-CI energy, -1.1373060483 Ha, obtained without
 optimizing the basis set parameters.
 
 The components of the HF solver can also be differentiated individually. For instance, the overlap
@@ -157,8 +152,8 @@ integral can be differentiated with respect to the basis set parameters as follo
     a = mol.basis_set[0]
     b = mol.basis_set[1]
 
-    g_alpha = qp.grad(qp.qchem.overlap_integral(a, b), argnum = 0)(*args)
-    g_coeff = qp.grad(qp.qchem.overlap_integral(a, b), argnum = 1)(*args)
+    g_alpha = qp.grad(qp.qchem.overlap_integral(a, b), argnums=0)(*args)
+    g_coeff = qp.grad(qp.qchem.overlap_integral(a, b), argnums=1)(*args)
 
 >>> print(g_alpha)
 [[ 0.00169332 -0.14826928 -0.37296693]

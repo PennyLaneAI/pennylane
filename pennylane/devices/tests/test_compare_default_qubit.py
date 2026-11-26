@@ -18,7 +18,6 @@ import pytest
 from flaky import flaky
 
 import pennylane as qp
-from pennylane import numpy as pnp  # Import from PennyLane to mirror the standard approach in demos
 from pennylane.templates.layers import RandomLayers
 
 from .conftest import get_legacy_capabilities
@@ -42,16 +41,16 @@ class TestComparison:
         if dev.name == "default.qubit":
             pytest.skip("Device is default.qubit.")
 
-        theta = 0.432
-        phi = 0.123
-        A_ = pnp.array(
+        jnp = pytest.importorskip("jax.numpy")
+        theta = jnp.array(0.432)
+        phi = jnp.array(0.123)
+        A_ = np.array(
             [
                 [-6, 2 + 1j, -3, -5 + 2j],
                 [2 - 1j, 0, 2 - 1j, -5 + 4j],
                 [-3, 2 + 1j, 0, -4 + 3j],
                 [-5 - 2j, -5 - 4j, -4 - 3j, -6],
             ],
-            requires_grad=False,
         )
 
         def circuit(theta, phi):
@@ -76,8 +75,8 @@ class TestComparison:
 
         qnode_res, qnode_def_res, grad_res, grad_def_res = workload()
 
-        assert pnp.allclose(qnode_res, qnode_def_res, atol=tol)
-        assert pnp.allclose(grad_res, grad_def_res, atol=tol)
+        assert np.allclose(qnode_res, qnode_def_res, atol=tol)
+        assert np.allclose(grad_res, grad_def_res, atol=tol)
 
     @pytest.mark.parametrize(
         "state",
@@ -111,8 +110,9 @@ class TestComparison:
         if dev.name == "default.qubit":
             pytest.skip("Device is default.qubit.")
 
-        theta = 0.432
-        phi = 0.123
+        jnp = pytest.importorskip("jax.numpy")
+        theta = jnp.array(0.432)
+        phi = jnp.array(0.123)
 
         def circuit(theta, phi, state):
             qp.RX(theta, wires=[0])
@@ -136,8 +136,8 @@ class TestComparison:
 
         qnode_res, qnode_def_res, grad_res, grad_def_res = workload()
 
-        assert pnp.allclose(qnode_res, qnode_def_res, atol=tol)
-        assert pnp.allclose(grad_res, grad_def_res, atol=tol)
+        assert np.allclose(qnode_res, qnode_def_res, atol=tol)
+        assert np.allclose(grad_res, grad_def_res, atol=tol)
 
     def test_pauliz_expectation_analytic(self, device, tol, shots):
         """Test that the tensor product of PauliZ expectation value is correct"""
@@ -158,8 +158,9 @@ class TestComparison:
         if shots:
             pytest.skip("Device is in non-analytical mode.")
 
-        theta = 0.432
-        phi = 0.123
+        jnp = pytest.importorskip("jax.numpy")
+        theta = jnp.array(0.432)
+        phi = jnp.array(0.123)
 
         def circuit(theta, phi):
             qp.RX(theta, wires=[0])
@@ -173,8 +174,8 @@ class TestComparison:
         grad_def = qp.grad(qnode_def, argnums=[0, 1])
         grad = qp.grad(qnode, argnums=[0, 1])
 
-        assert pnp.allclose(qnode(theta, phi), qnode_def(theta, phi), atol=tol)
-        assert pnp.allclose(grad(theta, phi), grad_def(theta, phi), atol=tol)
+        assert np.allclose(qnode(theta, phi), qnode_def(theta, phi), atol=tol)
+        assert np.allclose(grad(theta, phi), grad_def(theta, phi), atol=tol)
 
     @pytest.mark.parametrize("ret", ["expval", "var"])
     def test_random_circuit(self, device, tol, ret, shots):
@@ -196,8 +197,9 @@ class TestComparison:
         if shots:
             pytest.skip("Device is in non-analytical mode.")
 
-        n_layers = pnp.random.randint(1, 5)
-        weights = 2 * pnp.pi * pnp.random.rand(n_layers, 1)
+        jnp = pytest.importorskip("jax.numpy")
+        n_layers = np.random.randint(1, 5)
+        weights = jnp.asarray(2 * np.pi * np.random.rand(n_layers, 1))
 
         ret_type = getattr(qp, ret)
 
@@ -211,8 +213,8 @@ class TestComparison:
         grad_def = qp.grad(qnode_def, argnums=0)
         grad = qp.grad(qnode, argnums=0)
 
-        assert pnp.allclose(qnode(weights), qnode_def(weights), atol=tol)
-        assert pnp.allclose(grad(weights), grad_def(weights), atol=tol)
+        assert np.allclose(qnode(weights), qnode_def(weights), atol=tol)
+        assert np.allclose(grad(weights), grad_def(weights), atol=tol)
 
     def test_four_qubit_random_circuit(self, device, tol, shots):
         """Compare a four-qubit random circuit with lots of different gates to default.qubit"""
@@ -251,8 +253,8 @@ class TestComparison:
 
         layers = 3
         # Avoid seed 1967 until https://github.com/Qiskit/qiskit/issues/15278 is fixed.
-        rng = pnp.random.default_rng(1968)
-        gates_per_layers = [rng.permutation(gates).numpy() for _ in range(layers)]
+        rng = np.random.default_rng(1968)
+        gates_per_layers = [rng.permutation(gates) for _ in range(layers)]
 
         def circuit():
             """4-qubit circuit with layers of randomly selected gates and random connections for
@@ -265,4 +267,4 @@ class TestComparison:
         qnode_def = qp.QNode(circuit, dev_def, shots=shots)
         qnode = qp.QNode(circuit, dev, shots=shots)
 
-        assert pnp.allclose(qnode(), qnode_def(), atol=tol)
+        assert np.allclose(qnode(), qnode_def(), atol=tol)

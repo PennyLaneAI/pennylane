@@ -142,9 +142,11 @@ class TestControlledDecompositionZYZ:
 
     @pytest.mark.system
     @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
+    @pytest.mark.jax
     def test_decomposition_circuit_gradient(self, control_wires):
         """Tests that the controlled decomposition of a single-qubit operation
         behaves as expected in a quantum circuit"""
+        from jax import numpy as jnp
 
         dev = qp.device("default.qubit", wires=4)
 
@@ -155,7 +157,7 @@ class TestControlledDecompositionZYZ:
 
         circ_ad = qp.QNode(circuit, dev, diff_method="adjoint")
         circ_bp = qp.QNode(circuit, dev, diff_method="backprop")
-        par = qp.numpy.array([0.123, 0.234, 0.345])
+        par = jnp.array([0.123, 0.234, 0.345])
         jac_ad = qp.jacobian(circ_ad)(par)
         jac_bp = qp.jacobian(circ_bp)(par)
 

@@ -150,9 +150,13 @@ def adjoint_metric_tensor(
 
     .. code-block:: python
 
+        import jax
+        import jax.numpy as jnp
+        jax.config.update("jax_enable_x64", True)
+
         dev = qp.device("default.qubit", wires=3)
 
-        @qp.qnode(dev, interface="autograd")
+        @qp.qnode(dev, interface="jax")
         def circuit(weights):
             qp.RX(weights[0], wires=0)
             qp.RY(weights[1], wires=0)
@@ -165,12 +169,12 @@ def adjoint_metric_tensor(
     that returns the metric tensor of this QNode:
 
     >>> mt_fn = qp.adjoint_metric_tensor(circuit)
-    >>> weights = np.array([0.1, 0.2, 0.4, 0.5], requires_grad=True)
+    >>> weights = jnp.array([0.1, 0.2, 0.4, 0.5])
     >>> mt_fn(weights)
-    tensor([[ 0.25  ,  0.    , -0.0497, -0.0497],
-            [ 0.    ,  0.2475,  0.0243,  0.0243],
-            [-0.0497,  0.0243,  0.0123,  0.0123],
-            [-0.0497,  0.0243,  0.0123,  0.0123]], requires_grad=True)
+    Array([[ 0.25      ,  0.        , -0.04966733, -0.04966733],
+           [ 0.        ,  0.24750832,  0.02433865,  0.02433865],
+           [-0.04966733,  0.02433865,  0.01226071,  0.01226071],
+           [-0.04966733,  0.02433865,  0.01226071,  0.01226071]],      dtype=float64)
 
     This approach has the benefit of being significantly faster than the hardware-ready
     ``metric_tensor`` function:
@@ -178,13 +182,11 @@ def adjoint_metric_tensor(
     >>> import time
     >>> start_time = time.process_time()
     >>> mt = mt_fn(weights)
-    >>> time.process_time() - start_time
-    0.019
+    >>> adjoint_seconds = time.process_time() - start_time
     >>> mt_fn_2 = qp.metric_tensor(circuit)
     >>> start_time = time.process_time()
     >>> mt = mt_fn_2(weights)
-    >>> time.process_time() - start_time
-    0.025
+    >>> hardware_ready_seconds = time.process_time() - start_time
 
     This speedup becomes more drastic for larger circuits.
     The drawback of the adjoint method is that it is only available on simulators and without

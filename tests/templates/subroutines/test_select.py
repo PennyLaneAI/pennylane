@@ -22,7 +22,6 @@ import pytest
 from scipy.stats import unitary_group
 
 import pennylane as qp
-from pennylane import numpy as pnp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.templates.subroutines.select import (
@@ -585,44 +584,6 @@ class TestInterfaces:
     """Tests that the template is compatible with all interfaces, including the computation
     of gradients."""
 
-    @pytest.mark.autograd
-    def test_autograd(self):
-        """Tests the autograd interface."""
-        dev = qp.device("default.qubit", wires=2)
-
-        circuit_default = qp.QNode(manual_rx_circuit, dev)
-        circuit_select = qp.QNode(select_rx_circuit, dev)
-
-        input_default = [0.5, 0.2]
-        input_grad = pnp.array(input_default, requires_grad=True)
-
-        grad_fn = qp.grad(circuit_default)
-        grads = grad_fn(input_grad)
-
-        grad_fn2 = qp.grad(circuit_select)
-        grads2 = grad_fn2(input_grad)
-
-        assert qp.math.allclose(grads, grads2)
-
-    @pytest.mark.autograd
-    def test_autograd_parameter_shift(self):
-        """Tests the autograd interface using the parameter-shift method."""
-        dev = qp.device("default.qubit", wires=2)
-
-        circuit_default = qp.QNode(manual_rx_circuit, dev, diff_method="parameter-shift")
-        circuit_select = qp.QNode(select_rx_circuit, dev, diff_method="parameter-shift")
-
-        input_default = [0.5, 0.2]
-        input_grad = pnp.array(input_default, requires_grad=True)
-
-        grad_fn = qp.grad(circuit_default)
-        grads = grad_fn(input_grad)
-
-        grad_fn2 = qp.grad(circuit_select)
-        grads2 = grad_fn2(input_grad)
-
-        assert qp.math.allclose(grads, grads2)
-
     @pytest.mark.torch
     def test_torch(self):
         """Tests the torch interface."""
@@ -653,7 +614,8 @@ class TestInterfaces:
 
     @pytest.mark.jax
     @pytest.mark.slow
-    def test_jax(self):
+    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
+    def test_jax(self, diff_method):
         """Tests the jax interface."""
         import jax
         import jax.numpy as jnp
@@ -663,8 +625,8 @@ class TestInterfaces:
         input_default = [0.5, 0.2]
         input_jax = jnp.array(input_default)
 
-        circuit_default = qp.QNode(manual_rx_circuit, dev)
-        circuit_jax = qp.QNode(select_rx_circuit, dev)
+        circuit_default = qp.QNode(manual_rx_circuit, dev, diff_method=diff_method)
+        circuit_jax = qp.QNode(select_rx_circuit, dev, diff_method=diff_method)
 
         assert qp.math.allclose(
             qp.matrix(circuit_default)(input_default), qp.matrix(circuit_jax)(input_jax)

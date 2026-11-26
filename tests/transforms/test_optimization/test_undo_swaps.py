@@ -199,25 +199,6 @@ expected_wires_list = [
 class TestUndoSwapsInterfaces:
     """Test that `undo_swaps` transform works in all interfaces."""
 
-    @pytest.mark.autograd
-    def test_undo_swaps_autograd(self):
-        """Test QNode and gradient in autograd interface."""
-
-        original_qnode = qp.QNode(qfunc_all_ops, dev)
-        transformed_qnode = qp.QNode(transformed_qfunc_all_ops, dev)
-
-        input = np.array([0.1, 0.2], requires_grad=True)
-
-        # Check that the numerical output is the same
-        assert qp.math.allclose(original_qnode(input), transformed_qnode(input))
-
-        # Check that the gradient is the same
-        assert qp.math.allclose(qp.grad(original_qnode)(input), qp.grad(transformed_qnode)(input))
-
-        # Check operation list
-        tape = qp.workflow.construct_tape(transformed_qnode)(input)
-        compare_operation_lists(tape.operations, expected_op_list, expected_wires_list)
-
     @pytest.mark.torch
     def test_undo_swaps_torch(self):
         """Test QNode and gradient in torch interface."""

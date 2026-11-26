@@ -17,6 +17,7 @@ Unit tests for the ``GradientDescentOptimizer``.
 
 import jax
 import pytest
+from legacy_optimizer_native import native_gradient
 
 import pennylane as qp
 from pennylane import numpy as np
@@ -79,13 +80,14 @@ class TestGradientDescentOptimizer:
         expected = f(args)
         assert np.all(res == expected)
 
-    def test_step_and_cost_autograd_sgd_multiple_inputs(self):
+    def test_step_and_cost_supplied_grad_sgd_multiple_inputs(self):
         """Test that the correct cost is returned via the step_and_cost method for the
         gradient-descent optimizer"""
         stepsize = 0.1
         sgd_opt = GradientDescentOptimizer(stepsize)
 
-        @qp.qnode(qp.device("default.qubit", wires=1))
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(qp.device("default.qubit", wires=1), interface="numpy")
         def quant_fun(*variables):
             qp.RX(variables[0][1], wires=[0])
             qp.RY(variables[1][2], wires=[0])
@@ -98,26 +100,29 @@ class TestGradientDescentOptimizer:
             np.array(0.1, requires_grad=True),
         ]
 
-        _, res = sgd_opt.step_and_cost(quant_fun, *inputs)
+        _, res = sgd_opt.step_and_cost(quant_fun, *inputs, grad_fn=native_gradient(quant_fun))
         expected = quant_fun(*inputs)
 
         assert np.all(res == expected)
 
-    def test_step_and_cost_autograd_sgd_single_multid_input(self):
+    def test_step_and_cost_supplied_grad_sgd_single_multid_input(self):
         """Test that the correct cost is returned via the step_and_cost method for the
         gradient-descent optimizer"""
         stepsize = 0.1
         sgd_opt = GradientDescentOptimizer(stepsize)
         multid_array = np.array([[0.1, 0.2], [-0.1, -0.4]])
 
-        @qp.qnode(qp.device("default.qubit", wires=1))
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(qp.device("default.qubit", wires=1), interface="numpy")
         def quant_fun_mdarr(var):
             qp.RX(var[0, 1], wires=[0])
             qp.RY(var[1, 0], wires=[0])
             qp.RY(var[1, 1], wires=[0])
             return qp.expval(qp.PauliZ(0))
 
-        _, res = sgd_opt.step_and_cost(quant_fun_mdarr, multid_array)
+        _, res = sgd_opt.step_and_cost(
+            quant_fun_mdarr, multid_array, grad_fn=native_gradient(quant_fun_mdarr)
+        )
         expected = quant_fun_mdarr(multid_array)
 
         assert np.all(res == expected)

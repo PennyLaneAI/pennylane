@@ -19,7 +19,6 @@ on:
           - format
           - module-validation
           - package-warning-as-errors
-          - autograd-tests
           - jax-tests
           - torch-tests
           - capture-jax-tests
@@ -54,7 +53,7 @@ jobs:
         if: inputs.workflow != 'documentation-tests' || inputs.workflow != 'docs' || inputs.workflow != 'format' || inputs.workflow != 'module-validation' || inputs.workflow != 'package-warning-as-errors' 
         id: set-skip-tests
         run: |
-          ALL_TESTS='torch-tests,gradients-tests,all-interfaces-tests,external-libraries-tests,catalyst-tests,gradients-tests,device-tests,core-tests,capture-jax-tests,jax-tests,autograd-tests,qchem-tests,data-tests'
+          ALL_TESTS='torch-tests,gradients-tests,all-interfaces-tests,external-libraries-tests,catalyst-tests,gradients-tests,device-tests,core-tests,capture-jax-tests,jax-tests,qchem-tests,data-tests'
           WORKFLOW='${{ inputs.workflow }}'
           SKIP_TESTS=${ALL_TESTS[@]/$WORKFLOW}
           echo "skip-tests=$SKIP_TESTS" >> $GITHUB_OUTPUT
@@ -114,7 +113,6 @@ jobs:
     needs: prepare-run-count
     if: >
       ${{
-        inputs.workflow == 'autograd-tests' ||
         inputs.workflow == 'jax-tests' ||
         inputs.workflow == 'torch-tests' ||
         inputs.workflow == 'capture-jax-tests' ||

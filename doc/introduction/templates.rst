@@ -469,7 +469,7 @@ The shape can for example be used to construct random weights at the beginning o
 
     import pennylane as qp
     from pennylane.templates import BasicEntanglerLayers
-    from pennylane import numpy as np
+    import numpy as np
 
     n_wires = 3
     dev = qp.device('default.qubit', wires=n_wires)
@@ -483,8 +483,8 @@ The shape can for example be used to construct random weights at the beginning o
     np.random.seed(42)  # to make the result reproducible
     weights = np.random.random(size=shape)
 
->>> circuit(weights)
-tensor(0.72588592, requires_grad=True)
+>>> round(float(circuit(weights)), 8)
+0.72588592
 
 If a template takes more than one weight tensor, the ``shape`` method returns a list of shape tuples.
 

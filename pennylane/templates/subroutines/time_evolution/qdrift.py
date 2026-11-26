@@ -167,7 +167,8 @@ class QDrift(Operation):
                 return qp.expval(qp.Z(0) @ qp.Z(1))
 
 
-        >>> time = qp.numpy.array(1.23)
+        >>> import jax.numpy as jnp
+        >>> time = jnp.array(1.23)
         >>> print(qp.grad(my_circ)(time))
         0.279...
 

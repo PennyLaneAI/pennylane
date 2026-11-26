@@ -71,7 +71,7 @@ class TestInitialization:
         "state_vector,expected",
         [([1.0, 0.0, 0.0, 1.0] / qp.math.sqrt(2), qp.math.log(2)), ([1.0, 0.0, 0.0, 0.0], 0)],
     )
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     def test_vn_entropy(self, interface, state_vector, expected):
         """Tests the output of qp.vn_entropy"""
         dev = qp.device("default.qubit", wires=2)
@@ -205,29 +205,6 @@ class TestIntegration:
 
         expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
         assert qp.math.allclose(entropy, expected_entropy)
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("wires", single_wires_list)
-    @pytest.mark.parametrize("param", parameters)
-    @pytest.mark.parametrize("base", base)
-    @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_IsingXX_qnode_entropy_grad(self, param, wires, base, diff_method):
-        """Test entropy for a QNode gradient with autograd."""
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit_entropy(x):
-            qp.IsingXX(x, wires=[0, 1])
-            return qp.vn_entropy(wires=wires, log_base=base)
-
-        grad_entropy = qp.grad(circuit_entropy)(param)
-
-        # higher tolerance for finite-diff method
-        tol = 1e-8 if diff_method == "backprop" else 1e-5
-
-        grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
-        assert qp.math.allclose(grad_entropy, grad_expected_entropy, atol=tol)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("wires", single_wires_list)

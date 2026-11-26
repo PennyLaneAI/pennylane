@@ -212,37 +212,6 @@ class TestIntegration:
 
         assert allclose(state, expected_state)
 
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
-    def test_execution_autograd(self, coeffs, ops, seed):
-        """Test that the circuit executes as expected using autograd"""
-
-        time = qnp.array(0.5)
-        coeffs = qnp.array(coeffs, requires_grad=False)
-
-        dev = qp.device("reference.qubit", wires=[0, 1])
-
-        @qp.qnode(dev)
-        def circ(time):
-            hamiltonian = qp.dot(coeffs, ops)
-            qp.QDrift(hamiltonian, time, n=2, seed=seed)
-            return qp.state()
-
-        expected_decomp = _sample_decomposition(coeffs, ops, time, n=2, seed=seed)
-
-        initial_state = qnp.array([1.0, 0.0, 0.0, 0.0])
-
-        expected_state = (
-            reduce(
-                lambda x, y: x @ y,
-                [qp.matrix(op, wire_order=[0, 1]) for op in expected_decomp[::-1]],
-            )
-            @ initial_state
-        )
-        state = circ(time)
-
-        assert allclose(expected_state, state)
-
     @pytest.mark.torch
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_torch(self, coeffs, ops, seed):
@@ -335,25 +304,6 @@ class TestIntegration:
 
         assert allclose(expected_state, state)
 
-    @pytest.mark.autograd
-    def test_error_gradient_workflow_autograd(self):
-        """Test that an error is raised if we require a gradient of QDrift with respect to hamiltonian coefficients."""
-        time = qnp.array(1.5)
-        coeffs = qnp.array([1.23, -0.45], requires_grad=True)
-
-        terms = [qp.PauliX(0), qp.PauliZ(0)]
-        dev = qp.device("default.qubit", wires=1)
-
-        @qp.qnode(dev)
-        def circ(time, coeffs):
-            h = qp.dot(coeffs, terms)
-            qp.QDrift(h, time, n=3)
-            return qp.expval(qp.Hadamard(0))
-
-        msg = "The QDrift template currently doesn't support differentiation through the coefficients of the input Hamiltonian."
-        with pytest.raises(QuantumFunctionError, match=msg):
-            qp.grad(circ)(time, coeffs)
-
     @pytest.mark.torch
     def test_error_gradient_workflow_torch(self):
         """Test that an error is raised if we require a gradient of QDrift with respect to hamiltonian coefficients."""
@@ -397,35 +347,6 @@ class TestIntegration:
         msg = "The QDrift template currently doesn't support differentiation through the coefficients of the input Hamiltonian."
         with pytest.raises(QuantumFunctionError, match=msg):
             jax.grad(circ, argnums=[1])(time, coeffs)
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("n", (1, 5, 10))
-    def test_autograd_gradient(self, n, seed):
-        """Test that the gradient is computed correctly"""
-        time = qnp.array(1.5)
-        coeffs = qnp.array([1.23, -0.45], requires_grad=False)
-        terms = [qp.PauliX(0), qp.PauliZ(0)]
-
-        dev = qp.device("default.qubit", wires=1)
-
-        @qp.qnode(dev)
-        def circ(time, coeffs):
-            h = qp.dot(coeffs, terms)
-            qp.QDrift(h, time, n=n, seed=seed)
-            return qp.expval(qp.Hadamard(0))
-
-        @qp.qnode(dev)
-        def reference_circ(time, coeffs):
-            decomp = _sample_decomposition(coeffs, terms, time, n, seed)
-
-            for op in decomp:
-                qp.apply(op)
-
-            return qp.expval(qp.Hadamard(0))
-
-        measured_grad = qp.grad(circ)(time, coeffs)
-        reference_grad = qp.grad(reference_circ)(time, coeffs)
-        assert allclose(measured_grad, reference_grad)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("n", (1, 5, 10))

@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as pnp
 from pennylane.testing import assert_decomposable
 from pennylane.typing import Wire
 
@@ -265,30 +264,6 @@ class TestInterfaces:
 
         res = circuit(tuple(features))
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])
-    def test_autograd(self, tol, features):
-        """Tests the autograd interface."""
-
-        features = pnp.array(features, requires_grad=True)
-
-        dev = qp.device("default.qubit", wires=2)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(features)
-        res2 = circuit2(features)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        grad_fn = qp.jacobian(circuit)
-        grads = grad_fn(features)
-
-        grad_fn2 = qp.jacobian(circuit2)
-        grads2 = grad_fn2(features)
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])

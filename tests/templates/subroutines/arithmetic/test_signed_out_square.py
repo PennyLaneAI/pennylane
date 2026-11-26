@@ -17,10 +17,10 @@ Tests for the SignedeutSquare template.
 
 from itertools import product
 
+import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as np
 from pennylane.core.operator import abstractify
 from pennylane.templates.subroutines.arithmetic.signed_out_square import (
     OutSquare,

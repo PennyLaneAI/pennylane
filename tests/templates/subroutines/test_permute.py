@@ -60,7 +60,7 @@ class TestDecomposition:
 
         dev = qp.device("default.qubit", wires=4)
 
-        @qp.qnode(dev, interface="autograd")
+        @qp.qnode(dev, interface="numpy")
         def identity_permutation():
             qp.Permute([0, 1, 2, 3], wires=dev.wires)
             return qp.expval(qp.PauliZ(0))
@@ -100,7 +100,7 @@ class TestDecomposition:
 
         dev = qp.device("default.qubit", wires=len(permutation_order))
 
-        @qp.qnode(dev, interface="autograd")
+        @qp.qnode(dev, interface="numpy")
         def two_cycle():
             qp.Permute(permutation_order, wires=dev.wires)
             return qp.expval(qp.PauliZ(0))
@@ -154,7 +154,7 @@ class TestDecomposition:
 
         dev = qp.device("default.qubit", wires=len(permutation_order))
 
-        @qp.qnode(dev, interface="autograd")
+        @qp.qnode(dev, interface="numpy")
         def cycle():
             qp.Permute(permutation_order, wires=dev.wires)
             return qp.expval(qp.PauliZ(0))
@@ -204,7 +204,7 @@ class TestDecomposition:
 
         dev = qp.device("default.qubit", wires=len(permutation_order))
 
-        @qp.qnode(dev, interface="autograd")
+        @qp.qnode(dev, interface="numpy")
         def arbitrary_perm():
             qp.Permute(permutation_order, wires=dev.wires)
             return qp.expval(qp.PauliZ(0))
@@ -264,7 +264,7 @@ class TestDecomposition:
 
         dev = qp.device("default.qubit", wires=num_wires)
 
-        @qp.qnode(dev, interface="autograd")
+        @qp.qnode(dev, interface="numpy")
         def subset_perm():
             qp.Permute(permutation_order, wires=wire_subset)
             return qp.expval(qp.PauliZ(0))

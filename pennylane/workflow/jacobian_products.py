@@ -131,7 +131,7 @@ class JacobianProductCalculator(abc.ABC):
     def compute_vjp(self, tapes: QuantumScriptBatch, dy: Sequence[Sequence[TensorLike]]) -> tuple:
         """Compute the vjp for a given batch of tapes.
 
-        This method is used by autograd and torch to compute VJPs.
+        This method is used by Torch to compute VJPs.
 
         Args:
             tapes (tuple[.QuantumScript]): the batch of tapes to take the derivatives of
@@ -248,10 +248,11 @@ class TransformJacobianProducts(JacobianProductCalculator):
 
     Keyword Args:
         cache_full_jacobian=False (bool): Whether or not to compute the full jacobian and cache it,
-            instead of treating each call as independent. This keyword argument is used to patch problematic
-            autograd behaviour when caching is turned off. In this case, caching will be based on the identity
-            of the batch, rather than the potentially expensive :attr:`~.QuantumScript.hash` that is used
-            by the cache.
+            instead of treating each call as independent. Repeated backward calls, such as those
+            used to construct a Torch vector Jacobian, then reuse the same gradient evaluations
+            even when execution caching is disabled. This cache uses batch identity rather than
+            the potentially expensive :attr:`~.QuantumScript.hash` used by the execution cache.
+            Torch backward calls that build a gradient graph use separate cache entries.
 
     >>> inner_execute = qp.device('default.qubit').execute
     >>> gradient_transform = qp.gradients.param_shift
@@ -349,12 +350,16 @@ class TransformJacobianProducts(JacobianProductCalculator):
     def compute_jacobian(self, tapes: QuantumScriptBatch):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("compute_jacobian called with %s", tapes)
-        if tapes in self._cache:
-            return self._cache[tapes]
+        cache_key = tapes
+        parameters = [param for tape in tapes for param in tape.get_parameters()]
+        if qp.math.get_interface(*parameters) == "torch":
+            cache_key = (tapes, qp.math.is_grad_enabled(like="torch"))
+        if cache_key in self._cache:
+            return self._cache[cache_key]
         jac_tapes, batch_post_processing = self._gradient_transform(tapes, **self._gradient_kwargs)
         results = self._inner_execute(jac_tapes)
         jacs = tuple(batch_post_processing(results))
-        self._cache[tapes] = jacs
+        self._cache[cache_key] = jacs
         return jacs
 
 
@@ -533,7 +538,7 @@ class DeviceDerivatives(JacobianProductCalculator):
     def compute_vjp(self, tapes, dy):
         """Compute the vjp for a given batch of tapes.
 
-        This method is used by autograd and torch to compute VJPs.
+        This method is used by Torch to compute VJPs.
 
         Args:
             tapes (tuple[`~.QuantumScript`]): the batch of tapes to take the derivatives of

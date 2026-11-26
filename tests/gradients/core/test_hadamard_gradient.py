@@ -959,6 +959,7 @@ class TestHadamardGrad:  # pylint: disable=too-many-public-methods
         (cost9, (2,), tuple),
     ]
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_expval_scalar)
     def test_output_shape_matches_qnode_expval_scalar(self, cost, exp_shape, exp_type, mode):
@@ -966,15 +967,17 @@ class TestHadamardGrad:  # pylint: disable=too-many-public-methods
         expectation values and a scalar parameter."""
         if mode in {"reversed", "reversed-direct"} and exp_shape == (2,):
             pytest.xfail("reversed modes do not work with more than one output value.")
+        import torch
+
         dev = qp.device("default.qubit", wires=4)
 
-        x = np.array(0.419)
+        x = torch.tensor(0.419, dtype=torch.float64, requires_grad=True)
         circuit = qp.QNode(cost, dev)
 
         res_hadamard = qp.gradients.hadamard_grad(circuit, mode=mode, aux_wire=2)(x)
 
-        assert isinstance(res_hadamard, exp_type)
-        assert np.array(res_hadamard).shape == exp_shape
+        assert isinstance(res_hadamard, torch.Tensor if exp_type is np.ndarray else exp_type)
+        assert np.array(qp.math.unwrap(res_hadamard)).shape == exp_shape
 
     costs_and_expected_expval_array = [
         (cost1, [3], np.ndarray),
@@ -982,6 +985,7 @@ class TestHadamardGrad:  # pylint: disable=too-many-public-methods
         (cost3, [2, 3], tuple),
     ]
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_expval_array)
     def test_output_shape_matches_qnode_expval_array(self, cost, exp_shape, exp_type, mode):
@@ -990,21 +994,23 @@ class TestHadamardGrad:  # pylint: disable=too-many-public-methods
         if mode in {"reversed", "reversed-direct"} and exp_shape == [2, 3]:
             pytest.xfail("reversed modes do not work with more than one output value.")
 
+        import torch
+
         dev = qp.device("default.qubit", wires=4)
 
-        x = np.random.rand(3)
+        x = torch.tensor(np.random.rand(3), dtype=torch.float64, requires_grad=True)
         circuit = qp.QNode(cost, dev)
 
         res_hadamard = qp.gradients.hadamard_grad(circuit, mode=mode, aux_wire=2)(x)
 
-        assert isinstance(res_hadamard, exp_type)
+        assert isinstance(res_hadamard, torch.Tensor if exp_type is np.ndarray else exp_type)
         if len(res_hadamard) == 1:
             res_hadamard = res_hadamard[0]
         assert len(res_hadamard) == exp_shape[0]
 
         if len(exp_shape) > 1:
             for r in res_hadamard:
-                assert isinstance(r, np.ndarray)
+                assert isinstance(r, torch.Tensor)
                 assert len(r) == exp_shape[1]
 
     costs_and_expected_probs = [
@@ -1016,19 +1022,22 @@ class TestHadamardGrad:  # pylint: disable=too-many-public-methods
         (cost12, [8, 3], np.ndarray),
     ]
 
+    @pytest.mark.torch
     @pytest.mark.parametrize(
         "mode", ["standard"]
     )  # other modes should not work with probs at the moment
     @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_probs)
     def test_output_shape_matches_qnode_probs(self, cost, exp_shape, exp_type, mode):
         """Test that the transform output shape matches that of the QNode."""
+        import torch
+
         dev = qp.device("default.qubit", wires=6)
 
-        x = np.random.rand(3)
+        x = torch.tensor(np.random.rand(3), dtype=torch.float64, requires_grad=True)
         circuit = qp.QNode(cost, dev)
 
         res_hadamard = qp.gradients.hadamard_grad(circuit, mode=mode, aux_wire=5)(x)
-        assert isinstance(res_hadamard, exp_type)
+        assert isinstance(res_hadamard, torch.Tensor if exp_type is np.ndarray else exp_type)
         if len(res_hadamard) == 1:
             res_hadamard = res_hadamard[0]
         assert len(res_hadamard) == exp_shape[0]
@@ -1036,21 +1045,23 @@ class TestHadamardGrad:  # pylint: disable=too-many-public-methods
         # Also check on the tape level
         tape = qp.workflow.construct_tape(circuit)(x)
         tapes, fn = qp.gradients.hadamard_grad(tape, mode=mode, aux_wire=6)
-        res_hadamard_tape = qp.math.moveaxis(qp.math.stack(fn(dev.execute(tapes))), -2, -1)
+        tape_results = qp.math.unwrap(fn(dev.execute(tapes)))
+        res_hadamard_tape = qp.math.moveaxis(qp.math.stack(tape_results), -2, -1)
 
         for res in [res_hadamard, res_hadamard_tape]:
+            array_type = torch.Tensor if res is res_hadamard else np.ndarray
             if len(exp_shape) > 2:
                 for r in res:
-                    assert isinstance(r, np.ndarray)
+                    assert isinstance(r, array_type)
                     assert len(r) == exp_shape[1]
 
                     for r_ in r:
-                        assert isinstance(r_, np.ndarray)
+                        assert isinstance(r_, array_type)
                         assert len(r_) == exp_shape[2]
 
             elif len(exp_shape) > 1:
                 for r in res:
-                    assert isinstance(r, np.ndarray)
+                    assert isinstance(r, array_type)
                     assert len(r) == exp_shape[1]
 
     @pytest.mark.parametrize("shots", [None, 100, (1000, 1000)])
@@ -1070,23 +1081,6 @@ class TestHadamardGrad:  # pylint: disable=too-many-public-methods
         _, tapes = grad_fn(tape, dev, aux_wire=2)
 
         assert all(new_tape.shots == tape.shots for new_tape in tapes)
-
-    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
-    @pytest.mark.autograd
-    def test_no_trainable_params_qnode_autograd(self, mode):
-        """Test that the correct output and warning is generated in the absence of any trainable
-        parameters"""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, interface="autograd")
-        def circuit(weights):
-            qp.RX(weights[0], wires=0)
-            qp.RY(weights[1], wires=0)
-            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
-
-        weights = [0.1, 0.2]
-        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            qp.gradients.hadamard_grad(circuit, mode=mode, aux_wire=2)(weights)
 
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.torch
@@ -1334,11 +1328,14 @@ class TestHadamardGradEdgeCases:
         assert res_hadamard[1][2].shape == (4,)
         assert np.allclose(res_hadamard[1][2], 0)
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("mode", ["standard"])
     @pytest.mark.parametrize("prefactor", [1.0, 2.0])
     def test_all_zero_diff_methods(self, prefactor, mode):
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""
+        import torch
+
         dev = qp.device("default.qubit", wires=4)
 
         @qp.qnode(dev)
@@ -1346,13 +1343,13 @@ class TestHadamardGradEdgeCases:
             qp.Rot(*(prefactor * params), wires=0)
             return qp.probs([2, 3])
 
-        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+        params = torch.tensor([0.5, 0.5, 0.5], dtype=torch.float64, requires_grad=True)
 
         result = qp.gradients.hadamard_grad(circuit, mode=mode, aux_wire=1)(params)
 
-        assert isinstance(result, np.ndarray)
+        assert isinstance(result, torch.Tensor)
         assert result.shape == (4, 3)
-        assert np.allclose(result, 0)
+        assert qp.math.allclose(result, 0)
 
     @pytest.mark.parametrize(
         "kwargs", [{"aux_wire": 1}, {"mode": "reversed"}, {"mode": "standard"}]
@@ -1389,43 +1386,6 @@ class TestHadamardGradEdgeCases:
 @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
 class TestHadamardTestGradDiff:
     """Test that the transform is differentiable"""
-
-    @pytest.mark.autograd
-    def test_autograd(self, mode):
-        """Tests that the output of the hadamard gradient transform
-        can be differentiated using autograd, yielding second derivatives."""
-        dev = qp.device("default.qubit", wires=3)
-        params = np.array([0.543, -0.654], requires_grad=True)
-
-        def cost_fn_hadamard(x):
-            with qp.queuing.AnnotatedQueue() as q:
-                qp.RX(x[0], wires=[0])
-                qp.RY(x[1], wires=[1])
-                qp.CNOT(wires=[0, 1])
-                qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
-
-            tape = qp.tape.QuantumScript.from_queue(q)
-            tape.trainable_params = {0, 1}
-            tapes, fn = qp.gradients.hadamard_grad(tape, mode=mode, aux_wire=2)
-            jac = fn(dev.execute(tapes))
-            return qp.math.stack(jac)
-
-        def cost_fn_param_shift(x):
-            with qp.queuing.AnnotatedQueue() as q:
-                qp.RX(x[0], wires=[0])
-                qp.RY(x[1], wires=[1])
-                qp.CNOT(wires=[0, 1])
-                qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
-
-            tape = qp.tape.QuantumScript.from_queue(q)
-            tape.trainable_params = {0, 1}
-            tapes, fn = qp.gradients.param_shift(tape)
-            jac = fn(dev.execute(tapes))
-            return qp.math.stack(jac)
-
-        res_hadamard = qp.jacobian(cost_fn_hadamard)(params)
-        res_param_shift = qp.jacobian(cost_fn_param_shift)(params)
-        assert np.allclose(res_hadamard, res_param_shift)
 
     @pytest.mark.torch
     def test_torch(self, mode):
@@ -1465,6 +1425,44 @@ class TestHadamardTestGradDiff:
 
         assert np.allclose(res_hadamard[0].detach(), res_param_shift[0].detach())
         assert np.allclose(res_hadamard[1].detach(), res_param_shift[1].detach())
+
+    @pytest.mark.core
+    @pytest.mark.autograd
+    def test_autograd(self, mode):
+        """Tests that the output of the hadamard gradient transform
+        can be differentiated using autograd, yielding second derivatives."""
+        dev = qp.device("default.qubit", wires=3)
+        params = np.array([0.543, -0.654], requires_grad=True)
+
+        def cost_fn_hadamard(x):
+            with qp.queuing.AnnotatedQueue() as q:
+                qp.RX(x[0], wires=[0])
+                qp.RY(x[1], wires=[1])
+                qp.CNOT(wires=[0, 1])
+                qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
+
+            tape = qp.tape.QuantumScript.from_queue(q)
+            tape.trainable_params = {0, 1}
+            tapes, fn = qp.gradients.hadamard_grad(tape, mode=mode, aux_wire=2)
+            jac = fn(dev.execute(tapes))
+            return qp.math.stack(jac)
+
+        def cost_fn_param_shift(x):
+            with qp.queuing.AnnotatedQueue() as q:
+                qp.RX(x[0], wires=[0])
+                qp.RY(x[1], wires=[1])
+                qp.CNOT(wires=[0, 1])
+                qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
+
+            tape = qp.tape.QuantumScript.from_queue(q)
+            tape.trainable_params = {0, 1}
+            tapes, fn = qp.gradients.param_shift(tape)
+            jac = fn(dev.execute(tapes))
+            return qp.math.stack(jac)
+
+        res_hadamard = qp.jacobian(cost_fn_hadamard)(params)
+        res_param_shift = qp.jacobian(cost_fn_param_shift)(params)
+        assert np.allclose(res_hadamard, res_param_shift)
 
     @pytest.mark.jax
     def test_jax(self, mode):

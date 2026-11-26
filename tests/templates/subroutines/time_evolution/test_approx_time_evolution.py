@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as pnp
 from pennylane.testing import assert_decomposable
 
 
@@ -287,29 +286,6 @@ class TestInterfaces:
         res2 = circuit2(time)
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
-    @pytest.mark.autograd
-    def test_autograd(self, tol):
-        """Tests the autograd interface."""
-
-        time = pnp.array(0.5, requires_grad=True)
-
-        dev = qp.device("default.qubit", wires=3)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(time)
-        res2 = circuit2(time)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        grad_fn = qp.grad(circuit)
-        grads = grad_fn(time)
-
-        grad_fn2 = qp.grad(circuit2)
-        grads2 = grad_fn2(time)
-
-        assert np.allclose(grads, grads2, atol=tol, rtol=0)
-
     @pytest.mark.jax
     def test_jax(self, tol):
         """Tests the jax interface."""
@@ -390,7 +366,7 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
 
-@pytest.mark.autograd
+@pytest.mark.jax
 @pytest.mark.parametrize(
     "dev_name,diff_method",
     [["default.qubit", "backprop"], ["default.qubit", qp.gradients.param_shift]],
@@ -398,6 +374,8 @@ class TestInterfaces:
 def test_trainable_hamiltonian(dev_name, diff_method):
     """Test that the ApproxTimeEvolution template
     can be differentiated if the Hamiltonian coefficients are trainable"""
+    from jax import numpy as jnp
+
     dev = qp.device(dev_name, wires=2)
 
     obs = [qp.PauliX(0) @ qp.PauliY(1), qp.PauliY(0) @ qp.PauliX(1)]
@@ -417,31 +395,33 @@ def test_trainable_hamiltonian(dev_name, diff_method):
 
         if diff_method is qp.gradients.param_shift and dev_name != "default.qubit":
             tape = dev.expand_fn(tape)
-            return qp.execute([tape], dev, diff_method)[0]
+            return qp.execute([tape], dev, diff_method, interface="jax")[0]
         program = dev.preprocess_transforms()
-        return qp.execute([tape], dev, diff_method=diff_method, transform_program=program)[0]
+        return qp.execute(
+            [tape], dev, diff_method=diff_method, interface="jax", transform_program=program
+        )[0]
 
-    t = pnp.array(0.54, requires_grad=True)
-    coeffs = pnp.array([-0.6, 2.0], requires_grad=True)
+    t = jnp.array(0.54)
+    coeffs = jnp.array([-0.6, 2.0])
 
     cost(coeffs, t)
-    grad = qp.grad(cost)(coeffs, t)
+    grad = qp.grad(cost, argnums=(0, 1))(coeffs, t)
 
     assert len(grad) == 2
 
-    assert isinstance(grad[0], np.ndarray)
+    assert isinstance(grad[0], jnp.ndarray)
     assert grad[0].shape == (2,)
 
-    assert isinstance(grad[1], np.ndarray)
+    assert isinstance(grad[1], jnp.ndarray)
     assert grad[1].shape == tuple()
 
     # compare to finite-differences
 
-    @qp.qnode(dev, diff_method="finite-diff")
+    @qp.qnode(dev, interface="jax", diff_method="finite-diff")
     def circuit(coeffs, t):
         H = qp.Hamiltonian(coeffs, obs)
         qp.ApproxTimeEvolution(H, t, 2)
         return qp.expval(qp.PauliZ(0))
 
-    expected = qp.grad(circuit)(coeffs, t)
+    expected = qp.grad(circuit, argnums=(0, 1))(coeffs, t)
     assert np.allclose(qp.math.hstack(grad), qp.math.hstack(expected))

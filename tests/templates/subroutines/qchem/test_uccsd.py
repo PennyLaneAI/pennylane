@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as pnp
 from pennylane.testing import assert_decomposable
 
 test_data_decomposition = [
@@ -496,51 +495,6 @@ class TestInterfaces:
         res = circuit(weights, n_repeats=2)
         res2 = circuit2(weights, n_repeats=2)
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-    @pytest.mark.autograd
-    def test_autograd(self, tol):
-        """Tests the autograd interface."""
-
-        weights = pnp.array(np.random.random(size=(2,)), requires_grad=True)
-
-        dev = qp.device("default.qubit", wires=4)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(weights)
-        res2 = circuit2(weights)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        grad_fn = qp.grad(circuit)
-        grads = grad_fn(weights)
-
-        grad_fn2 = qp.grad(circuit2)
-        grads2 = grad_fn2(weights)
-
-        assert np.allclose(grads, grads2, atol=tol, rtol=0)
-
-        # Test with n_repeats=2
-        weights = pnp.array(
-            np.random.random(
-                size=(
-                    2,
-                    2,
-                )
-            ),
-            requires_grad=True,
-        )
-        res = circuit(weights, n_repeats=2)
-        res2 = circuit2(weights, n_repeats=2)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        grad_fn = qp.grad(circuit)
-        grads = grad_fn(weights, n_repeats=2)
-
-        grad_fn2 = qp.grad(circuit2)
-        grads2 = grad_fn2(weights, n_repeats=2)
-
-        assert np.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.jax
     @pytest.mark.slow

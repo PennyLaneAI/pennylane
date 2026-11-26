@@ -543,26 +543,6 @@ class TestIntegration:
 class TestDifferentiability:
     """Tests the differentiability of the ``split_to_single_terms`` transform"""
 
-    @pytest.mark.autograd
-    def test_trainable_hamiltonian_autograd(self, seed):
-        """Tests that measurements of trainable Hamiltonians are differentiable"""
-
-        import pennylane.numpy as pnp
-
-        dev = NoTermsDevice(wires=2, seed=seed)
-
-        @split_to_single_terms
-        @qp.qnode(dev, shots=50000)
-        def circuit(coeff1, coeff2):
-            qp.RX(np.pi / 4, wires=0)
-            qp.RY(np.pi / 4, wires=1)
-            return qp.expval(qp.Hamiltonian([coeff1, coeff2], [qp.Y(0) @ qp.Z(1), qp.X(1)]))
-
-        params = pnp.array(pnp.pi / 4), pnp.array(3 * pnp.pi / 4)
-        actual = qp.jacobian(circuit)(*params)
-
-        assert qp.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
     def test_trainable_hamiltonian_jax(self, use_jit, seed):

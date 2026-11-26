@@ -542,45 +542,6 @@ class TestInterfaces:
     """Test that the template is compatible with all interfaces, including the computation
     of gradients."""
 
-    @pytest.mark.autograd
-    def test_autograd(self, tol):
-        """Test the autograd interface."""
-
-        unitary_matrix = qp.numpy.array(
-            [
-                [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
-                [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
-                [-0.58608928 + 0.0j, 0.03902657 + 0.04633548j, -0.57220635 + 0.57044649j],
-            ]
-        )
-        weights = qp.numpy.array(
-            [
-                2.2707802713289267,  # 0
-                2.9355948424220206,  # 1
-                -1.4869222527726533,  # 2
-                1.2601662579297865,  # 3
-                2.3559705032936717,  # 4
-                1.1748572730890159,  # 5
-                2.2500537657656356,  # 6
-                -0.7251404204443089,  # 7
-                2.3577346350335198,  # 8
-            ]
-        )
-
-        dev = qp.device("default.qubit", wires=3)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(unitary_matrix)
-        res2 = circuit2(weights)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        grad_fn = qp.grad(circuit)
-        grads = grad_fn(unitary_matrix)
-
-        assert np.allclose(grads, np.zeros_like(unitary_matrix, dtype=complex), atol=tol, rtol=0)
-
     @pytest.mark.parametrize(
         "unitary",
         [

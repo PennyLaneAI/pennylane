@@ -18,7 +18,6 @@ from functools import partial
 import jax
 
 from pennylane import math
-from pennylane._grad import jacobian
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import adjoint_metric_tensor
@@ -119,7 +118,11 @@ def classical_fisher(qnode, argnums=0):
 
     .. code-block:: python
 
-        import pennylane.numpy as np
+        import jax
+        import jax.numpy as jnp
+        jax.config.update("jax_enable_x64", True)
+
+        import numpy as np
 
         dev = qp.device("default.qubit")
 
@@ -134,17 +137,17 @@ def classical_fisher(qnode, argnums=0):
     Executing this circuit yields the ``2**2=4`` elements of :math:`p_\ell(\bm{\theta})`
 
     >>> np.random.seed(25)
-    >>> params = np.random.random(2)
+    >>> params = jnp.asarray(np.random.random(2))
     >>> circ(params)
-    tensor([0.41850088, 0.41850088, 0.08149912, 0.08149912], requires_grad=True)
+    Array([0.41850088, 0.41850088, 0.08149912, 0.08149912], dtype=float64)
 
     We can obtain its ``(2, 2)`` classical fisher information matrix (CFIM) by simply calling the function returned
     by ``classical_fisher()``:
 
     >>> cfim_func = qp.gradients.classical_fisher(circ)
     >>> cfim_func(params)
-    tensor([[ 0.90156094, -0.12555804],
-            [-0.12555804,  0.01748614]], requires_grad=True)
+    Array([[ 0.90156094, -0.12555804],
+            [-0.12555804,  0.01748614]], dtype=float64)
 
     This function has the same signature as the :class:`.QNode`. Here is a small example with multiple arguments:
 
@@ -156,12 +159,12 @@ def classical_fisher(qnode, argnums=0):
             qp.RY(y, wires=0)
             return qp.probs(wires=range(1))
 
-    >>> x, y = np.array([0.5, 0.6], requires_grad=True)
+    >>> x, y = jnp.array([0.5, 0.6])
     >>> circ(x, y)
-    tensor([0.86215007, 0.13784993], requires_grad=True)
-    >>> qp.gradients.classical_fisher(circ)(x, y)
-    [tensor([[0.32934729]], requires_grad=True),
-    tensor([[0.51650396]], requires_grad=True)]
+    Array([0.86215007, 0.13784993], dtype=float64)
+    >>> qp.gradients.classical_fisher(circ, argnums=(0, 1))(x, y)
+    [Array([[0.32934729]], dtype=float64),
+    Array([[0.51650396]], dtype=float64)]
 
     Note how in the case of multiple variables we get a list of matrices with sizes
     ``[(n_params0, n_params0), (n_params1, n_params1)]``, which in this case is simply two ``(1, 1)`` matrices.
@@ -185,7 +188,7 @@ def classical_fisher(qnode, argnums=0):
             qp.CNOT(wires=(0,1))
             return qp.expval(H)
 
-        params = np.random.random(4)
+        params = jnp.asarray(np.random.random(4))
 
     We can compute both the gradient of :math:`\langle H \rangle` and the CFIM with the same :class:`.QNode` ``circ``
     in this example since ``classical_fisher()`` ignores the return types and assumes ``qp.probs()`` for all wires.
@@ -200,7 +203,7 @@ def classical_fisher(qnode, argnums=0):
 
     >>> rescaled_grad = cfim @ grad
     >>> print(rescaled_grad)
-    [-0.66772533 -0.16618756 -0.05865127 -0.06696078]
+    [-0.2521444  -0.16564616 -0.18508446 -0.05006358]
 
     The ``classical_fisher`` matrix itself is again differentiable:
 
@@ -214,16 +217,20 @@ def classical_fisher(qnode, argnums=0):
             qp.RX(qp.math.cos(params[1]), wires=1)
             return qp.probs(wires=range(2))
 
-        params = np.random.random(2)
+        params = jnp.asarray(np.random.random(2))
 
     >>> qp.gradients.classical_fisher(circ)(params)
-    tensor([[0.86929514, 0.76134441],
-            [0.76134441, 0.6667992 ]], requires_grad=True)
-    >>> qp.jacobian(qp.gradients.classical_fisher(circ))(params)
-    array([[[ 1.98284265e+00, -1.60461922e-16],
-            [ 8.68304725e-01,  1.07654307e+00]],
-           [[ 8.68304725e-01,  1.07654307e+00],
-            [ 7.30752264e-17,  1.88571178e+00]]])
+    Array([[0.80048902, 0.53620384],
+           [0.53620384, 0.35917364]], dtype=float64)
+    >>> derivative = qp.jacobian(qp.gradients.classical_fisher(circ))(params)
+    >>> derivative.shape
+    (2, 2, 2)
+    >>> expected = np.array([
+    ...     [[1.95979118, 0.0], [0.65637849, 1.14606435]],
+    ...     [[0.65637849, 1.14606435], [0.0, 1.53537172]],
+    ... ])
+    >>> np.allclose(derivative, expected)
+    True
 
     """
     new_qnode = _make_probs(qnode)
@@ -242,9 +249,6 @@ def classical_fisher(qnode, argnums=0):
 
         elif interface == "torch":
             jac = _torch_jac(new_qnode)
-
-        elif interface == "autograd":
-            jac = jacobian(new_qnode)
 
         else:
             raise ValueError(
@@ -312,7 +316,11 @@ def quantum_fisher(
 
     .. code-block:: python
 
-        from pennylane import numpy as np
+        import jax
+        import jax.numpy as jnp
+        jax.config.update("jax_enable_x64", True)
+
+        import numpy as np
 
         n_wires = 2
 
@@ -328,20 +336,20 @@ def quantum_fisher(
             qp.RZ(params[2], wires=1)
             return qp.expval(H)
 
-        params = np.array([0.5, 1., 0.2], requires_grad=True)
+        params = jnp.array([0.5, 1., 0.2])
 
     The natural gradient is then simply the QFIM multiplied by the gradient:
 
     >>> grad = qp.grad(circ)(params)
     >>> grad
-    array([ 0.59422561, -0.02615095, -0.05146226])
+    Array([ 0.59422561, -0.02615095, -0.05146226], dtype=float64)
     >>> qfim = qp.gradients.quantum_fisher(circ)(params)
     >>> qfim
-    tensor([[1.        , 0.        , 0.        ],
+    Array([[1.        , 0.        , 0.        ],
             [0.        , 1.        , 0.        ],
-            [0.        , 0.        , 0.77517241]], requires_grad=True)
+            [0.        , 0.        , 0.77517241]], dtype=float64)
     >>> qfim @ grad
-    tensor([ 0.59422561, -0.02615095, -0.03989212], requires_grad=True)
+    Array([ 0.59422561, -0.02615095, -0.03989212], dtype=float64)
 
     When using real hardware or finite shots, ``quantum_fisher`` is internally calling :func:`~.pennylane.metric_tensor`.
     To obtain the full QFIM, we need an auxilary wire to perform the Hadamard test.

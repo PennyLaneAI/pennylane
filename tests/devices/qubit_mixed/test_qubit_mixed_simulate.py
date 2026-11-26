@@ -20,7 +20,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.devices.qubit_mixed import get_final_state, measure_final_state, simulate
 
-ml_interfaces = ["numpy", "autograd", "jax", "torch"]
+ml_interfaces = ["numpy", "jax", "torch"]
 
 
 class TestResultInterface:  # pylint: disable=too-few-public-methods
@@ -143,6 +143,7 @@ class TestBasicCircuit:
         assert len(result) == 3
         assert np.allclose(result, expected_measurements)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_autograd_results_and_backprop(self, wires):
         """Tests execution and gradients with autograd"""

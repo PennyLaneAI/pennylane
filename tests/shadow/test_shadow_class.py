@@ -17,11 +17,11 @@
 # pylint: disable=redefined-outer-name,too-few-public-methods
 
 
-import numpy as onp
+import numpy as np
 import pytest
 
 import pennylane as qp
-import pennylane.numpy as np
+from pennylane import numpy as pnp
 from pennylane.shadows import ClassicalShadow, median_of_means, pauli_expval
 
 wires = range(3)
@@ -143,7 +143,7 @@ class TestIntegrationShadows:
         assert np.all(local_snapshots[:, 0] == global_snapshots)
 
 
-def hadamard_circuit(wires, shots=10000, interface="autograd"):
+def hadamard_circuit(wires, shots=10000, interface="numpy"):
     """Hadamard circuit to put all qubits in equal superposition (locally)"""
     dev = qp.device("default.qubit", wires=wires)
 
@@ -157,7 +157,7 @@ def hadamard_circuit(wires, shots=10000, interface="autograd"):
     return circuit
 
 
-def max_entangled_circuit(wires, shots=10000, interface="autograd"):
+def max_entangled_circuit(wires, shots=10000, interface="numpy"):
     """maximally entangled state preparation circuit"""
     dev = qp.device("default.qubit", wires=wires)
 
@@ -172,7 +172,7 @@ def max_entangled_circuit(wires, shots=10000, interface="autograd"):
     return circuit
 
 
-def qft_circuit(wires, shots=10000, interface="autograd"):
+def qft_circuit(wires, shots=10000, interface="numpy"):
     """Quantum Fourier Transform circuit"""
     dev = qp.device("default.qubit", wires=wires)
 
@@ -189,7 +189,6 @@ def qft_circuit(wires, shots=10000, interface="autograd"):
     return circuit
 
 
-@pytest.mark.autograd
 class TestStateReconstruction:
     """Test that the state reconstruction is correct for a variety of states"""
 
@@ -266,8 +265,8 @@ class TestStateReconstruction:
 
         with monkeypatch.context() as m:
             # don't run the actual state computation since we only want the warning
-            m.setattr(onp, "einsum", lambda *args, **kwargs: None)
-            m.setattr(onp, "reshape", lambda *args, **kwargs: None)
+            m.setattr(np, "einsum", lambda *args, **kwargs: None)
+            m.setattr(np, "reshape", lambda *args, **kwargs: None)
 
             with pytest.warns(UserWarning, match=msg):
                 shadow.global_snapshots()
@@ -276,7 +275,7 @@ class TestStateReconstruction:
 @pytest.mark.all_interfaces
 class TestStateReconstructionInterfaces:
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     def test_qft_reconstruction(self, interface):
         """Test that the state reconstruction is correct for a QFT state"""
         circuit = qft_circuit(3, interface=interface)
@@ -293,7 +292,6 @@ class TestStateReconstructionInterfaces:
         assert qp.math.allclose(state, expected, atol=1e-1)
 
 
-@pytest.mark.autograd
 class TestExpvalEstimation:
     """Test that the expval estimation is correct for a variety of observables"""
 
@@ -371,7 +369,7 @@ class TestExpvalEstimation:
 @pytest.mark.all_interfaces
 class TestExpvalEstimationInterfaces:
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     def test_qft_expval(self, interface):
         """Test that the expval estimation is correct for a QFT state"""
         circuit = qft_circuit(3, shots=100000, interface=interface)
@@ -416,7 +414,7 @@ def convert_to_interface(arr, interface):  # pylint: disable=inconsistent-return
     import torch
 
     if interface == "autograd":
-        return arr
+        return pnp.asarray(arr)
 
     if interface == "jax":
         return jnp.array(arr)

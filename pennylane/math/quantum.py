@@ -55,6 +55,9 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
 
     Consider the following ansatz and observable list:
 
+    >>> import jax
+    >>> import jax.numpy as jnp
+    >>> jax.config.update("jax_enable_x64", True)
     >>> obs_list = [qp.X(0) @ qp.Z(1), qp.Y(2)]
     >>> ansatz = qp.templates.StronglyEntanglingLayers
 
@@ -63,11 +66,11 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
 
     .. code-block:: python
 
-        from pennylane import numpy as np
+        import numpy as np
 
         dev = qp.device("default.qubit", wires=3)
 
-        @qp.qnode(dev, interface="autograd")
+        @qp.qnode(dev, interface="jax")
         def circuit(weights):
             ansatz(weights, wires=[0, 1, 2])
             # rotate into the basis of the observables
@@ -78,23 +81,25 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
     We can now compute the covariance matrix:
 
     >>> shape = qp.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
-    >>> weights = np.random.random(shape, requires_grad=True)
+    >>> weights = jnp.asarray(np.random.default_rng(123).random(shape))
     >>> cov = qp.math.cov_matrix(circuit(weights), obs_list)
-    >>> cov
-    tensor([[0.98125435, 0.4905541 ],
-            [0.4905541 , 0.99920878]], requires_grad=True)
+    >>> np.round(np.asarray(cov), 8) + 0.0
+    array([[0.95031948, 0.12378444],
+           [0.12378444, 0.98875701]])
 
-    Autodifferentiation is fully supported using all interfaces.
-    Here we use autograd:
+    Differentiation is supported with JAX and PyTorch.
+    Here we use JAX:
 
     >>> cost_fn = lambda weights: qp.math.cov_matrix(circuit(weights), obs_list)[0, 1]
-    >>> qp.grad(cost_fn)(weights)
-    array([[[ 4.94240914e-17, -2.33786398e-01, -1.54193959e-01],
-            [-3.05414996e-17,  8.40072236e-04,  5.57884080e-04],
-            [ 3.01859411e-17,  8.60411436e-03,  6.15745204e-04]],
-           [[ 6.80309533e-04, -1.23162742e-03,  1.08729813e-03],
-            [-1.53863193e-01, -1.38700657e-02, -1.36243323e-01],
-            [-1.54665054e-01, -1.89018172e-02, -1.56415558e-01]]])
+    >>> np.round(np.asarray(qp.grad(cost_fn)(weights)), 8) + 0.0
+    array([[[ 0.        ,  0.23076848, -0.02901148],
+            [ 0.        ,  0.01414881, -0.00067805],
+            [ 0.        , -0.02764467, -0.00107288]],
+    <BLANKLINE>
+           [[ 0.03364566,  0.00390027,  0.04740395],
+            [-0.0299024 ,  0.46975452,  0.08796476],
+            [ 0.00514269,  0.05130117, -0.04866404]]])
+
     """
     variances = []
 

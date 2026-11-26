@@ -16,6 +16,7 @@ Unit tests for the Sum arithmetic class of qubit operations
 """
 
 import gate_data as gd  # a file containing matrix rep of each gate
+import jax.numpy as jnp
 import numpy as np
 import pytest
 
@@ -512,7 +513,6 @@ class TestMatrix:
     @pytest.mark.jax
     def test_sum_jax(self):
         """Test matrix is cast correctly using jax parameters."""
-        import jax.numpy as jnp
 
         theta = jnp.array(1.23)
         rot_params = jnp.array([0.12, 3.45, 6.78])
@@ -935,7 +935,6 @@ class TestSimplify:
     @pytest.mark.jax
     def test_simplify_pauli_rep_jax(self):
         """Test that simplifying operators with a valid pauli representation works with jax interface."""
-        import jax.numpy as jnp
 
         c1, c2, c3 = jnp.array(1.23), jnp.array(-1.23), jnp.array(0.5)
 
@@ -1219,6 +1218,7 @@ class TestIntegration:
             2, list(results.keys())[0]
         )  # rounding errors due to float type of measurement outcome
 
+    @pytest.mark.jax
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Sum op in the measurement process."""
         sum_op = Sum(qp.PauliX(0), qp.PauliZ(1))
@@ -1232,7 +1232,7 @@ class TestIntegration:
             qp.RX(weights[2], wires=1)
             return qp.expval(sum_op)
 
-        weights = qnp.array([0.1, 0.2, 0.3], requires_grad=True)
+        weights = jnp.array([0.1, 0.2, 0.3])
         grad = qp.grad(circuit)(weights)
 
         true_grad = qnp.array([-0.09347337, -0.18884787, -0.28818254])

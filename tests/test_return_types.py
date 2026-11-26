@@ -38,7 +38,7 @@ test_wires = [2, 3, 4]
 devices = ["default.qubit"]
 
 
-@pytest.mark.parametrize("interface, shots", [["autograd", None], ["auto", 100]])
+@pytest.mark.parametrize("interface, shots", [["numpy", None], ["auto", 100]])
 class TestSingleReturnExecute:
     """Test that single measurements return behavior does not change."""
 

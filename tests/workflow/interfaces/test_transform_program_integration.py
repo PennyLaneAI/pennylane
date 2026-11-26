@@ -35,7 +35,7 @@ device_suite = (
 class TestCompilePipeline:
     """Non differentiability tests for the transform program keyword argument."""
 
-    @pytest.mark.parametrize("interface", (None, "autograd", "jax", "torch"))
+    @pytest.mark.parametrize("interface", (None, "numpy", "jax", "torch"))
     def test_transform_program_none(self, interface):
         """Test that if no transform program is provided, null default behavior is used."""
 
@@ -55,7 +55,7 @@ class TestCompilePipeline:
         assert tracker.history["resources"][0].quantum_operations["RX"] == 1
         assert tracker.history["resources"][1].quantum_operations["RY"] == 1
 
-    @pytest.mark.parametrize("interface", (None, "autograd", "jax", "torch"))
+    @pytest.mark.parametrize("interface", (None, "numpy", "jax", "torch"))
     def test_transform_program_modifies_circuit(self, interface):
         """Integration tests for a transform program that modifies the input tapes."""
 
@@ -93,7 +93,7 @@ class TestCompilePipeline:
         assert tracker.history["resources"][1].quantum_operations["PauliX"] == 1
         assert tracker.history["resources"][1].total_quantum_operations == 1
 
-    @pytest.mark.parametrize("interface", (None, "autograd", "jax", "torch"))
+    @pytest.mark.parametrize("interface", (None, "numpy", "jax", "torch"))
     def test_shot_distributing_transform(self, interface):
         """Test a transform that creates a batch of tapes with different shots.
 
@@ -123,7 +123,7 @@ class TestCompilePipeline:
         assert results[0] == {"0": 50}
         assert results[1] == {"0": 200}
 
-    @pytest.mark.parametrize("interface", (None, "autograd", "jax", "torch"))
+    @pytest.mark.parametrize("interface", (None, "numpy", "jax", "torch"))
     @pytest.mark.parametrize("dev", device_suite)
     def test_ragged_batch_sizes(self, dev, interface):
         """Test a transform that splits input tapes up into different sizes."""
@@ -206,7 +206,7 @@ class TestCompilePipeline:
         assert dev.tracker.history["resources"][0].quantum_operations["PauliX"] == 1
         assert qp.math.allclose(results, -1.0)
 
-    @pytest.mark.parametrize("interface", (None, "autograd", "jax", "torch"))
+    @pytest.mark.parametrize("interface", (None, "numpy", "jax", "torch"))
     @pytest.mark.parametrize("dev", device_suite)
     def test_chained_postprocessing(self, dev, interface):
         def add_one(results):

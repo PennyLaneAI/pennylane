@@ -148,7 +148,7 @@ class TestStateMeasurement:
 
         dev = DefaultQubitLegacy(wires=2)
 
-        @qp.qnode(dev, interface="autograd", diff_method="parameter-shift")
+        @qp.qnode(dev, interface="numpy", diff_method="parameter-shift")
         def circuit():
             return qp.state()
 

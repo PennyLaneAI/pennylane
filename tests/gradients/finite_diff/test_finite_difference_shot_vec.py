@@ -15,6 +15,8 @@
 Tests for the gradients.finite_difference module using shot vectors.
 """
 
+import jax
+import jax.numpy as jnp
 import numpy
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
@@ -147,23 +149,6 @@ class TestFiniteDiff:
         assert g_tapes == []
         assert isinstance(res, tuple)
 
-    @pytest.mark.autograd
-    def test_no_trainable_params_qnode_autograd(self):
-        """Test that the correct output and warning is generated in the absence of any trainable
-        parameters"""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.set_shots(default_shot_vector)
-        @qp.qnode(dev)
-        def circuit(weights):
-            qp.RX(weights[0], wires=0)
-            qp.RY(weights[1], wires=0)
-            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
-
-        weights = [0.1, 0.2]
-        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            qp.gradients.finite_diff(circuit, h=h_val)(weights)
-
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
         """Test that the correct output and warning is generated in the absence of any trainable
@@ -209,7 +194,7 @@ class TestFiniteDiff:
             qp.Rot(*params, wires=0)
             return qp.probs([2, 3])
 
-        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+        params = jnp.array([0.5, 0.5, 0.5])
 
         all_result = qp.gradients.finite_diff(circuit, h=h_val)(params)
 
@@ -217,7 +202,7 @@ class TestFiniteDiff:
         assert len(all_result) == len(default_shot_vector)
 
         for result in all_result:
-            assert isinstance(result, np.ndarray)
+            assert isinstance(result, jax.Array)
             assert result.shape == (4, 3)
             assert np.allclose(result, 0)
 
@@ -233,7 +218,7 @@ class TestFiniteDiff:
             qp.Rot(*params, wires=0)
             return qp.expval(qp.PauliZ(wires=2)), qp.probs([2, 3])
 
-        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+        params = jnp.array([0.5, 0.5, 0.5])
 
         all_result = qp.gradients.finite_diff(circuit, h=h_val)(params)
         assert isinstance(all_result, tuple)
@@ -243,7 +228,7 @@ class TestFiniteDiff:
             assert isinstance(res, tuple)
             assert len(res) == 2
             for r, exp_shape in zip(res, [(3,), (4, 3)]):
-                assert isinstance(r, np.ndarray)
+                assert isinstance(r, jax.Array)
                 assert r.shape == exp_shape
                 assert np.allclose(r, 0)
 
@@ -343,7 +328,7 @@ class TestFiniteDiff:
             qp.Rot(*x, wires=0)
             return qp.probs([0, 1]), qp.probs([2, 3])
 
-        x = np.random.rand(3)
+        x = jnp.asarray(np.random.rand(3))
         circuits = [
             qp.set_shots(qp.QNode(cost, dev), shots=(1, 1000, 1001))
             for cost in (cost1, cost2, cost3, cost4, cost5, cost6)
@@ -365,12 +350,15 @@ class TestFiniteDiff:
             qp.Rot(x[0], 2 * y[1], -0.1 * z[0], wires=0)
             return qp.probs([0, 1]), qp.probs([2, 3])
 
-        x, y, z = np.random.rand(3, 2)
+        x, y, z = jnp.asarray(np.random.rand(3, 2))
         circuits = [
             qp.set_shots(qp.QNode(cost, dev), shots=(1, 1000, 1001)) for cost in (cost1, cost2)
         ]
 
-        transform = [qp.math.shape(qp.gradients.finite_diff(c, h=h_val)(x, y, z)) for c in circuits]
+        transform = [
+            qp.math.shape(qp.gradients.finite_diff(c, h=h_val, argnums=[0, 1, 2])(x, y, z))
+            for c in circuits
+        ]
         expected = [
             (3, 3, 2),  # shot vector, params, param shape
             (3, 2, 3, 4, 2),  # shot vector, measurements, params, measurement shape, param shape
@@ -434,19 +422,30 @@ class TestFiniteDiff:
 
         dev = DeviceSupportingSpecialObservable(wires=1, shots=None)
 
-        @qp.qnode(dev, diff_method="finite-diff")
+        @qp.qnode(dev, interface="numpy", diff_method=None)
         def qnode(x):
             qp.RY(x, wires=0)
             return qp.expval(SpecialObservable(wires=0))
 
-        @qp.qnode(dev, diff_method="finite-diff")
+        @qp.qnode(dev, interface="numpy", diff_method=None)
         def reference_qnode(x):
             qp.RY(x, wires=0)
             return qp.expval(qp.PauliZ(wires=0))
 
-        par = np.array(0.2, requires_grad=True)
-        assert np.isclose(qnode(par).item().val, reference_qnode(par))
-        assert np.isclose(qp.jacobian(qnode)(par).item().val, qp.jacobian(reference_qnode)(par))
+        par = 0.2
+        assert np.isclose(qnode(par).item().val, qp.math.toarray(reference_qnode(par)).item())
+
+        tape = qp.workflow.construct_tape(qnode)(par)
+        reference_tape = qp.workflow.construct_tape(reference_qnode)(par)
+        tape.trainable_params = [0]
+        reference_tape.trainable_params = [0]
+        tapes, postprocessing = qp.gradients.finite_diff(tape)
+        reference_tapes, reference_postprocessing = qp.gradients.finite_diff(reference_tape)
+        result = postprocessing(qp.execute(tapes, dev, interface=None, diff_method=None))
+        expected = reference_postprocessing(
+            qp.execute(reference_tapes, dev, interface=None, diff_method=None)
+        )
+        assert np.isclose(result.item().val, expected.item())
 
 
 @pytest.mark.parametrize("approx_order", [2, 4])
@@ -830,84 +829,6 @@ class TestFiniteDiffIntegration:
 class TestFiniteDiffGradients:
     """Test that the transform is differentiable"""
 
-    @pytest.mark.autograd
-    def test_autograd(self, approx_order, strategy, seed):
-        """Tests that the output of the finite-difference transform
-        can be differentiated using autograd, yielding second derivatives."""
-        dev = qp.device("default.qubit", wires=2, seed=seed)
-        params = np.array([0.543, -0.654], requires_grad=True)
-
-        def cost_fn(x):
-            with qp.queuing.AnnotatedQueue() as q:
-                qp.RX(x[0], wires=[0])
-                qp.RY(x[1], wires=[1])
-                qp.CNOT(wires=[0, 1])
-                qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
-
-            tape = qp.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
-            tape.trainable_params = {0, 1}
-            tapes, fn = finite_diff(
-                tape,
-                n=1,
-                approx_order=approx_order,
-                strategy=strategy,
-                h=h_val,
-            )
-            return np.array(fn(dev.execute(tapes)))
-
-        all_res = qp.jacobian(cost_fn)(params)
-
-        assert isinstance(all_res, tuple)
-        assert len(all_res) == len(many_shots_shot_vector)
-
-        for res in all_res:
-            x, y = params
-            expected = np.array(
-                [
-                    [-np.cos(x) * np.sin(y), -np.cos(y) * np.sin(x)],
-                    [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
-                ]
-            )
-
-            assert np.allclose(res, expected, atol=0.3, rtol=0)
-
-    @pytest.mark.autograd
-    def test_autograd_ragged(self, approx_order, strategy, seed):
-        """Tests that the output of the finite-difference transform
-        of a ragged tape can be differentiated using autograd, yielding second derivatives."""
-        dev = qp.device("default.qubit", wires=2, seed=seed)
-        params = np.array([0.543, -0.654], requires_grad=True)
-
-        def cost_fn(x):
-            with qp.queuing.AnnotatedQueue() as q:
-                qp.RX(x[0], wires=[0])
-                qp.RY(x[1], wires=[1])
-                qp.CNOT(wires=[0, 1])
-                qp.expval(qp.PauliZ(0))
-                qp.probs(wires=[1])
-
-            tape = qp.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
-            tape.trainable_params = {0, 1}
-            tapes, fn = finite_diff(
-                tape,
-                n=1,
-                approx_order=approx_order,
-                strategy=strategy,
-                h=h_val,
-            )
-            jac = fn(dev.execute(tapes))
-            return jac[1][0]
-
-        x, y = params
-        all_res = qp.jacobian(cost_fn)(params)[0]
-
-        assert isinstance(all_res, tuple)
-        assert len(all_res) == len(many_shots_shot_vector)
-
-        for res in all_res:
-            expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
-            assert np.allclose(res, expected, atol=0.3, rtol=0)
-
     @pytest.mark.torch
     def test_torch(self, approx_order, strategy, seed):
         """Tests that the output of the finite-difference transform
@@ -952,8 +873,6 @@ class TestFiniteDiffGradients:
     def test_jax(self, approx_order, strategy, seed):
         """Tests that the output of the finite-difference transform
         can be differentiated using JAX, yielding second derivatives."""
-        import jax
-        from jax import numpy as jnp
 
         dev = qp.device("default.qubit", wires=2, seed=seed)
         params = jnp.array([0.543, -0.654])

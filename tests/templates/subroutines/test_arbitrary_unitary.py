@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as pnp
 from pennylane.templates.subroutines.arbitrary_unitary import (
     _all_pauli_words_but_identity,
     _n_k_gray_code,
@@ -262,29 +261,6 @@ class TestInterfaces:
         res2 = circuit2(weights)
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
-    @pytest.mark.autograd
-    def test_autograd(self, tol):
-        """Tests the autograd interface."""
-
-        weights = pnp.array(np.random.random(size=(15,)), requires_grad=True)
-
-        dev = qp.device("default.qubit", wires=2)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(weights)
-        res2 = circuit2(weights)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        grad_fn = qp.grad(circuit)
-        grads = grad_fn(weights)
-
-        grad_fn2 = qp.grad(circuit2)
-        grads2 = grad_fn2(weights)
-
-        assert np.allclose(grads, grads2, atol=tol, rtol=0)
-
     @pytest.mark.jax
     def test_jax(self, tol):
         """Tests the jax interface."""
@@ -308,7 +284,7 @@ class TestInterfaces:
         grad_fn2 = jax.grad(circuit2)
         grads2 = grad_fn2(weights)
 
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+        assert np.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.jax
     def test_jax_jit(self, tol):

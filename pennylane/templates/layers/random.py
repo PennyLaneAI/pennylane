@@ -75,10 +75,10 @@ class RandomLayers(Operation):
         .. code-block:: python
 
             import pennylane as qp
-            from pennylane import numpy as pnp
+            import numpy as np
 
             dev = qp.device("default.qubit", wires=2)
-            weights = pnp.array([[0.1, -2.1, 1.4]])
+            weights = np.array([[0.1, -2.1, 1.4]])
 
             @qp.qnode(dev)
             def circuit1(weights):
@@ -90,7 +90,7 @@ class RandomLayers(Operation):
                 qp.RandomLayers(weights=weights, wires=range(2))
                 return qp.expval(qp.Z(0))
 
-        >>> pnp.allclose(circuit1(weights), circuit2(weights))
+        >>> np.allclose(circuit1(weights), circuit2(weights))
         True
 
         You can verify this by drawing the circuits.

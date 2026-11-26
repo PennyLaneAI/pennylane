@@ -423,8 +423,11 @@ class TestSample:  # pylint: disable=too-many-public-methods
         )
         assert processed_samples.dtype == np.dtype(dtype)
 
+    @pytest.mark.jax
     def test_sample_allowed_with_parameter_shift(self):
-        """Test that qp.sample doesn't raise an error with parameter-shift and autograd."""
+        """Test that qp.sample supports parameter-shift through qp.jacobian with JAX."""
+        import jax
+
         dev = qp.device("default.qubit")
 
         @qp.set_shots(10)
@@ -433,10 +436,10 @@ class TestSample:  # pylint: disable=too-many-public-methods
             qp.RX(angle, wires=0)
             return qp.sample(qp.PauliX(0))
 
-        angle = qp.numpy.array(0.1)
+        angle = jax.numpy.array(0.1)
         res = qp.jacobian(circuit)(angle)
         assert qp.math.shape(res) == (10,)
-        assert all(r in {-1, 0, 1} for r in np.round(res, 13))
+        assert all(r in {-1, 0, 1} for r in np.round(np.asarray(res), 13))
 
     @pytest.mark.jax
     def test_sample_with_jax_jacobian(self):
@@ -455,7 +458,7 @@ class TestSample:  # pylint: disable=too-many-public-methods
         _ = jax.jacobian(circuit)(angle)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "torch", "jax"])
+    @pytest.mark.parametrize("interface", ["numpy", "torch", "jax"])
     @pytest.mark.parametrize(
         "dtype, obs",
         [

@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as pnp
 from pennylane.templates.state_preparations.superposition import order_states
 from pennylane.testing import assert_decomposable
 
@@ -204,10 +203,11 @@ class TestSuperposition:
     @pytest.mark.parametrize(
         "state_vector",
         [
-            pnp.array([0.70710678, 0.70710678], requires_grad=True),
-            pnp.array([0.70710678, 0.70710678j], requires_grad=True),
+            np.array([0.70710678, 0.70710678]),
+            np.array([0.70710678, 0.70710678j]),
         ],
     )
+    @pytest.mark.jax
     def test_gradient_evaluated(self, state_vector):
         """Test that the gradient is successfully calculated for a simple example. This test only
         checks that the gradient is calculated without an error."""
@@ -218,7 +218,9 @@ class TestSuperposition:
             qp.Superposition(state_vector, bases=[[1], [0]], wires=range(1), work_wire=1)
             return qp.expval(qp.PauliZ(0))
 
-        qp.grad(circuit)(state_vector)
+        import jax.numpy as jnp
+
+        qp.grad(circuit)(jnp.asarray(state_vector))
 
     def test_access_work_wire(self):
         """Test that the work_wire can be accessed."""

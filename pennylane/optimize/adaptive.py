@@ -75,82 +75,19 @@ class AdaptiveOptimizer:
         param_steps (int): number of steps for optimizing the parameter of a selected gate (default value: 10).
         stepsize (float): step size for optimizing the parameter of a selected gate (default value: 0.5).
 
+    .. note::
+
+        This optimizer internally constructs PennyLane NumPy parameters for differentiating
+        candidate gates. Quantum training with this optimizer is currently unavailable after
+        the removal of the Autograd interface.
+
     **Example**
 
-    This examples shows an implementation of the
-    `ADAPT-VQE <https://www.nature.com/articles/s41467-019-10988-2>`_ algorithm for building an
-    adaptive circuit for the :math:`\text{H}_3^+` cation.
+    The optimizer's hyperparameters can be configured independently of quantum execution:
 
-    >>> import pennylane as qp
-    >>> from pennylane import numpy as np
-
-    The molecule is defined and the Hamiltonian is computed with:
-
-    >>> symbols = ["H", "H", "H"]
-    >>> geometry = np.array([[0.01076341, 0.04449877, 0.0],
-    ...                      [0.98729513, 1.63059094, 0.0],
-    ...                      [1.87262415, -0.00815842, 0.0]], requires_grad=False)
-    >>> H, qubits = qp.qchem.molecular_hamiltonian(symbols, geometry, charge = 1)
-
-    The collection of gates to grow the circuit adaptively contains all single and double
-    excitations:
-
-    >>> n_electrons = 2
-    >>> singles, doubles = qp.qchem.excitations(n_electrons, qubits)
-    >>> singles_excitations = [qp.SingleExcitation(0.0, x) for x in singles]
-    >>> doubles_excitations = [qp.DoubleExcitation(0.0, x) for x in doubles]
-    >>> operator_pool = doubles_excitations + singles_excitations
-
-    An initial circuit preparing the Hartree-Fock state and returning the expectation value of the
-    Hamiltonian is defined:
-
-    >>> hf_state = qp.qchem.hf_state(n_electrons, qubits)
-    >>> dev = qp.device("default.qubit", wires=qubits)
-    >>> @qp.qnode(dev)
-    ... def circuit():
-    ...     qp.BasisState(hf_state, wires=range(qubits))
-    ...     return qp.expval(H)
-
-    The optimizer is instantiated and then the circuit is created and optimized adaptively:
-
-    >>> opt = AdaptiveOptimizer()
-    >>> for i in range(len(operator_pool)):
-    ...     circuit, energy, gradient = opt.step_and_cost(circuit, operator_pool, drain_pool=True)
-    ...     print('Energy:', energy)
-    ...     print(qp.draw(circuit, show_matrices=False)())
-    ...     print('Largest Gradient:', gradient)
-    ...     print()
-    ...     if gradient < 1e-3:
-    ...         break
-
-    .. code-block :: pycon
-
-        Energy: -1.2465499384199699
-        0: ─╭|Ψ⟩─╭G²(0.20)─┤ ╭<𝓗>
-        1: ─├|Ψ⟩─├G²(0.20)─┤ ├<𝓗>
-        2: ─├|Ψ⟩─│─────────┤ ├<𝓗>
-        3: ─├|Ψ⟩─│─────────┤ ├<𝓗>
-        4: ─├|Ψ⟩─├G²(0.20)─┤ ├<𝓗>
-        5: ─╰|Ψ⟩─╰G²(0.20)─┤ ╰<𝓗>
-        Largest Gradient: 0.1439987277673651
-
-        Energy: -1.2613740231522532
-        0: ─╭|Ψ⟩─╭G²(0.20)─╭G²(0.19)─┤ ╭<𝓗>
-        1: ─├|Ψ⟩─├G²(0.20)─├G²(0.19)─┤ ├<𝓗>
-        2: ─├|Ψ⟩─│─────────├G²(0.19)─┤ ├<𝓗>
-        3: ─├|Ψ⟩─│─────────╰G²(0.19)─┤ ├<𝓗>
-        4: ─├|Ψ⟩─├G²(0.20)───────────┤ ├<𝓗>
-        5: ─╰|Ψ⟩─╰G²(0.20)───────────┤ ╰<𝓗>
-        Largest Gradient: 0.13493495624211427
-
-        Energy: -1.2743971719772815
-        0: ─╭|Ψ⟩─╭G²(0.20)─╭G²(0.19)──────────┤ ╭<𝓗>
-        1: ─├|Ψ⟩─├G²(0.20)─├G²(0.19)─╭G(0.00)─┤ ├<𝓗>
-        2: ─├|Ψ⟩─│─────────├G²(0.19)─│────────┤ ├<𝓗>
-        3: ─├|Ψ⟩─│─────────╰G²(0.19)─╰G(0.00)─┤ ├<𝓗>
-        4: ─├|Ψ⟩─├G²(0.20)────────────────────┤ ├<𝓗>
-        5: ─╰|Ψ⟩─╰G²(0.20)────────────────────┤ ╰<𝓗>
-        Largest Gradient: 0.0004084175253678331
+    >>> opt = qp.AdaptiveOptimizer(param_steps=5, stepsize=0.1)
+    >>> opt.param_steps, opt.stepsize
+    (5, 0.1)
     """
 
     def __init__(self, param_steps=10, stepsize=0.5):

@@ -16,12 +16,14 @@
 # pylint: disable=no-member
 
 
+import jax
+import jax.numpy as jnp
+import numpy as np
 import pytest
 from flaky import flaky
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
-from pennylane import numpy as np
 from pennylane.core.measurements import MeasurementTransform, SampleMeasurement, StateMeasurement
 from pennylane.exceptions import DeviceError
 from pennylane.measurements import (
@@ -165,10 +167,10 @@ class TestHamiltonianSupport:  # pylint: disable=too-few-public-methods
 
         device_kwargs["wires"] = 1
         dev = qp.device(**device_kwargs)
-        coeffs = np.array([-0.05, 0.17])
-        param = np.array(1.7, requires_grad=True)
+        coeffs = jnp.array([-0.05, 0.17])
+        param = jnp.array(1.7)
 
-        @qp.qnode(dev, shots=shots, diff_method="parameter-shift")
+        @qp.qnode(dev, shots=shots, interface="jax", diff_method="parameter-shift")
         def circuit(coeffs, param):
             qp.RX(param, wires=0)
             qp.RY(param, wires=0)
@@ -179,7 +181,7 @@ class TestHamiltonianSupport:  # pylint: disable=too-few-public-methods
                 )
             )
 
-        grad_fn = qp.grad(circuit)
+        grad_fn = jax.grad(circuit, argnums=(0, 1))
         grad = grad_fn(coeffs, param)
 
         def circuit1(param):
@@ -194,13 +196,13 @@ class TestHamiltonianSupport:  # pylint: disable=too-few-public-methods
             qp.RY(param, wires=0)
             return qp.expval(qp.Z(0))
 
-        half1 = qp.QNode(circuit1, dev, shots=shots, diff_method="parameter-shift")
-        half2 = qp.QNode(circuit2, dev, shots=shots, diff_method="parameter-shift")
+        half1 = qp.QNode(circuit1, dev, shots=shots, interface="jax", diff_method="parameter-shift")
+        half2 = qp.QNode(circuit2, dev, shots=shots, interface="jax", diff_method="parameter-shift")
 
         def combine(coeffs, param):
             return coeffs[0] * half1(param) + coeffs[1] * half2(param)
 
-        grad_fn_expected = qp.grad(combine)
+        grad_fn_expected = jax.grad(combine, argnums=(0, 1))
         grad_expected = grad_fn_expected(coeffs, param)
 
         assert np.allclose(grad[0], grad_expected[0], atol=tol)
@@ -1828,7 +1830,7 @@ class TestStateMeasurement:
         if isinstance(dev, qp.devices.Device):
             pytest.skip("test is specific to old device interface")
 
-        @qp.qnode(dev, shots=shots, interface="autograd", diff_method=None)
+        @qp.qnode(dev, shots=shots, interface="numpy", diff_method=None)
         def circuit():
             qp.X(0)
             return qp.state()

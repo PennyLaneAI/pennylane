@@ -93,7 +93,11 @@ class GateFabric(Operation):
         .. code-block:: python
 
             import pennylane as qp
-            from pennylane import numpy as np
+            import numpy as np
+            import jax
+            import jax.numpy as jnp
+
+            jax.config.update("jax_enable_x64", True)
 
             # Build the electronic Hamiltonian
             symbols = ["H", "H"]
@@ -120,10 +124,10 @@ class GateFabric(Operation):
 
             # Initialize the weight tensors
             np.random.seed(42)
-            weights = np.random.random(size=shape)
+            weights = jnp.array(np.random.random(size=shape))
 
-            # Define the optimizer
-            opt = qp.GradientDescentOptimizer(stepsize=0.4)
+            # Compute gradients with JAX
+            grad_fn = qp.grad(ansatz)
 
             # Store the values of the cost function
             energy = [ansatz(weights)]
@@ -135,7 +139,9 @@ class GateFabric(Operation):
             conv_tol = 1e-06
 
             for n in range(max_iterations):
-                weights, prev_energy = opt.step_and_cost(ansatz, weights)
+                gradient = grad_fn(weights)
+                prev_energy = grad_fn.forward
+                weights = weights - 0.4 * gradient
                 energy.append(ansatz(weights))
                 angle.append(weights)
                 conv = np.abs(energy[-1] - prev_energy)

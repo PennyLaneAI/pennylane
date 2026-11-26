@@ -132,7 +132,7 @@ class TestIntegration:
     """Tests for the mutual information functions"""
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     @pytest.mark.parametrize(
         "state, expected",
         [
@@ -173,7 +173,7 @@ class TestIntegration:
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     @pytest.mark.parametrize("params", np.linspace(0, 2 * np.pi, 8))
     def test_qnode_state(self, device, interface, params):
         """Test that the mutual information works for QNodes by comparing
@@ -199,7 +199,7 @@ class TestIntegration:
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     @pytest.mark.parametrize(
         "params", list(zip(np.linspace(0, np.pi, 8), np.linspace(0, 2 * np.pi, 8)))
     )
@@ -294,35 +294,6 @@ class TestIntegration:
         expected = qp.math.mutual_info(dm, indices0=[0], indices1=[1])
 
         assert np.allclose(actual, expected)
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
-    @pytest.mark.parametrize("diff_method", diff_methods)
-    @pytest.mark.parametrize("interface", ["auto", "autograd"])
-    def test_qnode_grad(self, param, diff_method, interface):
-        """Test that the gradient of mutual information works for QNodes
-        with the autograd interface"""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, interface=interface, diff_method=diff_method)
-        def circuit(param):
-            qp.RY(param, wires=0)
-            qp.CNOT(wires=[0, 1])
-            return qp.mutual_info(wires0=[0], wires1=[1])
-
-        if param == 0:
-            # we don't allow gradients to flow through the discontinuity at 0
-            expected = 0
-        else:
-            expected = np.sin(param) * (
-                np.log(np.cos(param / 2) ** 2) - np.log(np.sin(param / 2) ** 2)
-            )
-
-        # higher tolerance for finite-diff method
-        tol = 1e-8 if diff_method == "backprop" else 1e-5
-
-        actual = qp.grad(circuit)(param)
-        assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
@@ -429,7 +400,7 @@ class TestIntegration:
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     @pytest.mark.parametrize(
         "params", [np.array([0.0, 0.0]), np.array([0.3, 0.4]), np.array([0.6, 0.8])]
     )
@@ -452,7 +423,7 @@ class TestIntegration:
             circuit(params)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     @pytest.mark.parametrize("params", [np.array([0.0, 0.0]), np.array([0.3, 0.4])])
     def test_custom_wire_labels_works(self, interface, params):
         """Tests that no error is raised when mutual information is measured

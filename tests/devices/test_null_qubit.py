@@ -251,6 +251,7 @@ class TestBasicCircuit:
         assert qp.math.shape(dq_res) == qp.math.shape(result)
         assert qp.math.allequal(result, 0)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_autograd_results_and_backprop(self):
         """Tests execution and gradients with autograd"""
@@ -594,21 +595,6 @@ class TestExecutingBatches:
         results = self.f(dev, phi)
         self.assert_results(results)
 
-    @pytest.mark.autograd
-    def test_autograd(self):
-        """Test batches can be executed and have backprop derivatives in autograd."""
-        dev = NullQubit()
-
-        phi = qp.numpy.array(-0.629)
-        results = self.f(dev, phi)
-        self.assert_results(results)
-
-        g0 = qp.jacobian(lambda x: qp.numpy.array(self.f(dev, x)[0]))(phi)
-        assert np.array_equal(g0, np.zeros(2))
-
-        g1 = qp.jacobian(lambda x: qp.numpy.array(self.f(dev, x)[1]))(phi)
-        assert qp.math.allclose(g1, np.zeros(4))
-
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
     def test_jax(self, use_jit):
@@ -681,15 +667,6 @@ class TestSumOfTermsDifferentiability:
         cosines = qp.math.cos(phase)
         sines = qp.math.sin(phase)
         return 2.5 * qp.math.prod(cosines) + 6.2 * qp.math.prod(sines)
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("style", ("sum", "hermitian"))
-    def test_autograd_backprop(self, style):
-        """Test that backpropagation derivatives work in autograd with hamiltonians and large sums."""
-        dev = NullQubit()
-        x = qp.numpy.array(0.52)
-        assert self.f(dev, x, style=style) == 0
-        assert qp.grad(self.f)(dev, x, style=style) == 0
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
@@ -1106,16 +1083,19 @@ class TestIntegration:
     @pytest.mark.parametrize(
         "diff_method", ["device", "adjoint", "backprop", "finite-diff", "parameter-shift"]
     )
+    @pytest.mark.torch
     def test_expected_shape_all_methods(self, diff_method, seed):
         """Test that the gradient shape is as expected with all diff methods."""
+        from torch.autograd.functional import jacobian as torch_jacobian
+
         n_wires = 4
 
         shape = qp.StronglyEntanglingLayers.shape(n_layers=5, n_wires=n_wires)
         rng = np.random.default_rng(seed=seed)
-        params = qp.numpy.array(rng.random(shape))
-        dev = qp.device("null.qubit")
+        import torch
 
-        diff_method = "device"
+        params = torch.tensor(rng.random(shape), requires_grad=True)
+        dev = qp.device("null.qubit")
 
         @qp.qnode(dev, diff_method=diff_method)
         def circuit(params):
@@ -1124,9 +1104,9 @@ class TestIntegration:
 
         def cost(params):
             out = circuit(params)
-            return qp.math.sum(out)
+            return qp.math.sum(qp.math.stack(out))
 
-        assert np.array_equal(qp.grad(cost)(params), np.zeros(shape))
+        assert np.array_equal(qp.math.toarray(torch_jacobian(cost, params)), np.zeros(shape))
 
 
 @pytest.mark.parametrize(
@@ -1143,20 +1123,6 @@ class TestJacobian:
             return qp.probs(wires=[0]), qp.expval(qp.PauliZ(0))
 
         return circuit
-
-    def test_jacobian_autograd(self, method, device_vjp):
-        """Test the jacobian with autograd."""
-
-        @qp.qnode(NullQubit(), diff_method=method, device_vjp=device_vjp)
-        def circuit(x, mp):
-            qp.RX(x, wires=0)
-            return qp.apply(mp)
-
-        x = qp.numpy.array(0.1)
-        probs_jac = qp.jacobian(circuit)(x, qp.probs(wires=[0]))
-        expval_jac = qp.jacobian(circuit)(x, qp.expval(qp.PauliZ(0)))
-        assert np.array_equal(probs_jac, np.zeros(2))
-        assert np.array_equal(expval_jac, 0.0)
 
     @pytest.mark.jax
     def test_jacobian_jax(self, method, device_vjp):

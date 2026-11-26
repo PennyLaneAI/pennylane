@@ -117,11 +117,12 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
     1: ────├○────────┤
     2: ──X─├●────────┤
     3: ────╰○────────┤
-    >>> x = qp.numpy.array(1.2, requires_grad=True)
-    >>> circuit(x)
-    tensor(0.362..., requires_grad=True)
-    >>> qp.grad(circuit)(x)
-    tensor(-0.932..., requires_grad=True)
+    >>> import jax.numpy as jnp
+    >>> x = jnp.array(1.2)
+    >>> print(circuit(x))
+    0.362...
+    >>> print(qp.grad(circuit)(x))
+    -0.932...
 
     :func:`~.ctrl` works on both callables like ``qp.RX`` or a quantum function
     and individual :class:`~.operation.Operator`'s.

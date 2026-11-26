@@ -29,6 +29,7 @@ def adjoint_ops(op: qp.operation.Operator) -> bool:
 class TestAdjointJacobian:
     """Tests for adjoint_jacobian"""
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("G", [qp.RX, qp.RY, qp.RZ])
@@ -49,6 +50,7 @@ class TestAdjointJacobian:
         numeric_val = fn(results)
         assert np.allclose(calculated_val, numeric_val, atol=tol, rtol=0)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     def test_Rot_gradient(self, theta, tol):
@@ -77,6 +79,7 @@ class TestAdjointJacobian:
         assert np.allclose(calculated_val, numeric_val, atol=tol, rtol=0)
         assert isinstance(calculated_val, tuple)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize("obs", [qp.PauliY])
     @pytest.mark.parametrize(
@@ -167,6 +170,7 @@ class TestAdjointJacobian:
         assert isinstance(jacobian, tuple)
         assert all(isinstance(j, tuple) for j in jacobian)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_gradient_gate_with_multiple_parameters(self, tol):
         """Tests that gates with multiple free parameters yield correct gradients."""

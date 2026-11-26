@@ -15,12 +15,12 @@
 
 # pylint: disable=too-few-public-methods
 
+import jax.numpy as jnp
 import numpy as np
 import pytest
 import scipy as sp
 
 import pennylane as qp
-from pennylane import numpy as pnp
 from pennylane._class_property import classproperty
 from pennylane.devices import DefaultQubit, ExecutionConfig
 from pennylane.devices.default_qubit import stopping_condition
@@ -202,6 +202,7 @@ class TestConfigSetup:
         assert config.grad_on_execution
         assert config.use_device_jacobian_product
 
+    @pytest.mark.jax
     def test_integration_uses_adjoint_if_maxworkers(self):
         """Test that the workflow uses adjoint if the device has max_workers set."""
 
@@ -213,7 +214,7 @@ class TestConfigSetup:
             return qp.expval(qp.PauliZ(0))
 
         with dev.tracker:
-            qp.grad(circuit)(qp.numpy.array(0.1))
+            qp.grad(circuit)(jnp.array(0.1))
 
         assert dev.tracker.totals["execute_and_derivative_batches"] == 1
 
@@ -243,7 +244,7 @@ class TestConfigSetup:
         processed = dev.setup_execution_config(config)
         assert processed.convert_to_numpy
 
-    @pytest.mark.parametrize("interface", ("autograd", "torch"))
+    @pytest.mark.parametrize("interface", ("numpy", "torch"))
     def test_convert_to_numpy_non_jax(self, interface):
         """Test that other interfaces are still converted to numpy."""
         config = qp.devices.ExecutionConfig(gradient_method="adjoint", interface=interface)
@@ -1108,6 +1109,7 @@ class TestAdjointDiffTapeValidation:
         assert qs_valid.trainable_params == [0, 1, 2, 3]
         assert qs.shots == qs_valid.shots
 
+    @pytest.mark.jax
     def test_untrainable_operations(self):
         """Tests that a parametrized QubitUnitary that is not trainable is not expanded"""
 
@@ -1117,7 +1119,7 @@ class TestAdjointDiffTapeValidation:
             qp.QubitUnitary(np.eye(8), [0, 1, 2])
             return qp.expval(qp.PauliZ(2))
 
-        x = pnp.array(1.1, requires_grad=True)
+        x = jnp.array(1.1)
         assert qp.jacobian(circuit)(x) == 0
 
 

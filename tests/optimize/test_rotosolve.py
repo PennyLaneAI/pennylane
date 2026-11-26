@@ -414,14 +414,16 @@ num_wires = 3
 dev = qp.device("default.qubit", wires=num_wires)
 
 
-@qp.qnode(dev)
+@qp.transforms.convert_to_numpy_parameters
+@qp.qnode(dev, interface="numpy")
 def scalar_qnode(x):
     for w in dev.wires:
         qp.RX(x, wires=w)
     return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1) @ qp.PauliZ(2))
 
 
-@qp.qnode(dev)
+@qp.transforms.convert_to_numpy_parameters
+@qp.qnode(dev, interface="numpy")
 def array_qnode(x, y, z):
     for _x, w in zip(x, dev.wires):
         qp.RX(_x, wires=w)
@@ -436,7 +438,8 @@ def array_qnode(x, y, z):
     return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1) @ qp.PauliZ(2))
 
 
-@qp.qnode(dev)
+@qp.transforms.convert_to_numpy_parameters
+@qp.qnode(dev, interface="numpy")
 def _postprocessing_qnode(x, y, z):
     for w in dev.wires:
         qp.RX(x, wires=w)

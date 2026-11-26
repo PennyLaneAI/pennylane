@@ -19,6 +19,7 @@ modifies Autograd NumPy arrays so that they have an additional property,
 
 import numpy as onp
 import pytest
+from autograd import grad as autograd_grad
 from autograd.numpy.numpy_boxes import ArrayBox
 
 import pennylane as qp
@@ -435,6 +436,20 @@ class TestNumpyIntegration:
 @pytest.mark.integration
 class TestAutogradIntegration:
     """Test autograd works with the new tensor subclass"""
+
+    def test_asarray_classical_gradient(self):
+        """Array conversion preserves the classical gradient's values and matrix shape."""
+        weights = onp.array([[1.0, -2.0, 3.0], [4.0, 0.5, -6.0]])
+        values = np.array([[0.2, -0.3, 0.5], [1.1, -1.5, 2.2]])
+
+        def cost(argument):
+            converted = np.asarray(argument, dtype=onp.float64, order="F")
+            return np.sum(weights * converted**2)
+
+        gradient = autograd_grad(cost)(values)
+
+        assert gradient.shape == values.shape
+        assert onp.allclose(gradient, 2 * weights * onp.asarray(values))
 
     def test_gradient(self):
         """Test gradient computations continue to work"""

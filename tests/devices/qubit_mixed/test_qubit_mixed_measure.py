@@ -34,7 +34,7 @@ from pennylane.devices.qubit_mixed.measure import (
 
 ml_frameworks_list = [
     "numpy",
-    pytest.param("autograd", marks=pytest.mark.autograd),
+    pytest.param("autograd", marks=(pytest.mark.core, pytest.mark.autograd)),
     pytest.param("jax", marks=pytest.mark.jax),
     pytest.param("torch", marks=pytest.mark.torch),
 ]
@@ -578,6 +578,7 @@ class TestSumOfTermsDifferentiability:
         sign = (-1) ** n_wires  # For n_wires=5, sign = -1
         return coeffs[1] * sign * qp.math.prod(sines)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize(
         "coeffs",
@@ -599,6 +600,7 @@ class TestSumOfTermsDifferentiability:
         expected_gradient = qp.grad(self.expected)(x, coeffs)
         assert qp.math.allclose(expected_gradient, gradient)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_autograd_backprop_coeffs(self):
         """Test that backpropagation derivatives work in autograd with

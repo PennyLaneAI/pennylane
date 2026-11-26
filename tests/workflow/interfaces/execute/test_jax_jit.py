@@ -902,7 +902,7 @@ class TestVectorValuedJIT:
 
         res = cost(x, y, dev, interface="jax-jit", ek=execute_kwargs)
 
-        exp = cost(x_, y_, dev, interface="autograd", ek=execute_kwargs)
+        exp = cost(x_, y_, dev, interface="numpy", ek=execute_kwargs)
 
         for r, e in zip(res, exp):
             assert jax.numpy.allclose(r, e, atol=1e-7)

@@ -65,21 +65,31 @@ class MomentumQNGOptimizer(QNGOptimizer):
     expectation value of a Hamiltonian.
 
     >>> dev = qp.device("default.qubit", wires=(0, 1, 2))
-    >>> @qp.qnode(dev)
+    >>> @qp.qnode(dev, interface="numpy")
     ... def circuit(params):
     ...     qp.RX(params[0], wires=0)
     ...     qp.RY(params[1], wires=0)
     ...     return qp.expval(qp.X(0))
 
-    Once constructed, the cost function can be passed directly to the
-    optimizer's :meth:`~.step` function. In addition to the standard learning
+    Supply native Torch gradients and metric tensors through the optimizer's hooks, while
+    storing its parameters as PennyLane NumPy arrays. In addition to the standard learning
     rate, the ``MomentumQNGOptimizer`` takes a ``momentum`` parameter:
 
+    >>> import torch
+    >>> native_circuit = qp.QNode(circuit.func, dev, interface="torch")
+    >>> def as_torch(params):
+    ...     return torch.tensor(qp.math.toarray(params), dtype=torch.float64, requires_grad=True)
+    >>> def grad_fn(params):
+    ...     return qp.math.toarray(qp.grad(native_circuit)(as_torch(params)))
+    >>> def metric_tensor_fn(params):
+    ...     return qp.math.toarray(qp.metric_tensor(native_circuit)(as_torch(params)))
     >>> eta = 0.01
     >>> rho = 0.93
     >>> init_params = qp.numpy.array([0.5, 0.23], requires_grad=True)
     >>> opt = qp.MomentumQNGOptimizer(stepsize=eta, momentum=rho)
-    >>> theta_new = opt.step(circuit, init_params)
+    >>> theta_new = opt.step(
+    ...     circuit, init_params, grad_fn=grad_fn, metric_tensor_fn=metric_tensor_fn
+    ... )
     >>> theta_new
     tensor([0.50437193, 0.18562052], requires_grad=True)
 

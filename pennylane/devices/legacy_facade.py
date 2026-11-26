@@ -349,7 +349,10 @@ class LegacyDeviceFacade(Device):  # pylint: disable=abstract-method
         if tape.shots:
             return False
         params = tape.get_parameters(trainable_only=False)
-        if (interface := math.get_interface(*params)) != "numpy":
+        interface = math.get_interface(*params)
+        if interface == "autograd":
+            interface = "numpy"
+        elif interface != "numpy":
             interface = Interface(interface).value
 
         if tape and any(isinstance(m.obs, ops.SparseHamiltonian) for m in tape.measurements):

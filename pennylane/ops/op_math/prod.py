@@ -232,11 +232,12 @@ class Prod(CompositeOp):
                 qp.prod(qp.Z(0), qp.RX(theta, 1))
                 return qp.expval(qp.Z(1))
 
-        >>> par = qp.numpy.array(1.23, requires_grad=True)
-        >>> circuit(par)
-        tensor(0.334..., requires_grad=True)
-        >>> qp.grad(circuit)(par)
-        tensor(-0.942..., requires_grad=True)
+        >>> import jax.numpy as jnp
+        >>> par = jnp.array(1.23)
+        >>> print(circuit(par))
+        0.334...
+        >>> print(qp.grad(circuit)(par))
+        -0.942...
 
         The Prod operation can also be measured as an observable.
         If the circuit is parametrized, then we can also differentiate through the
@@ -252,8 +253,8 @@ class Prod(CompositeOp):
                 qp.RX(weights[0], wires=0)
                 return qp.expval(prod_op)
 
-        >>> weights = qp.numpy.array([0.1], requires_grad=True)
-        >>> qp.grad(circuit)(weights)
+        >>> weights = jnp.array([0.1])
+        >>> np.asarray(qp.grad(circuit)(weights), dtype=float)
         array([-0.070...])
 
         Note that the :meth:`~Prod.terms` method always simplifies and flattens the operands.

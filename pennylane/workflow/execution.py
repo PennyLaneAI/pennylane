@@ -73,9 +73,10 @@ def execute(  # pylint: disable=too-many-arguments
         diff_method (Optional[str | Transform]): The gradient transform function to use
             for backward passes. If "device", the device will be queried directly
             for the gradient (if supported).
-        interface (str, Interface): The interface that will be used for classical auto-differentiation.
+        interface (str, Interface): The interface used for execution and classical auto-differentiation.
             This affects the types of parameters that can exist on the input tapes.
-            Available options include ``autograd``, ``torch``, ``jax``, and ``auto``.
+            Available options include ``numpy``, ``torch``, ``jax``, and ``auto``.
+            The NumPy interface does not provide automatic differentiation.
         transform_program(.CompilePipeline): A transform program to be applied to the initial tape.
         grad_on_execution (bool, str): Whether the gradients should be computed
             on the execution or not. It only applies
@@ -149,22 +150,23 @@ def execute(  # pylint: disable=too-many-arguments
 
     Let's execute this cost function while tracking the gradient:
 
-    >>> params = pnp.array([0.1, 0.2, 0.3], requires_grad=True)
-    >>> x = pnp.array([0.5], requires_grad=True)
-    >>> print(cost_fn(params, x))
+    >>> import torch
+    >>> params = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64, requires_grad=True)
+    >>> x = torch.tensor([0.5], dtype=torch.float64, requires_grad=True)
+    >>> print(qp.math.toarray(cost_fn(params, x)))
     1.93...
 
     Since the ``execute`` function is differentiable, we can
     also compute the gradient:
 
-    >>> print(qp.grad(cost_fn)(params, x)) # doctest: +SKIP
+    >>> print(tuple(g.detach().numpy() for g in qp.grad(cost_fn)(params, x))) # doctest: +SKIP
     (array([-0.0978434 , -0.19767681, -0.29552021]), array([5.37764278e-17]))
 
     Finally, we can also compute any nth-order derivative. Let's compute the Jacobian
     of the gradient (that is, the Hessian):
 
     >>> x.requires_grad = False
-    >>> print(qp.jacobian(qp.grad(cost_fn))(params, x)) # doctest: +SKIP
+    >>> print(qp.math.toarray(qp.jacobian(qp.grad(cost_fn))(params, x))) # doctest: +SKIP
     [[-0.97517033  0.01983384  0.        ]
      [ 0.01983384 -0.97517033  0.        ]
      [ 0.          0.         -0.95533649]]

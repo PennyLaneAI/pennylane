@@ -125,20 +125,29 @@ class QNGOptimizer(GradientDescentOptimizer):
     realized as a :class:`~.QNode` that returns the expectation value of a Hamiltonian.
 
     >>> dev = qp.device("default.qubit", wires=(0, 1, 2))
-    >>> @qp.qnode(dev)
+    >>> @qp.qnode(dev, interface="numpy")
     ... def circuit(params):
     ...     qp.RX(params[0], wires=0)
     ...     qp.RY(params[1], wires=0)
     ...     return qp.expval(qp.X(0) + qp.X(1))
 
-    Once constructed, the cost function can be passed directly to the
-    optimizer's :meth:`~.step` function:
+    The optimizer stores parameters as PennyLane NumPy arrays. Supply gradients and metric
+    tensors from a Torch QNode through the existing ``grad_fn`` and ``metric_tensor_fn`` hooks:
 
-    >>> from pennylane import numpy as np
+    >>> import torch
+    >>> native_circuit = qp.QNode(circuit.func, dev, interface="torch")
+    >>> def as_torch(params):
+    ...     return torch.tensor(qp.math.toarray(params), dtype=torch.float64, requires_grad=True)
+    >>> def grad_fn(params):
+    ...     return qp.math.toarray(qp.grad(native_circuit)(as_torch(params)))
+    >>> def metric_tensor_fn(params):
+    ...     return qp.math.toarray(qp.metric_tensor(native_circuit)(as_torch(params)))
     >>> eta = 0.01
-    >>> init_params = np.array([0.011, 0.012])
+    >>> init_params = qp.numpy.array([0.011, 0.012], requires_grad=True)
     >>> opt = qp.QNGOptimizer(eta)
-    >>> theta_new = opt.step(circuit, init_params)
+    >>> theta_new = opt.step(
+    ...     circuit, init_params, grad_fn=grad_fn, metric_tensor_fn=metric_tensor_fn
+    ... )
     >>> theta_new
     tensor([ 0.01100528, -0.02799954], requires_grad=True)
 
@@ -146,8 +155,9 @@ class QNGOptimizer(GradientDescentOptimizer):
     via the ``metric_tensor_fn`` keyword argument. For example, we can provide a function
     to calculate the metric tensor via the adjoint method.
 
-    >>> adj_metric_tensor = qp.adjoint_metric_tensor(circuit)
-    >>> opt.step(circuit, init_params, metric_tensor_fn=adj_metric_tensor)
+    >>> def adj_metric_tensor(params):
+    ...     return qp.math.toarray(qp.adjoint_metric_tensor(native_circuit)(as_torch(params)))
+    >>> opt.step(circuit, init_params, grad_fn=grad_fn, metric_tensor_fn=adj_metric_tensor)
     tensor([ 0.01100528, -0.02799954], requires_grad=True)
 
     .. note::

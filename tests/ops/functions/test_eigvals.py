@@ -479,6 +479,7 @@ class TestDifferentiation:
         assert np.allclose(l.detach(), 2 * np.cos(v / 2))
         assert np.allclose(dl.detach(), -np.sin(v / 2))
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.xfail(reason="np.linalg.eigvals not differentiable using Autograd")
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))

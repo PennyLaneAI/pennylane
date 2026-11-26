@@ -15,6 +15,8 @@
 
 # pylint: disable=too-few-public-methods
 
+import jax
+import jax.numpy as jnp
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
@@ -304,7 +306,7 @@ class TestGetOperationRecipe:
         """Test a custom recipe using a QNode."""
         dev = qp.device("default.qubit", wires=2)
 
-        x = np.array(0.4, requires_grad=True)
+        x = jnp.array(0.4)
         with qp.queuing.AnnotatedQueue() as q:
             qp.RX(x, 0)
             qp.expval(qp.PauliZ(0))
@@ -744,10 +746,10 @@ class TestParamShift:
             qp.Rot(*params, wires=0)
             return qp.probs([2, 3])
 
-        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+        params = jnp.array([0.5, 0.5, 0.5])
 
         result = qp.gradients.param_shift(circuit)(params)
-        assert np.allclose(result, np.zeros((4, 3)), atol=0)
+        assert np.allclose(result, jnp.zeros((4, 3)), atol=0)
 
         tape = qp.workflow.construct_tape(circuit)(params)
         tapes, _ = qp.gradients.param_shift(tape, broadcast=broadcast)
@@ -2499,15 +2501,16 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
     def test_output_shape_matches_qnode_expval_scalar(self, cost, exp_shape, exp_type):
         """Test that the transform output shape matches that of the QNode for
         expectation values and a scalar parameter."""
+        exp_type = jax.Array if exp_type is np.ndarray else exp_type
         dev = qp.device("default.qubit", wires=4)
 
-        x = np.array(0.419)
+        x = jnp.array(0.419)
         circuit = qp.QNode(cost, dev)
 
         res_parshift = qp.gradients.param_shift(circuit)(x)
 
         assert isinstance(res_parshift, exp_type)
-        assert np.array(res_parshift).shape == exp_shape
+        assert jnp.array(res_parshift).shape == exp_shape
 
     costs_and_expected_expval = [
         (cost1, [3], np.ndarray),
@@ -2519,9 +2522,10 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
     def test_output_shape_matches_qnode_expval_array(self, cost, exp_shape, exp_type):
         """Test that the transform output shape matches that of the QNode for
         expectation values and an array-valued parameter."""
+        exp_type = jax.Array if exp_type is np.ndarray else exp_type
         dev = qp.device("default.qubit", wires=4)
 
-        x = np.random.rand(3)
+        x = jnp.asarray(np.random.rand(3))
         circuit = qp.QNode(cost, dev)
 
         res = qp.gradients.param_shift(circuit)(x)
@@ -2533,7 +2537,7 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
 
         if len(exp_shape) > 1:
             for r in res:
-                assert isinstance(r, np.ndarray)
+                assert isinstance(r, jax.Array)
                 assert len(r) == exp_shape[1]
 
     costs_and_expected_probs = [
@@ -2545,9 +2549,10 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_probs)
     def test_output_shape_matches_qnode_probs(self, cost, exp_shape, exp_type):
         """Test that the transform output shape matches that of the QNode."""
+        exp_type = jax.Array if exp_type is np.ndarray else exp_type
         dev = qp.device("default.qubit", wires=4)
 
-        x = np.random.rand(3)
+        x = jnp.asarray(np.random.rand(3))
         circuit = qp.QNode(cost, dev)
 
         res_parshift = qp.gradients.param_shift(circuit)(x)
@@ -2556,10 +2561,10 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
         assert isinstance(res_parshift, exp_type)
         if len(exp_shape) > 1:
             for r in res_parshift:
-                assert isinstance(r, np.ndarray)
+                assert isinstance(r, jax.Array)
 
         # Check shape, result can be put into a single array by assumption
-        assert np.allclose(np.squeeze(np.array(res_parshift)).shape, exp_shape)
+        assert np.allclose(jnp.squeeze(jnp.array(res_parshift)).shape, exp_shape)
 
     # TODO: revisit the following test when the Autograd interface supports
     #       parameter-shift with the new return type system
@@ -2617,19 +2622,30 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
 
         dev = DeviceSupporingSpecialObservable(wires=1, shots=None)
 
-        @qp.qnode(dev, diff_method="parameter-shift")
+        @qp.qnode(dev, interface="numpy", diff_method=None)
         def qnode(x):
             qp.RY(x, wires=0)
             return qp.expval(SpecialObservable(wires=0))
 
-        @qp.qnode(dev, diff_method="parameter-shift")
+        @qp.qnode(dev, interface="numpy", diff_method=None)
         def reference_qnode(x):
             qp.RY(x, wires=0)
             return qp.expval(qp.PauliZ(wires=0))
 
-        par = np.array(0.2, requires_grad=True)
-        assert np.isclose(qnode(par).item().val, reference_qnode(par))
-        assert np.isclose(qp.jacobian(qnode)(par).item().val, qp.jacobian(reference_qnode)(par))
+        par = 0.2
+        assert np.isclose(qnode(par).item().val, qp.math.toarray(reference_qnode(par)).item())
+
+        tape = qp.workflow.construct_tape(qnode)(par)
+        reference_tape = qp.workflow.construct_tape(reference_qnode)(par)
+        tape.trainable_params = [0]
+        reference_tape.trainable_params = [0]
+        tapes, postprocessing = qp.gradients.param_shift(tape)
+        reference_tapes, reference_postprocessing = qp.gradients.param_shift(reference_tape)
+        result = postprocessing(qp.execute(tapes, dev, interface=None, diff_method=None))
+        expected = reference_postprocessing(
+            qp.execute(reference_tapes, dev, interface=None, diff_method=None)
+        )
+        assert np.isclose(result.item().val, expected.item())
 
     def test_multi_measure_no_warning(self):
         """Test computing the gradient of a tape that contains multiple
@@ -2862,9 +2878,6 @@ class TestParameterShiftRuleBroadcast:
     @pytest.mark.jax
     def test_fallback(self, mocker, tol):
         """Test that fallback gradient functions are correctly used"""
-
-        import jax
-        from jax import numpy as jnp
 
         spy = mocker.spy(qp.gradients, "finite_diff")
         dev = qp.device("default.qubit", wires=2)
@@ -3245,7 +3258,7 @@ class TestParameterShiftRuleBroadcast:
             qp.Rot(*x, wires=0)
             return [qp.probs([0, 1]), qp.probs([2, 3])]
 
-        x = np.random.rand(3)
+        x = jnp.asarray(np.random.rand(3))
         single_measure_circuits = [qp.QNode(cost, dev) for cost in (cost1, cost2, cost4, cost5)] + [
             qp.QNode(cost, dev) for cost in (cost3, cost6)
         ]
@@ -3254,48 +3267,6 @@ class TestParameterShiftRuleBroadcast:
         for c, exp_shape in zip(single_measure_circuits, expected_shapes):
             grad = qp.gradients.param_shift(c, broadcast=True)(x)
             assert qp.math.shape(grad) == exp_shape
-
-
-@pytest.mark.parametrize(
-    "broadcast, expected", [(False, (5, [None] * 5)), (True, (3, [None, 2, 2]))]
-)
-class TestParamShiftGradients:
-    """Test that the transform is differentiable"""
-
-    @pytest.mark.autograd
-    # TODO: support Hessian with the new return types
-    @pytest.mark.skip
-    def test_autograd(self, tol, broadcast, expected):
-        """Tests that the output of the parameter-shift transform
-        can be differentiated using autograd, yielding second derivatives."""
-        dev = qp.device("default.qubit", wires=2)
-        params = np.array([0.543, -0.654], requires_grad=True)
-        exp_num_tapes, exp_batch_sizes = expected
-
-        def cost_fn(x):
-            with qp.queuing.AnnotatedQueue() as q:
-                qp.RX(x[0], wires=[0])
-                qp.RY(x[1], wires=[1])
-                qp.CNOT(wires=[0, 1])
-                qp.var(qp.PauliZ(0) @ qp.PauliX(1))
-
-            tape = qp.tape.QuantumScript.from_queue(q)
-            tape.trainable_params = {0, 1}
-            tapes, fn = qp.gradients.param_shift(tape, broadcast=broadcast)
-            assert len(tapes) == exp_num_tapes
-            assert [t.batch_size for t in tapes] == exp_batch_sizes
-            jac = fn(dev.execute(tapes))
-            return jac
-
-        res = qp.jacobian(cost_fn)(params)
-        x, y = params
-        expected = np.array(
-            [
-                [2 * np.cos(2 * x) * np.sin(y) ** 2, np.sin(2 * x) * np.sin(2 * y)],
-                [np.sin(2 * x) * np.sin(2 * y), -2 * np.cos(x) ** 2 * np.cos(2 * y)],
-            ]
-        )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
 @pytest.mark.parametrize("broadcast", [True, False])
@@ -3472,288 +3443,31 @@ class TestHamiltonianExpvalGradients:
         return jac
 
 
-@pytest.mark.autograd
-class TestQnodeAutograd:
-    """Class to test the parameter shift transform on QNode with some classical processing."""
-
-    interfaces = ["auto", "autograd"]
-
-    @pytest.mark.parametrize("interface", interfaces)
-    def test_single_measurement_single_param(self, interface):
-        """Test for a single measurement and a single param."""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(x):
-            qp.RX(2 * x, wires=[0])
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0))
-
-        x = qp.numpy.array(0.543, requires_grad=True)
-
-        res = qp.gradients.param_shift(circuit)(x)
-
-        res_expected = qp.jacobian(circuit)(x)
-
-        assert res.shape == res_expected.shape
-        assert np.allclose(res, res_expected)
-
-    @pytest.mark.parametrize("interface", interfaces)
-    def test_single_measurement_single_param_not_hybrid(self, interface):
-        """Test for a single measurement and a single param with hybrid False."""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(x):
-            qp.RX(2 * x, wires=[0])
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0))
-
-        x = qp.numpy.array(0.543, requires_grad=True)
-
-        res = qp.gradients.param_shift(circuit, hybrid=False)(x)
-
-        res_expected = qp.jacobian(circuit)(x)
-        assert res.shape == res_expected.shape
-        assert np.allclose(2 * res, res_expected)
-
-    @pytest.mark.parametrize("interface", interfaces)
-    def test_single_measurement_single_param_2(self, interface):
-        """Test for a single measurement and a single param."""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(x):
-            qp.RX(x[0], wires=[0])
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0))
-
-        x = qp.numpy.array([0.543, 0.2], requires_grad=True)
-
-        res = qp.gradients.param_shift(circuit)(x)
-
-        res_expected = qp.jacobian(circuit)(x)
-
-        assert res.shape == res_expected.shape
-        assert np.allclose(res, res_expected)
-
-    @pytest.mark.parametrize("interface", interfaces)
-    def test_single_measurement_prob_single_param(self, interface):
-        """Test for a single measurement (probs) and a single param."""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(x):
-            qp.RX(2 * x, wires=[0])
-            qp.CNOT(wires=[0, 1])
-            return qp.probs(wires=[0, 1])
-
-        x = qp.numpy.array(0.543, requires_grad=True)
-
-        res = qp.gradients.param_shift(circuit)(x)
-
-        res_expected = qp.jacobian(circuit)(x)
-
-        assert res.shape == res_expected.shape
-        assert np.allclose(res, res_expected)
-
-    @pytest.mark.parametrize("interface", interfaces)
-    def test_single_measurement_prob_single_param_2(self, interface):
-        """Test for a single measurement (probs) and a single param."""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(x):
-            qp.RX(x[0], wires=[0])
-            qp.CNOT(wires=[0, 1])
-            return qp.probs(wires=[0, 1])
-
-        x = qp.numpy.array([0.543, 0.2], requires_grad=True)
-
-        res = qp.gradients.param_shift(circuit)(x)
-        res_expected = qp.jacobian(circuit)(x)
-
-        assert np.allclose(res, res_expected)
-
-    @pytest.mark.parametrize("interface", interfaces)
-    def test_multi_measurement_single_param(self, interface):
-        """Test for multiple measurement and a single param."""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(x):
-            qp.RX(x[0], wires=[0])
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliX(1))
-
-        x = qp.numpy.array([0.543, 0.2], requires_grad=True)
-
-        res = qp.gradients.param_shift(circuit)(x)
-
-        def cost(x):
-            return qp.math.stack(circuit(x))
-
-        res_expected = qp.jacobian(cost)(x)
-
-        assert np.allclose(res[0], res_expected[0])
-        assert np.allclose(res[1], res_expected[1])
-
-    @pytest.mark.parametrize("interface", interfaces)
-    def test_multi_measurement_expval_probs_single_param(self, interface):
-        """Test for multiple measurement (expval, probs) and a single param."""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(x):
-            qp.RX(x[0], wires=[0])
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
-
-        x = qp.numpy.array([0.543, 0.2], requires_grad=True)
-
-        res = qp.gradients.param_shift(circuit)(x)
-
-        def cost(x):
-            return qp.math.hstack(circuit(x))
-
-        res_expected = qp.jacobian(cost)(x)
-
-        assert np.allclose(res[0], res_expected[0])
-        assert np.allclose(res[1][0], res_expected[1])
-        assert np.allclose(res[1][1], res_expected[2])
-        assert np.allclose(res[1][2], res_expected[3])
-        assert np.allclose(res[1][3], res_expected[4])
-
-    @pytest.mark.parametrize("interface", interfaces)
-    def test_single_measurement_multiple_params(self, interface):
-        """Test for a single measurement and multiple params."""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(x, y):
-            qp.RX(x[0], wires=[0])
-            qp.RY(y, wires=[1])
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
-
-        x = qp.numpy.array([0.543, 0.2], requires_grad=True)
-        y = qp.numpy.array(-0.654, requires_grad=True)
-
-        res = qp.gradients.param_shift(circuit)(x, y)
-        res_expected = qp.jacobian(circuit)(x, y)
-
-        assert np.allclose(res[0], res_expected[0])
-        assert np.allclose(res[1], res_expected[1])
-
-    @pytest.mark.parametrize("interface", interfaces)
-    def test_single_measurement_probs_multiple_params(self, interface):
-        """Test for a single measurement (probs) and multiple params."""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(x, y):
-            qp.RX(x[0], wires=[0])
-            qp.RY(y, wires=[1])
-            qp.CNOT(wires=[0, 1])
-            return qp.probs(wires=[0, 1])
-
-        x = qp.numpy.array([0.543, 0.2], requires_grad=True)
-        y = qp.numpy.array(-0.654, requires_grad=True)
-
-        res = qp.gradients.param_shift(circuit)(x, y)
-        res_expected = qp.jacobian(circuit)(x, y)
-
-        assert np.allclose(res[0], res_expected[0])
-        assert np.allclose(res[1], res_expected[1])
-
-    @pytest.mark.parametrize("interface", interfaces)
-    def test_multi_measurements_expval_multi_params(self, interface):
-        """Test for multiple measurements and multiple params."""
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(x, y):
-            qp.RX(x[0], wires=[0])
-            qp.RY(y, wires=[1])
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliX(1))
-
-        x = qp.numpy.array([0.543, 0.2], requires_grad=True)
-        y = qp.numpy.array(-0.654, requires_grad=True)
-
-        res = qp.gradients.param_shift(circuit)(x, y)
-
-        def cost(x, y):
-            return qp.math.stack(circuit(x, y))
-
-        res_expected = qp.jacobian(cost)(x, y)
-
-        assert np.allclose(res[0][0], res_expected[0][0])
-        assert np.allclose(res[0][1], res_expected[1][0])
-        assert np.allclose(res[1][0], res_expected[0][1])
-        assert np.allclose(res[1][1], res_expected[1][1])
-
-    @pytest.mark.parametrize("interface", interfaces)
-    def test_multi_meas_expval_probs__multi_params(self, interface):
-        """Test for multiple measurements (expval , probs) and multiple params."""
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(x, y):
-            qp.RX(x[0], wires=[0])
-            qp.RY(y, wires=[1])
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
-
-        x = qp.numpy.array([0.543, 0.2], requires_grad=True)
-        y = qp.numpy.array(-0.654, requires_grad=True)
-
-        res = qp.gradients.param_shift(circuit)(x, y)
-
-        def cost(x, y):
-            return qp.math.hstack(circuit(x, y))
-
-        res_expected = qp.jacobian(cost)(x, y)
-
-        assert np.allclose(res[0][0], res_expected[0][0])
-        assert np.allclose(res[0][1], res_expected[1][0])
-        assert np.allclose(res[1][0][0], res_expected[0][1])
-        assert np.allclose(res[1][0][1], res_expected[0][2])
-        assert np.allclose(res[1][0][2], res_expected[0][3])
-        assert np.allclose(res[1][0][3], res_expected[0][4])
-        assert np.allclose(res[1][1][0], res_expected[1][1])
-        assert np.allclose(res[1][1][1], res_expected[1][2])
-        assert np.allclose(res[1][1][2], res_expected[1][3])
-        assert np.allclose(res[1][1][3], res_expected[1][4])
-
-    @pytest.mark.parametrize("interface", interfaces)
-    def test_identity_classical_jacobian(self, interface):
-        """Test for an identity cjac."""
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(x):
-            qp.RX(x[0], wires=[0])
-            qp.RY(x[1], wires=[1])
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0))
-
-        x = qp.numpy.array([0.543, -0.654], requires_grad=True)
-        res = qp.gradients.param_shift(circuit)(x)
-        res_expected = qp.jacobian(circuit)(x)
-
-        assert np.allclose(res, res_expected)
-
-
 @pytest.mark.torch
 class TestQnodeTorch:
     """Class to test the parameter shift transform on QNode with some classical processing."""
 
     expected_jacs = []
     interfaces = ["auto", "torch"]
+
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_single_measurement_single_param_not_hybrid(self, interface):
+        """Disabling the classical cotransform retains the quantum partial derivative."""
+        import torch
+
+        dev = qp.device("default.qubit", wires=2)
+
+        @qp.qnode(dev, interface=interface)
+        def circuit(params):
+            qp.RX(2 * params, wires=0)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0))
+
+        params = torch.tensor(0.543, dtype=torch.float64, requires_grad=True)
+        result = qp.gradients.param_shift(circuit, hybrid=False)(params)
+        expected = torch.autograd.functional.jacobian(circuit, params)
+        assert result.shape == expected.shape
+        assert np.allclose(2 * result.detach().numpy(), expected.detach().numpy())
 
     @pytest.mark.parametrize("interface", interfaces)
     def test_single_measurement_single_param(self, interface):
@@ -4010,8 +3724,6 @@ class TestQnodeJax:
         """Test for a single measurement and a single param."""
         dev = qp.device("default.qubit", wires=2)
 
-        import jax
-
         @qp.qnode(dev, interface=interface)
         def circuit(x):
             qp.RX(2 * x, wires=[0])
@@ -4031,7 +3743,6 @@ class TestQnodeJax:
     def test_single_measurement_single_param_2(self, interface):
         """Test for a single measurement and a single param."""
         dev = qp.device("default.qubit", wires=2)
-        import jax
 
         @qp.qnode(dev, interface=interface)
         def circuit(x):
@@ -4051,7 +3762,6 @@ class TestQnodeJax:
     def test_single_measurement_probs_single_param(self, interface):
         """Test for a single measurement (probs) and a single param."""
         dev = qp.device("default.qubit", wires=2)
-        import jax
 
         @qp.qnode(dev, interface=interface)
         def circuit(x):
@@ -4073,8 +3783,6 @@ class TestQnodeJax:
         """Test for a single measurement (probs) and a single param."""
         dev = qp.device("default.qubit", wires=2)
 
-        import jax
-
         @qp.qnode(dev, interface=interface)
         def circuit(x):
             qp.RX(x[0], wires=[0])
@@ -4092,7 +3800,6 @@ class TestQnodeJax:
     def test_multi_measurement_single_param(self, interface):
         """Test for multiple measurements and a single param."""
         dev = qp.device("default.qubit", wires=2)
-        import jax
 
         @qp.qnode(dev, interface=interface)
         def circuit(x):
@@ -4113,7 +3820,6 @@ class TestQnodeJax:
     def test_multi_measurement_expval_probs_single_param(self, interface):
         """Test for multiple measurement (probs) and a single param."""
         dev = qp.device("default.qubit", wires=2)
-        import jax
 
         @qp.qnode(dev, interface=interface)
         def circuit(x):
@@ -4134,7 +3840,6 @@ class TestQnodeJax:
     def test_single_measurement_multiple_params(self, interface):
         """Test for a single measurement and multiple params."""
         dev = qp.device("default.qubit", wires=2)
-        import jax
 
         @qp.qnode(dev, interface=interface)
         def circuit(x, y):
@@ -4156,7 +3861,6 @@ class TestQnodeJax:
     def test_single_measurement_probs_multiple_params(self, interface):
         """Test for a single measurement (probs) and multiple params."""
         dev = qp.device("default.qubit", wires=2)
-        import jax
 
         @qp.qnode(dev, interface=interface)
         def circuit(x, y):
@@ -4178,7 +3882,6 @@ class TestQnodeJax:
     def test_multiple_measurements_multi_params(self, interface, tol):
         """Test for multiple measurements and multiple params."""
         dev = qp.device("default.qubit", wires=2)
-        import jax
 
         @qp.qnode(dev, interface=interface)
         def circuit(x, y):
@@ -4202,7 +3905,6 @@ class TestQnodeJax:
     @pytest.mark.parametrize("interface", interfaces)
     def test_multiple_measurements_expval_probs_multi_params(self, interface, tol):
         """Test for multiple measurements (with shape) and multiple params."""
-        import jax
 
         dev = qp.device("default.qubit", wires=2)
 
@@ -4228,7 +3930,6 @@ class TestQnodeJax:
     @pytest.mark.parametrize("interface", interfaces)
     def test_identity_classical_jacobian(self, interface, tol):
         """Test for an identity cjac."""
-        import jax
 
         dev = qp.device("default.qubit", wires=2)
 
@@ -4259,8 +3960,6 @@ class TestQnodeJaxJit:
         """Test for a single measurement and a single param."""
         dev = qp.device("default.qubit", wires=2)
 
-        import jax
-
         @qp.qnode(dev, interface=interface, cache=False)
         def circuit(x):
             qp.RX(2 * x, wires=[0])
@@ -4280,7 +3979,6 @@ class TestQnodeJaxJit:
     def test_single_measurement_single_param_2(self, interface):
         """Test for a single measurement and a single param."""
         dev = qp.device("default.qubit", wires=2)
-        import jax
 
         @qp.qnode(dev, interface=interface, cache=False)
         def circuit(x):
@@ -4301,7 +3999,6 @@ class TestQnodeJaxJit:
     def test_single_measurement_probs_single_param(self, interface):
         """Test for a single measurement (probs) and a single param."""
         dev = qp.device("default.qubit", wires=2)
-        import jax
 
         @qp.qnode(dev, interface=interface, cache=False)
         def circuit(x):
@@ -4323,8 +4020,6 @@ class TestQnodeJaxJit:
         """Test for a single measurement (probs) and a single param."""
         dev = qp.device("default.qubit", wires=2)
 
-        import jax
-
         @qp.qnode(dev, interface=interface, cache=False)
         def circuit(x):
             qp.RX(x[0], wires=[0])
@@ -4342,7 +4037,6 @@ class TestQnodeJaxJit:
     def test_multi_measurement_single_param(self, interface):
         """Test for multiple measurements and a single param."""
         dev = qp.device("default.qubit", wires=2)
-        import jax
 
         @qp.qnode(dev, interface=interface, cache=False)
         def circuit(x):
@@ -4363,7 +4057,6 @@ class TestQnodeJaxJit:
     def test_multi_measurement_expval_probs_single_param(self, interface):
         """Test for multiple measurement (expval,probs) and a single param."""
         dev = qp.device("default.qubit", wires=2)
-        import jax
 
         @qp.qnode(dev, interface=interface, cache=False)
         def circuit(x):
@@ -4384,7 +4077,6 @@ class TestQnodeJaxJit:
     def test_single_measurement_multiple_params(self, interface):
         """Test for a single measurement and multiple params."""
         dev = qp.device("default.qubit", wires=2)
-        import jax
 
         @qp.qnode(dev, interface=interface, cache=False)
         def circuit(x, y):
@@ -4406,7 +4098,6 @@ class TestQnodeJaxJit:
     def test_single_measurement_probs_multiple_params(self, interface):
         """Test for a single measurement (probs) and multiple params."""
         dev = qp.device("default.qubit", wires=2)
-        import jax
 
         @qp.qnode(dev, interface=interface, cache=False)
         def circuit(x, y):
@@ -4428,7 +4119,6 @@ class TestQnodeJaxJit:
     def test_multiple_measurement_multi_params(self, interface, tol):
         """Test for multiple measurements and multiple params."""
         dev = qp.device("default.qubit", wires=2)
-        import jax
 
         @qp.qnode(dev, interface=interface, cache=False)
         def circuit(x, y):
@@ -4452,7 +4142,6 @@ class TestQnodeJaxJit:
     @pytest.mark.parametrize("interface", interfaces)
     def test_multiple_measurements_expval_probs_multi_params(self, interface, tol):
         """Test for multiple measurements (expval, probs) and multiple params."""
-        import jax
 
         dev = qp.device("default.qubit", wires=2)
 
@@ -4478,7 +4167,6 @@ class TestQnodeJaxJit:
     @pytest.mark.parametrize("interface", interfaces)
     def test_identity_classical_jacobian(self, interface, tol):
         """Test for an identity cjac."""
-        import jax
 
         dev = qp.device("default.qubit", wires=2)
 
@@ -4499,7 +4187,6 @@ class TestQnodeJaxJit:
     @pytest.mark.parametrize("interface", interfaces)
     def test_identity_classical_jacobian_multi_meas(self, interface, tol):
         """Test for an identity cjac with qjac multiple measurements."""
-        import jax
 
         dev = qp.device("default.qubit", wires=2)
 
@@ -4529,7 +4216,6 @@ class TestJaxArgnums:
 
     def test_argnum_error(self, argnums, interface):
         """Test that giving argnum to Jax, raises an error."""
-        import jax
 
         dev = qp.device("default.qubit", wires=2)
 
@@ -4551,7 +4237,6 @@ class TestJaxArgnums:
 
     def test_single_expectation_value(self, argnums, interface):
         """Test for single expectation value."""
-        import jax
 
         dev = qp.device("default.qubit", wires=2)
 
@@ -4580,7 +4265,6 @@ class TestJaxArgnums:
 
     def test_single_probs(self, argnums, interface):
         """Test for single probs."""
-        import jax
 
         dev = qp.device("default.qubit", wires=2)
 
@@ -4615,7 +4299,6 @@ class TestJaxArgnums:
 
     def test_multi_expectation_values(self, argnums, interface):
         """Test for multiple expectation values."""
-        import jax
 
         dev = qp.device("default.qubit", wires=2)
 
@@ -4648,7 +4331,6 @@ class TestJaxArgnums:
 
     def test_hessian(self, argnums, interface):
         """Test for hessian."""
-        import jax
 
         dev = qp.device("default.qubit", wires=2)
 

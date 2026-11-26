@@ -37,7 +37,6 @@ from pennylane.devices.qubit.simulate import (
 
 ml_frameworks_list = [
     "numpy",
-    pytest.param("autograd", marks=pytest.mark.autograd),
     pytest.param("jax", marks=pytest.mark.jax),
     pytest.param("torch", marks=pytest.mark.torch),
 ]
@@ -163,6 +162,7 @@ class TestBasicCircuit:
         assert np.allclose(result[0], -np.sin(phi))
         assert np.allclose(result[1], np.cos(phi))
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_autograd_results_and_backprop(self):
         """Tests execution and gradients with autograd"""
@@ -239,15 +239,16 @@ class TestBasicCircuit:
         assert qp.math.get_interface(res) == "jax"
         assert qp.math.allclose(res, -1)
 
-    def test_expand_state_keeps_autograd_interface(self):
-        """Test that expand_state doesn't convert autograd to numpy."""
+    @pytest.mark.jax
+    def test_expand_state_keeps_jax_interface(self):
+        """Test that expanding the state preserves its JAX interface."""
 
-        @qp.qnode(qp.device("default.qubit", wires=2), interface="autograd")
+        @qp.qnode(qp.device("default.qubit", wires=2), interface="jax")
         def circuit(x):
             qp.RX(x, 0)
             return qp.probs(wires=[0, 1])
 
-        assert qp.math.get_interface(circuit(1.5)) == "autograd"
+        assert qp.math.get_interface(circuit(1.5)) == "jax"
 
 
 class TestBroadcasting:
@@ -436,7 +437,7 @@ class TestPostselection:
             _ = simulate(tape)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "torch", "jax", "autograd"])
+    @pytest.mark.parametrize("interface", ["numpy", "torch", "jax"])
     def test_nan_state(self, interface):
         """Test that a state with nan values is returned if the probability of a postselection state
         is 0."""
@@ -494,6 +495,7 @@ class TestDebugger:
             debugger.snapshots["final_state"], [np.cos(phi / 2), -np.sin(phi / 2) * 1j]
         )
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_debugger_autograd(self):
         """Tests debugger with autograd"""
@@ -831,6 +833,7 @@ class TestQInfoMeasurements:
         for val1, val2 in zip(results, self.expected_results(phi)):
             assert qp.math.allclose(val1, val2)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_qinfo_autograd_execute(self):
         """Tests autograd execution with qinfo measurements."""
@@ -845,6 +848,7 @@ class TestQInfoMeasurements:
         for val1, val2 in zip(results, expected):
             assert qp.math.allclose(val1, val2)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_qinfo_autograd_backprop(self):
         """Tests autograd derivatives with qinfo measurements.

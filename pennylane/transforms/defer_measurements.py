@@ -186,14 +186,15 @@ def defer_measurements(  # pylint: disable=too-many-branches,unused-argument
     >>> dev = qp.device('default.qubit', wires=2)
     >>> transformed_qfunc = qp.defer_measurements(qfunc)
     >>> qnode = qp.QNode(transformed_qfunc, dev)
-    >>> par = pnp.array(np.pi/2, requires_grad=True)
-    >>> qnode(par)
-    tensor(0.434..., requires_grad=True)
+    >>> import jax.numpy as jnp
+    >>> par = jnp.array(np.pi/2)
+    >>> print(qnode(par))
+    0.434...
 
     We can also differentiate parameters passed to conditional operations:
 
-    >>> qp.grad(qnode)(par)
-    tensor(-0.496... requires_grad=True)
+    >>> print(qp.grad(qnode)(par))
+    -0.496...
 
     Reusing and resetting measured wires will work as expected with the
     ``defer_measurements`` transform:
@@ -214,9 +215,9 @@ def defer_measurements(  # pylint: disable=too-many-branches,unused-argument
 
     Executing this QNode:
 
-    >>> pars = pnp.array([0.643, 0.246], requires_grad=True)
+    >>> pars = np.array([0.643, 0.246])
     >>> func(*pars)
-    tensor([0.769..., 0.132..., 0.0839..., 0.014...], requires_grad=True)
+    array([0.769..., 0.132..., 0.0839..., 0.014...])
 
     .. details::
         :title: Usage Details

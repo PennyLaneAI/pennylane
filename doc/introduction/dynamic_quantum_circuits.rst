@@ -114,6 +114,8 @@ condition based on such values and pass it to :func:`~.pennylane.cond`:
 
 .. code-block:: python
 
+    import numpy as np
+
     @qp.qnode(dev)
     def qnode_conditional_op_on_zero(x, y):
         qp.RY(x, wires=0)
@@ -123,12 +125,12 @@ condition based on such values and pass it to :func:`~.pennylane.cond`:
         qp.cond(m_0 == 0, qp.RY)(y, wires=0)
         return qp.probs(wires=[0])
 
-    pars = np.array([0.643, 0.246], requires_grad=True)
+    pars = np.array([0.643, 0.246])
 
 .. code-block:: pycon
 
     >>> qnode_conditional_op_on_zero(*pars)
-    tensor([0.88660045, 0.11339955], requires_grad=True)
+    array([0.88660045, 0.11339955])
 
 For more examples, refer to the :func:`~.pennylane.cond` documentation
 and the :doc:`how-to on creating dynamic circuits with mid-circuit measurements <demo:demos/tutorial_how_to_create_dynamic_mcm_circuits>`.

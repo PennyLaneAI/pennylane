@@ -23,7 +23,7 @@ to generate the electronic Hamiltonian in a single call. For example,
 .. code-block:: python
 
     import pennylane as qp
-    from pennylane import numpy as np
+    import numpy as np
 
     symbols = ["H", "H"]
     geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
@@ -99,6 +99,9 @@ expectation value of a Hamiltonian can be calculated using ``qp.expval``:
 
 .. code-block:: python
 
+    import jax
+    import jax.numpy as jnp
+
     dev = qp.device('default.qubit', wires=4)
 
     symbols = ["H", "H"]
@@ -106,18 +109,19 @@ expectation value of a Hamiltonian can be calculated using ``qp.expval``:
     molecule = qp.qchem.Molecule(symbols, geometry)
     hamiltonian, qubits = qp.qchem.molecular_hamiltonian(molecule)
 
-    @qp.qnode(dev)
+    @qp.qnode(dev, interface="jax")
     def circuit(params):
         qp.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
         qp.DoubleExcitation(params, wires=[0, 1, 2, 3])
         return qp.expval(hamiltonian)
 
-    params = np.array(0.20885146442480412, requires_grad=True)
-    circuit(params)
+    with jax.experimental.enable_x64():
+        params = jnp.array(0.20885146442480412)
+        print(f"{float(circuit(params)):.8f}")
 
 .. code-block:: text
 
-    tensor(-1.13618912, requires_grad=True)
+    -1.13618912
 
 The circuit parameter can be optimized using the interface of choice.
 

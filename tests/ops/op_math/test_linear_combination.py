@@ -31,9 +31,8 @@ from pennylane.wires import Wires
 
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [
-    ([-0.05, 0.17], 1.7, "autograd"),
-    (np.array([-0.05, 0.17]), np.array(1.7), "autograd"),
-    (pnp.array([-0.05, 0.17], requires_grad=True), pnp.array(1.7, requires_grad=True), "autograd"),
+    ([-0.05, 0.17], 1.7, "numpy"),
+    (np.array([-0.05, 0.17]), np.array(1.7), "numpy"),
 ]
 
 try:
@@ -994,6 +993,7 @@ class TestLinearCombinationArithmeticTorch:
         assert H == (H1 @ H2)
 
 
+@pytest.mark.core
 @pytest.mark.autograd
 class TestLinearCombinationArithmeticAutograd:
     """Tests creation of LinearCombinations using arithmetic
@@ -1479,11 +1479,12 @@ class TestLinearCombinationDifferentiation:
 
     @pytest.mark.parametrize("simplify", [True, False])
     @pytest.mark.parametrize("group", [None, "qwc"])
+    @pytest.mark.jax
     def test_trainable_coeffs_paramshift(self, simplify, group):
         """Test the parameter-shift method by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a LinearCombination expectation"""
-        coeffs = pnp.array([-0.05, 0.17], requires_grad=True)
-        param = pnp.array(1.7, requires_grad=True)
+        coeffs = jnp.array([-0.05, 0.17])
+        param = jnp.array(1.7)
 
         # differentiating a circuit with measurement expval(H)
         @qp.qnode(dev, diff_method="parameter-shift")
@@ -1496,7 +1497,7 @@ class TestLinearCombinationDifferentiation:
                 else qp.ops.LinearCombination(coeffs, [X(0), Z(0)], grouping_type=group)
             )
 
-        grad_fn = qp.grad(circuit)
+        grad_fn = qp.grad(circuit, argnums=(0, 1))
         grad = grad_fn(coeffs, param)
 
         # differentiating a cost that combines circuits with
@@ -1507,17 +1508,18 @@ class TestLinearCombinationDifferentiation:
         def combine(coeffs, param):
             return coeffs[0] * half1(param) + coeffs[1] * half2(param)
 
-        grad_fn_expected = qp.grad(combine)
+        grad_fn_expected = qp.grad(combine, argnums=(0, 1))
         grad_expected = grad_fn_expected(coeffs, param)
 
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
+    @pytest.mark.jax
     def test_nontrainable_coeffs_paramshift(self):
         """Test the parameter-shift method if the coefficients are explicitly set non-trainable
         by not passing them to the qnode."""
         coeffs = np.array([-0.05, 0.17])
-        param = pnp.array(1.7, requires_grad=True)
+        param = jnp.array(1.7)
 
         # differentiating a circuit with measurement expval(H)
         @qp.qnode(dev, diff_method="parameter-shift")
@@ -1544,72 +1546,6 @@ class TestLinearCombinationDifferentiation:
 
         grad_fn_expected = qp.grad(combine)
         grad_expected = grad_fn_expected(param)
-
-        assert np.allclose(grad, grad_expected)
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("simplify", [True, False])
-    @pytest.mark.parametrize("group", [None, "qwc"])
-    def test_trainable_coeffs_autograd(self, simplify, group):
-        """Test the autograd interface by comparing the differentiation of linearly combined subcircuits
-        with the differentiation of a LinearCombination expectation"""
-        coeffs = pnp.array([-0.05, 0.17], requires_grad=True)
-        param = pnp.array(1.7, requires_grad=True)
-
-        # differentiating a circuit with measurement expval(H)
-        @qp.qnode(dev, interface="autograd")
-        def circuit(coeffs, param):
-            qp.RX(param, wires=0)
-            qp.RY(param, wires=0)
-            return qp.expval(
-                qp.simplify(qp.ops.LinearCombination(coeffs, [X(0), Z(0)], grouping_type=group))
-                if simplify
-                else qp.ops.LinearCombination(coeffs, [X(0), Z(0)], grouping_type=group)
-            )
-
-        grad_fn = qp.grad(circuit)
-        grad = grad_fn(coeffs, param)
-
-        # differentiating a cost that combines circuits with
-        # measurements expval(Pauli)
-        half1 = qp.QNode(circuit1, dev, interface="autograd")
-        half2 = qp.QNode(circuit2, dev, interface="autograd")
-
-        def combine(coeffs, param):
-            return coeffs[0] * half1(param) + coeffs[1] * half2(param)
-
-        grad_fn_expected = qp.grad(combine)
-        grad_expected = grad_fn_expected(coeffs, param)
-
-        assert np.allclose(grad[0], grad_expected[0])
-        assert np.allclose(grad[1], grad_expected[1])
-
-    @pytest.mark.autograd
-    def test_nontrainable_coeffs_autograd(self):
-        """Test the autograd interface if the coefficients are explicitly set non-trainable"""
-        coeffs = pnp.array([-0.05, 0.17], requires_grad=False)
-        param = pnp.array(1.7, requires_grad=True)
-
-        # differentiating a circuit with measurement expval(H)
-        @qp.qnode(dev, interface="autograd")
-        def circuit(coeffs, param):
-            qp.RX(param, wires=0)
-            qp.RY(param, wires=0)
-            return qp.expval(qp.ops.LinearCombination(coeffs, [X(0), Z(0)]))
-
-        grad_fn = qp.grad(circuit)
-        grad = grad_fn(coeffs, param)
-
-        # differentiating a cost that combines circuits with
-        # measurements expval(Pauli)
-        half1 = qp.QNode(circuit1, dev, interface="autograd")
-        half2 = qp.QNode(circuit2, dev, interface="autograd")
-
-        def combine(coeffs, param):
-            return coeffs[0] * half1(param) + coeffs[1] * half2(param)
-
-        grad_fn_expected = qp.grad(combine)
-        grad_expected = grad_fn_expected(coeffs, param)
 
         assert np.allclose(grad, grad_expected)
 
@@ -1764,12 +1700,13 @@ class TestLinearCombinationDifferentiation:
         assert coeffs.grad is None
         assert np.allclose(param.grad, param2.grad)
 
+    @pytest.mark.jax
     def test_not_supported_by_adjoint_differentiation(self):
         """Test that error is raised when attempting the adjoint differentiation method."""
         device = qp.device("default.qubit", wires=2)
 
-        coeffs = pnp.array([-0.05, 0.17], requires_grad=True)
-        param = pnp.array(1.7, requires_grad=True)
+        coeffs = jnp.array([-0.05, 0.17])
+        param = jnp.array(1.7)
 
         @qp.qnode(device, diff_method="adjoint")
         def circuit(coeffs, param):
@@ -1782,7 +1719,7 @@ class TestLinearCombinationDifferentiation:
                 )
             )
 
-        grad_fn = qp.grad(circuit)
+        grad_fn = qp.grad(circuit, argnums=(0, 1))
         with pytest.warns(UserWarning, match="not supported with the adjoint differentiation"):
             grad_fn(coeffs, param)
 

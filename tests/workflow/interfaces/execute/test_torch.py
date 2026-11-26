@@ -550,7 +550,7 @@ class TestTorchExecuteIntegration:
             else:
                 _gradient_method = "gradient-transform"
             config = qp.devices.ExecutionConfig(
-                interface="autograd",
+                interface="torch",
                 gradient_method=_gradient_method,
                 grad_on_execution=execute_kwargs.get("grad_on_execution", None),
             )

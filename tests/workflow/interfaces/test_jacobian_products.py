@@ -833,6 +833,7 @@ class TestTransformsDifferentiability:
         tangent_grad = jax.grad(f, argnums=1)(x, tangents)
         assert qp.math.allclose(tangent_grad[0][0], -np.sin(x))
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_vjp_autograd(self, seed):
         """Test that the derivative of compute_vjp can be taken with autograd."""

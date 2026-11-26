@@ -373,7 +373,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     .. code-block:: python
 
-        from pennylane import numpy as np
+        import numpy as np
 
         dev = qp.device("default.qubit", wires=[0, 1, 2])
 
@@ -384,8 +384,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             return qp.expval(qp.Z(0))
 
     >>> a = np.array(3.14)
-    >>> circuit(a)
-    tensor(-0.99999873, requires_grad=True)
+    >>> print(circuit(a))
+    -0.99999873...
 
     .. details::
         :title: Serialization and Pytree format
@@ -931,18 +931,17 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         >>> op2.label(cache=cache)
         'U\n(M0)'
         >>> cache['matrices']
-        [tensor([[1., 0.],
-         [0., 1.]], requires_grad=True)]
+        [array([[1., 0.],
+               [0., 1.]])]
         >>> op3 = qp.QubitUnitary(np.eye(4), wires=(0,1))
         >>> op3.label(cache=cache)
         'U\n(M1)'
         >>> cache['matrices']
-        [tensor([[1., 0.],
-                [0., 1.]], requires_grad=True),
-        tensor([[1., 0., 0., 0.],
-                [0., 1., 0., 0.],
-                [0., 0., 1., 0.],
-                [0., 0., 0., 1.]], requires_grad=True)]
+        [array([[1., 0.],
+               [0., 1.]]), array([[1., 0., 0., 0.],
+               [0., 1., 0., 0.],
+               [0., 0., 1., 0.],
+               [0., 0., 0., 1.]])]
 
         """
         op_label = base_label or self.__class__.__name__

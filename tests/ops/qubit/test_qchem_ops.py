@@ -31,7 +31,6 @@ from helpers.decomposition_helpers import assert_basis_change_decomposition
 from scipy.linalg import expm, fractional_matrix_power
 
 import pennylane as qp
-from pennylane import numpy as pnp
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.qubit.qchem_ops import (
@@ -247,48 +246,23 @@ class TestSingleExcitation:
         exp = SingleExcitationMinus(phi)
         assert np.allclose(res, exp)
 
-    @pytest.mark.autograd
     @pytest.mark.parametrize(
         "excitation", [qp.SingleExcitation, qp.SingleExcitationPlus, qp.SingleExcitationMinus]
     )
-    def test_autograd(self, excitation):
+    def test_numpy(self, excitation):
         """Tests that operations are computed correctly using the
-        autograd interface"""
+        NumPy interface"""
 
         dev = qp.device("default.qubit")
         state = np.array([0, -1 / np.sqrt(2), 1 / np.sqrt(2), 0])
 
-        @qp.qnode(dev, interface="autograd")
+        @qp.qnode(dev, interface="numpy")
         def circuit(phi):
             qp.PauliX(wires=0)
             excitation(phi, wires=[0, 1])
             return qp.state()
 
         assert np.allclose(state, circuit(np.pi / 2))
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    @pytest.mark.parametrize(
-        ("excitation", "phi"),
-        [
-            (qp.SingleExcitation, pnp.array(-0.1, requires_grad=True)),
-            (qp.SingleExcitationPlus, pnp.array(0.2, requires_grad=True)),
-            (qp.SingleExcitationMinus, pnp.array(np.pi / 4, requires_grad=True)),
-        ],
-    )
-    def test_autograd_grad(self, diff_method, excitation, phi):
-        """Tests that gradients are computed correctly using the
-        autograd interface"""
-
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev, diff_method=diff_method, interface="autograd")
-        def circuit(phi):
-            qp.PauliX(wires=0)
-            excitation(phi, wires=[0, 1])
-            return qp.expval(qp.PauliZ(0))
-
-        assert np.allclose(qp.grad(circuit)(phi), np.sin(phi))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
@@ -732,29 +706,6 @@ class TestDoubleExcitation:
 
         assert np.allclose(res, exp)
 
-    @pytest.mark.autograd
-    @pytest.mark.parametrize(
-        "excitation", [qp.DoubleExcitation, qp.DoubleExcitationPlus, qp.DoubleExcitationMinus]
-    )
-    def test_autograd(self, excitation):
-        """Tests that operations are computed correctly using the
-        autograd interface"""
-
-        dev = qp.device("default.qubit")
-        state = np.array(
-            [0, 0, 0, -1 / np.sqrt(2), 0, 0, 0, 0, 0, 0, 0, 0, 1 / np.sqrt(2), 0, 0, 0]
-        )
-
-        @qp.qnode(dev, interface="autograd")
-        def circuit(phi):
-            qp.PauliX(wires=0)
-            qp.PauliX(wires=1)
-            excitation(phi, wires=[0, 1, 2, 3])
-
-            return qp.state()
-
-        assert np.allclose(state, circuit(np.pi / 2))
-
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "excitation", [qp.DoubleExcitation, qp.DoubleExcitationPlus, qp.DoubleExcitationMinus]
@@ -777,31 +728,6 @@ class TestDoubleExcitation:
             return qp.state()
 
         assert np.allclose(state, circuit(np.pi / 2))
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize(
-        ("excitation", "phi"),
-        [
-            (qp.DoubleExcitation, pnp.array(-0.1, requires_grad=True)),
-            (qp.DoubleExcitationPlus, pnp.array(0.2, requires_grad=True)),
-            (qp.DoubleExcitationMinus, pnp.array(np.pi / 4, requires_grad=True)),
-        ],
-    )
-    def test_autograd_grad(self, excitation, phi):
-        """Tests that gradients are computed correctly using the
-        autograd interface"""
-
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev, interface="autograd")
-        def circuit(phi):
-            qp.PauliX(wires=0)
-            qp.PauliX(wires=1)
-            excitation(phi, wires=[0, 1, 2, 3])
-
-            return qp.expval(qp.PauliZ(0))
-
-        assert np.allclose(qp.grad(circuit)(phi), np.sin(phi))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
@@ -963,43 +889,6 @@ class TestOrbitalRotation:
 
         assert np.allclose(circuit1(), circuit2(phi))
 
-    @pytest.mark.autograd
-    def test_autograd(self):
-        """Tests that operations are computed correctly using the
-        autograd interface"""
-
-        dev = qp.device("default.qubit")
-        state = np.array(
-            [
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                0.5 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                0.5 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                -0.5 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                0.5 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-            ]
-        )
-
-        @qp.qnode(dev, interface="autograd")
-        def circuit(phi):
-            qp.PauliX(wires=0)
-            qp.PauliX(wires=1)
-            qp.OrbitalRotation(phi, wires=[0, 1, 2, 3])
-
-            return qp.state()
-
-        assert np.allclose(state, circuit(np.pi / 2))
-
     @pytest.mark.jax
     def test_jax(self):
         """Tests that operations are computed correctly using the
@@ -1073,31 +962,6 @@ class TestOrbitalRotation:
             return qp.state()
 
         assert np.allclose(state, circuit(np.pi / 2))
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    @pytest.mark.parametrize(
-        "phi",
-        [
-            pnp.array(-0.1, requires_grad=True),
-            pnp.array(0.1421, requires_grad=True),
-        ],
-    )
-    def test_autograd_grad(self, phi, diff_method):
-        """Tests that gradients are computed correctly using the
-        autograd interface"""
-
-        dev = qp.device("default.qubit")
-
-        circuit_0 = qp.QNode(
-            self.grad_circuit_0, dev, interface="autograd", diff_method=diff_method
-        )
-        circuit_1 = qp.QNode(
-            self.grad_circuit_1, dev, interface="autograd", diff_method=diff_method
-        )
-        total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
-
-        assert np.allclose(qp.grad(total)(phi), self.expected_grad_fn(phi))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
@@ -1249,10 +1113,9 @@ class TestFermionicSWAP:
 
         assert np.allclose(res, expected)
 
-    @pytest.mark.autograd
-    def test_autograd(self):
+    def test_numpy(self):
         """Tests that operations are computed correctly using the
-        autograd interface"""
+        NumPy interface"""
 
         dev = qp.device("default.qubit")
         state = np.array(
@@ -1264,37 +1127,13 @@ class TestFermionicSWAP:
             ]
         )
 
-        @qp.qnode(dev, interface="autograd")
+        @qp.qnode(dev, interface="numpy")
         def circuit(phi):
             qp.PauliX(wires=0)
             qp.FermionicSWAP(phi, wires=[0, 1])
             return qp.state()
 
         assert np.allclose(state, circuit(np.pi / 2))
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    @pytest.mark.parametrize(
-        ("phi"),
-        [
-            pnp.array(-0.1, requires_grad=True),
-            pnp.array(0.2, requires_grad=True),
-            pnp.array(np.pi / 4, requires_grad=True),
-        ],
-    )
-    def test_autograd_grad(self, diff_method, phi):
-        """Tests that gradients are computed correctly using the
-        autograd interface"""
-
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev, interface="autograd", diff_method=diff_method)
-        def circuit(phi):
-            qp.PauliX(wires=0)
-            qp.FermionicSWAP(phi, wires=[0, 1])
-            return qp.expval(qp.PauliZ(0))
-
-        assert np.allclose(qp.grad(circuit)(phi), np.sin(phi))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])

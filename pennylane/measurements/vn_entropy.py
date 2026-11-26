@@ -103,9 +103,10 @@ def vn_entropy(wires, log_base=None) -> VnEntropyMP:
 
     It is also possible to get the gradient of the previous QNode:
 
-    >>> param = pnp.array(np.pi/4, requires_grad=True)
-    >>> qp.grad(circuit_entropy)(param)
-    tensor(0.623..., requires_grad=True)
+    >>> import jax.numpy as jnp
+    >>> param = jnp.array(np.pi/4)
+    >>> print(qp.grad(circuit_entropy)(param))
+    0.623...
 
     .. note::
 

@@ -34,7 +34,7 @@ dtypes = ["complex64", "complex128"]
 
 ml_frameworks_list = [
     "numpy",
-    pytest.param("autograd", marks=pytest.mark.autograd),
+    pytest.param("autograd", marks=(pytest.mark.core, pytest.mark.autograd)),
     pytest.param("jax", marks=pytest.mark.jax),
     pytest.param("torch", marks=pytest.mark.torch),
 ]
@@ -180,6 +180,7 @@ class TestExpandMatrix:  # pylint: disable=too-many-public-methods
 
     expected_autodiff = [expected_autodiff_nobatch, expected_autodiff_broadcasted]
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize(
         "i, base_matrix",

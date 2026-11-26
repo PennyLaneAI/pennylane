@@ -160,7 +160,9 @@ class TestQROM:
         """Test the correctness of the QROM template output."""
         dev = qp.device("default.qubit")
 
-        if not isinstance(bitstrings, numpy.ndarray):
+        if isinstance(bitstrings, numpy.ndarray):
+            bitstrings = numpy.asarray(bitstrings)
+        else:
             bitstrings, control_wires, target_wires, work_wires = (
                 qp.math.array(bitstrings, like="jax"),
                 qp.math.array(control_wires, like="jax"),

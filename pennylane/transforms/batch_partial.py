@@ -77,21 +77,22 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
     The ``qp.batch_partial`` decorator allows us to create a partial callable
     object that wraps the QNode. For example,
 
-    >>> y = qp.numpy.array(0.2)
+    >>> import torch
+    >>> y = torch.tensor(0.2, dtype=torch.float64, requires_grad=True)
     >>> batched_partial_circuit = qp.batch_partial(circuit, y=y)
 
     The unevaluated arguments of the resulting function must now have a batch
     dimension, and the output of the function also has a batch dimension:
 
     >>> batch_size = 4
-    >>> x = qp.numpy.linspace(0.1, 0.5, batch_size)
-    >>> batched_partial_circuit(x)
-    tensor([0.975..., 0.953..., 0.914..., 0.860...], requires_grad=True)
+    >>> x = torch.linspace(0.1, 0.5, batch_size, dtype=torch.float64, requires_grad=True)
+    >>> qp.math.toarray(batched_partial_circuit(x))
+    array([0.975..., 0.953..., 0.914..., 0.860...])
 
     Jacobians can be computed for the arguments of the wrapper function, but
     not for any pre-supplied argument passed to ``qp.batch_partial``:
 
-    >>> qp.jacobian(batched_partial_circuit)(x) # doctest: +SKIP
+    >>> qp.math.toarray(qp.jacobian(batched_partial_circuit)(x))
     array([[-0.0978434 ,  0.        ,  0.        ,  0.        ],
            [ 0.        , -0.22661276,  0.        ,  0.        ],
            [ 0.        ,  0.        , -0.35135943,  0.        ],
@@ -101,7 +102,7 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
     of a QNode with functions, and calling the wrapper would evaluate
     those functions and pass the results into the QNode. For example,
 
-    >>> x = qp.numpy.array(0.1)
+    >>> x = torch.tensor(0.1, dtype=torch.float64, requires_grad=True)
     >>> y_fn = lambda y0: y0 * 0.2 + 0.3
     >>> batched_lambda_circuit = qp.batch_partial(circuit, x=x, preprocess={"y": y_fn})
 
@@ -109,13 +110,13 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
     have an initial batch dimension:
 
     >>> batch_size = 4
-    >>> y0 = qp.numpy.linspace(0.5, 2, batch_size)
-    >>> batched_lambda_circuit(y0)
-    tensor([0.916..., 0.873..., 0.821..., 0.761...], requires_grad=True)
+    >>> y0 = torch.linspace(0.5, 2, batch_size, dtype=torch.float64, requires_grad=True)
+    >>> qp.math.toarray(batched_lambda_circuit(y0))
+    array([0.916..., 0.873..., 0.821..., 0.761...])
 
     Jacobians can be computed in this scenario as well:
 
-    >>> qp.jacobian(batched_lambda_circuit)(y0) # doctest: +SKIP
+    >>> qp.math.toarray(qp.jacobian(batched_lambda_circuit)(y0))
     array([[-0.07749457,  0.        ,  0.        ,  0.        ],
            [ 0.        , -0.09540608,  0.        ,  0.        ],
            [ 0.        ,  0.        , -0.11236432,  0.        ],

@@ -18,6 +18,7 @@ Unit tests for functions needed for computing the dipole.
 # pylint: disable=too-many-arguments
 
 
+import jax.numpy as jnp
 import pytest
 
 import pennylane as qp
@@ -259,6 +260,7 @@ def test_expvalD(symbols, geometry, charge, d_ref):
             qp.DoubleExcitation(0.0, wires=[0, 1, 2, 3])
             qp.DoubleExcitation(0.0, wires=[0, 1, 4, 5])
             d_qubit = qchem.dipole_moment(mol)(*args)[idx]
+            assert qp.math.get_interface(*d_qubit.data) == "numpy"
             return qp.expval(d_qubit)
 
         return circuit
@@ -268,58 +270,101 @@ def test_expvalD(symbols, geometry, charge, d_ref):
         assert np.allclose(d, d_ref[i])
 
 
+@pytest.mark.parametrize("factory", ["dipole_moment", "molecular_dipole"])
+def test_frozen_dipole_observables_execute_directly(factory):
+    """Frozen dipole producers preserve the numeric observable in default execution."""
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4]], requires_grad=False)
+    molecule = qchem.Molecule(["H", "H"], geometry)
+    observables = (
+        qchem.dipole_moment(molecule)()
+        if factory == "dipole_moment"
+        else qchem.molecular_dipole(molecule)
+    )
+    state = np.zeros(16)
+    state[0b1100] = 1.0
+    dev = qp.device("default.qubit", wires=4)
+
+    @qp.qnode(dev)
+    def circuit(observable):
+        qp.BasisState(qchem.hf_state(2, 4), wires=range(4))
+        return qp.expval(observable)
+
+    for observable in observables:
+        assert qp.math.get_interface(*observable.data) == "numpy"
+        expected = np.vdot(state, qp.matrix(observable, wire_order=range(4)) @ state)
+        assert circuit(observable) == pytest.approx(complex(expected), rel=0, abs=1e-12)
+
+
+def test_explicit_dipole_parameters_preserve_classical_gradient():
+    """Explicit chemistry parameters retain a classical coefficient derivative."""
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4]], requires_grad=False)
+    alpha = np.array([[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]])
+
+    def cost(exponents):
+        molecule = qchem.Molecule(["H", "H"], geometry, alpha=exponents)
+        observable = qchem.dipole_moment(molecule)(exponents)[2]
+        coefficients = qp.math.stack(observable.terms()[0])
+        return qp.math.sum(coefficients**2)
+
+    gradient = qp.grad(cost)(alpha)
+    displacement = np.zeros(alpha.shape)
+    displacement[0, 0] = 1e-4
+    finite_difference = (cost(alpha + displacement) - cost(alpha - displacement)) / 2e-4
+
+    assert gradient.shape == alpha.shape
+    assert gradient[0, 0] == pytest.approx(float(finite_difference), rel=1e-4, abs=1e-7)
+
+
 def test_gradient_expvalD():
     r"""Test that the gradient of expval(D) computed with ``qp.grad`` is equal to the value
     obtained with the finite difference method."""
     symbols = ["H", "H", "H"]
-    geometry = np.array([[0.0, 0.0, 0.0], [1.0, 1.7, 0.0], [2.0, 0.0, 0.0]], requires_grad=False)
-    alpha = np.array(
+    geometry = jnp.array([[0.0, 0.0, 0.0], [1.0, 1.7, 0.0], [2.0, 0.0, 0.0]])
+    alpha = jnp.array(
         [
             [3.42525091, 0.62391373, 0.1688554],
             [3.42525091, 0.62391373, 0.1688554],
             [3.42525091, 0.62391373, 0.1688554],
         ],
-        requires_grad=True,
     )
 
     mol = qchem.Molecule(symbols, geometry, charge=1, alpha=alpha)
-    args = [mol.alpha]
+    args = [geometry, mol.coeff, mol.alpha]
     dev = qp.device("default.qubit", wires=6)
 
-    def dipole(mol):
-        @qp.qnode(dev)
+    def dipole():
+        @qp.qnode(dev, interface="jax")
         def circuit(*args):
             qp.PauliX(0)
             qp.PauliX(1)
             qp.DoubleExcitation(0.0, wires=[0, 1, 2, 3])
             qp.DoubleExcitation(0.0, wires=[0, 1, 4, 5])
-            d_qubit = qchem.dipole_moment(mol)(*args)
+            molecule = qchem.Molecule(symbols, args[0], charge=1, coeff=args[1], alpha=args[2])
+            d_qubit = qchem.dipole_moment(molecule)(*args)
             return qp.expval(d_qubit[0])
 
         return circuit
 
-    grad_qp = qp.grad(dipole(mol))(*args)
+    grad_qp = qp.grad(dipole(), argnums=2)(*args)
 
-    alpha_1 = np.array(
+    alpha_1 = jnp.array(
         [
             [3.42515091, 0.62391373, 0.1688554],
             [3.42525091, 0.62391373, 0.1688554],
             [3.42525091, 0.62391373, 0.1688554],
         ],
-        requires_grad=False,
     )  # alpha[0][0] -= 0.0001
 
-    alpha_2 = np.array(
+    alpha_2 = jnp.array(
         [
             [3.42535091, 0.62391373, 0.1688554],
             [3.42525091, 0.62391373, 0.1688554],
             [3.42525091, 0.62391373, 0.1688554],
         ],
-        requires_grad=False,
     )  # alpha[0][0] += 0.0001
 
-    d_1 = dipole(mol)(*[alpha_1])
-    d_2 = dipole(mol)(*[alpha_2])
+    d_1 = dipole()(geometry, mol.coeff, alpha_1)
+    d_2 = dipole()(geometry, mol.coeff, alpha_2)
 
     grad_finitediff = (d_2 - d_1) / 0.0002
 

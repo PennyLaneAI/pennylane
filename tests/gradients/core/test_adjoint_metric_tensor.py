@@ -202,8 +202,7 @@ fubini_params = [
 
 
 def autodiff_metric_tensor(ansatz, num_wires):
-    """Compute the metric tensor by full state vector
-    differentiation via autograd."""
+    """Compute an independent metric tensor by differentiating the full state vector."""
     dev = qp.device("default.qubit", wires=num_wires)
 
     @qp.qnode(dev)
@@ -215,32 +214,33 @@ def autodiff_metric_tensor(ansatz, num_wires):
         state = qnode(*params)
 
         def rqnode(*params):
-            return np.real(qnode(*params))
+            return qp.math.real(qnode(*params))
 
         def iqnode(*params):
-            return np.imag(qnode(*params))
+            return qp.math.imag(qnode(*params))
 
-        rjac = qp.jacobian(rqnode)(*params)
-        ijac = qp.jacobian(iqnode)(*params)
+        argnums = tuple(range(len(params))) if len(params) > 1 else 0
+        rjac = qp.jacobian(rqnode, argnums=argnums)(*params)
+        ijac = qp.jacobian(iqnode, argnums=argnums)(*params)
 
         if isinstance(rjac, tuple):
             out = []
             for rc, ic in zip(rjac, ijac):
                 c = rc + 1j * ic
-                psidpsi = np.tensordot(np.conj(state), c, axes=([0], [0]))
+                psidpsi = qp.math.tensordot(qp.math.conj(state), c, axes=([0], [0]))
                 out.append(
-                    np.real(
-                        np.tensordot(np.conj(c), c, axes=([0], [0]))
-                        - np.tensordot(np.conj(psidpsi), psidpsi, axes=0)
+                    qp.math.real(
+                        qp.math.tensordot(qp.math.conj(c), c, axes=([0], [0]))
+                        - qp.math.tensordot(qp.math.conj(psidpsi), psidpsi, axes=0)
                     )
                 )
             return tuple(out)
 
         jac = rjac + 1j * ijac
-        psidpsi = np.tensordot(np.conj(state), jac, axes=([0], [0]))
-        return np.real(
-            np.tensordot(np.conj(jac), jac, axes=([0], [0]))
-            - np.tensordot(np.conj(psidpsi), psidpsi, axes=0)
+        psidpsi = qp.math.tensordot(qp.math.conj(state), jac, axes=([0], [0]))
+        return qp.math.real(
+            qp.math.tensordot(qp.math.conj(jac), jac, axes=([0], [0]))
+            - qp.math.tensordot(qp.math.conj(psidpsi), psidpsi, axes=0)
         )
 
     return mt
@@ -253,33 +253,6 @@ class TestAdjointMetricTensorTape:
     """
 
     num_wires = 3
-    interfaces = ["auto", "autograd"]
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("interface", interfaces)
-    def test_correct_output_tape_autograd(self, ansatz, params, interface):
-        """Test that the output is correct when using Autograd and
-        calling the adjoint metric tensor directly on a tape."""
-        expected = autodiff_metric_tensor(ansatz, 3)(*params)
-        dev = qp.device("default.qubit")
-
-        wires = (6, 7, 8)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(*params):
-            """Circuit with dummy output to create a QNode."""
-            ansatz(*params, wires)
-            return qp.expval(qp.PauliZ(wires[0]))
-
-        circuit(*params)
-
-        mt = qp.adjoint_metric_tensor(circuit)(*params)
-        assert qp.math.allclose(mt, expected)
-
-        tape = qp.workflow.construct_tape(circuit)(*params)
-        met_tens = qp.adjoint_metric_tensor(tape)
-        expected = qp.math.reshape(expected, qp.math.shape(met_tens))
-        assert qp.math.allclose(met_tens, expected)
 
     @pytest.mark.jax
     @pytest.mark.skip("JAX does not support forward pass execution of the metric tensor.")
@@ -316,10 +289,12 @@ class TestAdjointMetricTensorTape:
         """Test that the output is correct when using Torch and
         calling the adjoint metric tensor directly on a tape."""
 
+        import jax
         import torch
 
-        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         t_params = tuple(torch.tensor(p, requires_grad=True) for p in params)
+        j_params = tuple(jax.numpy.array(p) for p in params)
+        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*j_params)
         dev = qp.device("default.qubit", wires=self.num_wires)
 
         @qp.qnode(dev, interface=interface)
@@ -345,29 +320,6 @@ class TestAdjointMetricTensorQNode:
     """
 
     num_wires = 3
-    interfaces = ["auto", "autograd"]
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
-    @pytest.mark.parametrize("interface", interfaces)
-    def test_correct_output_qnode_autograd(self, ansatz, params, interface):
-        """Test that the output is correct when using Autograd and
-        calling the adjoint metric tensor on a QNode."""
-        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
-        dev = qp.device("default.qubit", wires=self.num_wires)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(*params):
-            """Circuit with dummy output to create a QNode."""
-            ansatz(*params, dev.wires)
-            return qp.expval(qp.PauliZ(0))
-
-        mt = qp.adjoint_metric_tensor(circuit)(*params)
-
-        if isinstance(mt, tuple):
-            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
-        else:
-            assert qp.math.allclose(mt, expected)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
@@ -379,8 +331,8 @@ class TestAdjointMetricTensorQNode:
 
         jax.config.update("jax_enable_x64", True)
 
-        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         j_params = tuple(jax.numpy.array(p) for p in params)
+        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*j_params)
         dev = qp.device("default.qubit", wires=self.num_wires)
 
         @qp.qnode(dev, interface="jax")
@@ -405,10 +357,12 @@ class TestAdjointMetricTensorQNode:
         """Test that the output is correct when using Torch and
         calling the adjoint metric tensor on a QNode."""
 
+        import jax
         import torch
 
-        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         t_params = tuple(torch.tensor(p, requires_grad=True, dtype=torch.float64) for p in params)
+        j_params = tuple(jax.numpy.array(p) for p in params)
+        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*j_params)
         dev = qp.device("default.qubit", wires=self.num_wires)
 
         @qp.qnode(dev, interface=interface)
@@ -446,27 +400,6 @@ class TestAdjointMetricTensorDifferentiability:
 
     num_wires = 3
 
-    @pytest.mark.autograd
-    def test_autograd(self, ansatz, params):
-        """Test that the derivative is correct when using Autograd and
-        calling the adjoint metric tensor on a QNode."""
-        exp_fn = autodiff_metric_tensor(ansatz, self.num_wires)
-        expected = qp.jacobian(exp_fn)(*params)
-        dev = qp.device("default.qubit", wires=self.num_wires)
-
-        @qp.qnode(dev, interface="autograd")
-        def circuit(*params):
-            """Circuit with dummy output to create a QNode."""
-            ansatz(*params, dev.wires)
-            return qp.expval(qp.PauliZ(0))
-
-        mt_jac = qp.jacobian(qp.adjoint_metric_tensor(circuit))(*params)
-
-        if isinstance(mt_jac, tuple):
-            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected))
-        else:
-            assert qp.math.allclose(mt_jac, expected)
-
     @pytest.mark.jax
     def test_correct_output_qnode_jax(self, ansatz, params):
         """Test that the derivative is correct when using JAX and
@@ -474,8 +407,8 @@ class TestAdjointMetricTensorDifferentiability:
 
         import jax
 
-        expected = qp.jacobian(autodiff_metric_tensor(ansatz, self.num_wires))(*params)
         j_params = tuple(jax.numpy.array(p) for p in params)
+        expected = qp.jacobian(autodiff_metric_tensor(ansatz, self.num_wires))(*j_params)
         dev = qp.device("default.qubit", wires=self.num_wires)
 
         @qp.qnode(dev, interface="jax")
@@ -501,10 +434,12 @@ class TestAdjointMetricTensorDifferentiability:
         """Test that the derivative is correct when using Torch and
         calling the adjoint metric tensor on a QNode."""
 
+        import jax
         import torch
 
-        expected = qp.jacobian(autodiff_metric_tensor(ansatz, self.num_wires))(*params)
         t_params = tuple(torch.tensor(p, requires_grad=True, dtype=torch.float64) for p in params)
+        j_params = tuple(jax.numpy.array(p) for p in params)
+        expected = qp.jacobian(autodiff_metric_tensor(ansatz, self.num_wires))(*j_params)
         dev = qp.device("default.qubit", wires=self.num_wires)
 
         @qp.qnode(dev, interface="torch")
@@ -522,6 +457,33 @@ class TestAdjointMetricTensorDifferentiability:
             assert qp.math.allclose(mt_jac, expected)
 
 
+@pytest.mark.jax
+@pytest.mark.parametrize("wires", [(2, 5), ("left", "right")])
+def test_custom_wires_match_canonical_metric(wires):
+    """Custom wires preserve the full metric for native JAX QNodes and tapes."""
+    from jax import numpy as jnp
+
+    params = jnp.array([0.3, -0.7])
+    expected = autodiff_metric_tensor(fubini_ansatz0, 2)(params)
+    dev = qp.device("default.qubit", wires=wires)
+
+    @qp.qnode(dev, interface="jax")
+    def circuit(params):
+        fubini_ansatz0(params, wires=wires)
+        return qp.state()
+
+    metric = qp.adjoint_metric_tensor(circuit)(params)
+    assert qp.math.shape(metric) == (2, 2)
+    assert qp.math.get_interface(metric) == "jax"
+    assert qp.math.allclose(metric, expected)
+
+    tape = qp.workflow.construct_tape(circuit)(params)
+    tape.trainable_params = [0, 2]
+    tape_metric = qp.adjoint_metric_tensor(tape)
+    assert qp.math.shape(tape_metric) == (2, 2)
+    assert qp.math.allclose(tape_metric, expected)
+
+
 def test_error_finite_shots():
     """Test that an error is raised if the device has a finite number of shots set."""
     with qp.queuing.AnnotatedQueue() as q:
@@ -533,8 +495,11 @@ def test_error_finite_shots():
         qp.adjoint_metric_tensor(tape)
 
 
+@pytest.mark.jax
 def test_works_with_state_prep():
     """Test that a state preparation operation is respected."""
+    from jax import numpy as jnp
+
     dev = qp.device("default.qubit")
 
     # Some random normalized state, no particular relevance
@@ -552,7 +517,7 @@ def test_works_with_state_prep():
         ansatz(angles, wires=[0, 1])
         return qp.expval(qp.Z(0) @ qp.X(1))
 
-    angles = np.random.uniform(size=(2,), requires_grad=True)
+    angles = jnp.array(onp.random.uniform(size=(2,)))
     qfim = qp.adjoint_metric_tensor(circuit)(angles)
     autodiff_qfim = autodiff_metric_tensor(ansatz, 2)(angles)
     assert onp.allclose(qfim, autodiff_qfim)

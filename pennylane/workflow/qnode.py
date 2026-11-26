@@ -198,14 +198,9 @@ class QNode:  # pylint: disable=too-many-instance-attributes
     Args:
         func (Callable): a quantum function
         device (~.Device): a PennyLane-compatible device
-        interface (str): The interface that will be used for classical backpropagation.
+        interface (str): The interface used for execution and classical backpropagation.
             This affects the types of objects that can be passed to/returned from the QNode. See
-            ``qp.math.SUPPORTED_INTERFACE_USER_INPUT`` for a list of all accepted strings.
-
-            * ``"autograd"``: Allows autograd to backpropagate
-              through the QNode. The QNode accepts default Python types
-              (floats, ints, lists, tuples, dicts) as well as NumPy array arguments,
-              and returns NumPy arrays.
+            ``qp.math.SUPPORTED_INTERFACE_NAMES`` for the supported interfaces.
 
             * ``"torch"``: Allows PyTorch to backpropagate
               through the QNode. The QNode accepts and returns Torch tensors.
@@ -214,7 +209,7 @@ class QNode:  # pylint: disable=too-many-instance-attributes
               through the QNode. The QNode accepts and returns
               JAX ``Array`` objects.
 
-            * ``None``: The QNode accepts default Python types
+            * ``"numpy"`` or ``None``: The QNode accepts default Python types
               (floats, ints, lists, tuples, dicts) as well as NumPy array arguments,
               and returns NumPy arrays. It does not connect to any
               machine learning library automatically for backpropagation.

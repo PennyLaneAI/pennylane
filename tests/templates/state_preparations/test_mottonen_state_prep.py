@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as pnp
 from pennylane.core.operator import abstractify
 from pennylane.templates.state_preparations.mottonen import (
     _get_alpha_y,
@@ -277,7 +276,7 @@ class TestDecomposition:
 
         dev = qp.device("default.qubit", wires=n_wires)
 
-        @qp.qnode(dev, interface="autograd")
+        @qp.qnode(dev, interface="numpy")
         def circuit(state_vector):
             qp.MottonenStatePreparation(state_vector, wires=range(n_wires))
             return qp.expval(qp.PauliX(wires=0))
@@ -427,10 +426,11 @@ class TestGradient:  # pylint: disable=too-few-public-methods
     @pytest.mark.parametrize(
         "state_vector",
         [
-            pnp.array([0.70710678, 0.70710678], requires_grad=True),
-            pnp.array([0.70710678, 0.70710678j], requires_grad=True),
+            np.array([0.70710678, 0.70710678]),
+            np.array([0.70710678, 0.70710678j]),
         ],
     )
+    @pytest.mark.jax
     def test_gradient_evaluated(self, state_vector):
         """Test that the gradient is successfully calculated for a simple example. This test only
         checks that the gradient is calculated without an error."""
@@ -441,7 +441,9 @@ class TestGradient:  # pylint: disable=too-few-public-methods
             qp.MottonenStatePreparation(state_vector, wires=range(1))
             return qp.expval(qp.PauliZ(0))
 
-        qp.grad(circuit)(state_vector)
+        import jax.numpy as jnp
+
+        qp.grad(circuit)(jnp.asarray(state_vector))
 
 
 @pytest.mark.parametrize(

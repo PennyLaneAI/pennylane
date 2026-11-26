@@ -234,6 +234,7 @@ class TestMatrix:
 
         assert qp.math.allclose(op.matrix(), isingxx.matrix())
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize("requires_grad", (True, False))
     def test_matrix_autograd_rx(self, requires_grad):
@@ -244,6 +245,7 @@ class TestMatrix:
 
         assert qp.math.allclose(exp_rx.matrix(), rx.matrix())
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize("requires_grad", (True, False))
     def test_matrix_autograd_rz(self, requires_grad):
@@ -255,6 +257,7 @@ class TestMatrix:
 
         assert qp.math.allclose(exp_rz.matrix(), rz.matrix())
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize("requires_grad", (True, False))
     def test_tensor_with_pauliz_autograd(self, requires_grad):
@@ -267,6 +270,7 @@ class TestMatrix:
 
         assert qp.math.allclose(autograd_op.matrix(), mat)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_base_no_diagonalizing_gates_autograd_coeff(self):
         """Test the matrix when the base matrix doesn't define the diagonalizing gates."""
@@ -279,6 +283,7 @@ class TestMatrix:
         expected = qp.math.expm(coeff * base.matrix())
         assert qp.math.allclose(mat, expected)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize("requires_grad", (True, False))
     def test_matrix_autograd_composite_base(self, requires_grad):
@@ -293,6 +298,7 @@ class TestMatrix:
         expected = qp.math.expm(-1j * phi * qp.matrix(base, wire_order=[0]))
         assert qp.math.allclose(op.matrix(), expected)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_matrix_autograd_composite_base_in_recording(self):
         """The autograd matrix for a composite base must be correct even when
@@ -312,6 +318,7 @@ class TestMatrix:
         assert len(q.queue) == 1
         assert isinstance(q.queue[0], Exp)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_matrix_autograd_composite_diagonal_base(self):
         """A composite base that is already diagonal has empty diagonalizing gates,
@@ -325,6 +332,7 @@ class TestMatrix:
         expected = qp.math.expm(-1j * phi * qp.matrix(base, wire_order=[0, 1]))
         assert qp.math.allclose(op.matrix(), expected)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_matrix_autograd_composite_base_batched(self):
         """A broadcasted (batched) trainable scalar with a composite base must take
@@ -770,63 +778,6 @@ class TestIntegration:
         res.backward()
         assert qp.math.allclose(phi.grad, -torch.sin(phi))
 
-    @pytest.mark.autograd
-    def test_autograd_qnode(self):
-        """Test execution and gradient with pennylane numpy array."""
-        phi = qp.numpy.array(1.2)
-
-        dev = qp.device("default.qubit", wires=1)
-
-        @qp.qnode(dev)
-        def circuit(phi):
-            Exp(qp.PauliX(0), -0.5j * phi)
-            return qp.expval(qp.PauliZ(0))
-
-        res = circuit(phi)
-        assert qp.math.allclose(res, qp.numpy.cos(phi))
-
-        grad = qp.grad(circuit)(phi)
-        assert qp.math.allclose(grad, -qp.numpy.sin(phi))
-
-    @pytest.mark.xfail  # related to #6333
-    @pytest.mark.autograd
-    def test_autograd_param_shift_qnode(self):
-        """Test execution and gradient with pennylane numpy array."""
-
-        phi = qp.numpy.array(1.2)
-
-        dev = qp.device("default.qubit", wires=1)
-
-        @qp.qnode(dev, diff_method=qp.gradients.param_shift)
-        def circuit(phi):
-            Exp(qp.PauliX(0), -0.5j * phi)
-            return qp.expval(qp.PauliZ(0))
-
-        res = circuit(phi)
-        assert qp.math.allclose(res, qp.numpy.cos(phi))
-
-        grad = qp.grad(circuit)(phi)
-        assert qp.math.allclose(grad, -qp.numpy.sin(phi))
-
-    @pytest.mark.autograd
-    def test_autograd_measurement(self):
-        """Test exp in a measurement with gradient and autograd."""
-
-        x = qp.numpy.array(2.0)
-
-        @qp.qnode(qp.device("default.qubit", wires=1))
-        def circuit(x):
-            qp.Hadamard(0)
-            return qp.expval(Exp(qp.PauliZ(0), x))
-
-        res = circuit(x)
-        expected = 0.5 * (np.exp(x) + np.exp(-x))
-        assert qp.math.allclose(res, expected)
-
-        grad = qp.grad(circuit)(x)
-        expected_grad = 0.5 * (np.exp(x) - np.exp(-x))
-        assert qp.math.allclose(grad, expected_grad)
-
     @pytest.mark.torch
     def test_torch_measurement(self):
         """Test Exp in a measurement with gradient and torch."""
@@ -891,7 +842,7 @@ class TestIntegration:
             Exp(qp.PauliX(0), 0.5j * x)
             return qp.expval(qp.PauliY(0))
 
-        x = qp.numpy.array([1.234, 2.34, 3.456])
+        x = qp.math.asarray([1.234, 2.34, 3.456], like="numpy")
         res = circuit(x)
 
         expected = np.sin(x)
@@ -965,8 +916,11 @@ class TestDifferentiation:
 
         assert parameter_frequencies(op2) == [(4.0,)]
 
+    @pytest.mark.torch
     def test_params_can_be_considered_trainable(self):
         """Tests that the parameters of an Exp are considered trainable."""
+        import torch
+
         dev = qp.device("default.qubit", wires=1)
 
         @qp.qnode(dev)
@@ -974,8 +928,8 @@ class TestDifferentiation:
             Exp(qp.RX(x, 0), coeff)
             return qp.expval(qp.PauliZ(0))
 
-        with pytest.warns(UserWarning):
-            circuit(np.array(2.0), np.array(0.5))
+        args = (torch.tensor(2.0, requires_grad=True), torch.tensor(0.5, requires_grad=True))
+        circuit(*args)
 
-        tape = qp.workflow.construct_tape(circuit)(np.array(2.0), np.array(0.5))
+        tape = qp.workflow.construct_tape(circuit)(*args)
         assert tape.trainable_params == [0, 1]

@@ -365,7 +365,8 @@ def test_differentiable_hamiltonian(symbols, geometry, mapping, h_ref_data):
     h_noargs_coeffs, h_noargs_ops = h_noargs.terms()
 
     assert all(coeff.requires_grad is True for coeff in h_args_coeffs)
-    assert all(coeff.requires_grad is False for coeff in h_noargs_coeffs)
+    assert all(qp.math.get_interface(coeff) == "numpy" for coeff in h_noargs_coeffs)
+    assert not any(qp.math.requires_grad(coeff) for coeff in h_noargs_coeffs)
 
     assert np.allclose(np.sort(h_args_coeffs), np.sort(h_ref_coeffs))
     assert qp.Hamiltonian(np.ones(len(h_args_coeffs)), h_args_ops) == (
@@ -593,7 +594,8 @@ def test_differentiable_hamiltonian_molecule_class(symbols, geometry, mapping, h
     h_noargs_coeffs, h_noargs_ops = h_noargs.terms()
 
     assert all(coeff.requires_grad is True for coeff in h_args_coeffs)
-    assert all(coeff.requires_grad is False for coeff in h_noargs_coeffs)
+    assert all(qp.math.get_interface(coeff) == "numpy" for coeff in h_noargs_coeffs)
+    assert not any(qp.math.requires_grad(coeff) for coeff in h_noargs_coeffs)
 
     assert np.allclose(np.sort(h_args_coeffs), np.sort(h_ref_coeffs))
     assert qp.Hamiltonian(np.ones(len(h_args_coeffs)), h_args_ops) == (

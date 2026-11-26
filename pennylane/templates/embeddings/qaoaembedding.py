@@ -120,9 +120,12 @@ class QAOAEmbedding(Operation):
 
         .. code-block:: python
 
-            opt = qp.GradientDescentOptimizer()
+            import jax.numpy as jnp
+
+            weights = jnp.asarray(weights)
+            grad_fn = qp.grad(lambda w: circuit(w, f=features))
             for i in range(10):
-                weights = opt.step(lambda w : circuit(w, f=features), weights)
+                weights = weights - 0.01 * grad_fn(weights)
                 print("Step ", i, " weights = ", weights)
 
 
@@ -130,9 +133,11 @@ class QAOAEmbedding(Operation):
 
         In principle, also the features are trainable, which means that gradients with respect to feature values
         can be computed. To train both weights and features, they need to be passed to the qnode as
-        positional arguments. If the built-in optimizer is used, they have to be merged to one input:
+        positional arguments. With JAX, select both argument indices when computing gradients:
 
         .. code-block:: python
+
+            import jax.numpy as jnp
 
             @qp.qnode(dev)
             def circuit2(weights, features):
@@ -140,12 +145,14 @@ class QAOAEmbedding(Operation):
                 return qp.expval(qp.Z(0))
 
 
-            features = qp.numpy.array([1., 2.])
-            weights = qp.numpy.array([[0.1, -0.3, 1.5], [3.1, 0.2, -2.8]])
+            features = jnp.array([1., 2.])
+            weights = jnp.array([[0.1, -0.3, 1.5], [3.1, 0.2, -2.8]])
 
-            opt = qp.GradientDescentOptimizer()
+            grad_fn = qp.grad(circuit2, argnums=(0, 1))
             for i in range(10):
-                weights, features = opt.step(circuit2, weights, features)
+                weights_grad, features_grad = grad_fn(weights, features)
+                weights = weights - 0.01 * weights_grad
+                features = features - 0.01 * features_grad
                 print("Step ", i, "\n weights = ", weights, "\n features = ", features,"\n")
 
         **Local Fields**

@@ -294,42 +294,6 @@ class TestQubitUnitaryDifferentiability:
     """Tests to ensure the transform is fully differentiable in all interfaces for
     single-qubit unitary decompositions."""
 
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("rot_angles,diff_method", angle_diff_pairs)
-    def test_gradient_unitary_to_rot(self, rot_angles, diff_method):
-        """Tests differentiability in autograd interface."""
-
-        def qfunc_with_qubit_unitary(angles):
-            z = angles[0]
-            x = angles[1]
-
-            Z_mat = np.array([[np.exp(-1j * z / 2), 0.0], [0.0, np.exp(1j * z / 2)]])
-
-            c = np.cos(x / 2)
-            s = np.sin(x / 2) * 1j
-            X_mat = np.array([[c, -s], [-s, c]])
-
-            qp.Hadamard(wires=9)
-            qp.QubitUnitary(Z_mat, wires=9)
-            qp.QubitUnitary(X_mat, wires=10)
-            qp.CNOT(wires=[10, 9])
-            return qp.expval(qp.PauliX(wires=9))
-
-        dev = qp.device("default.qubit", wires=[9, 10])
-
-        original_qnode = qp.QNode(original_qfunc_for_grad, dev, diff_method=diff_method)
-
-        transformed_qfunc = unitary_to_rot(qfunc_with_qubit_unitary)
-        transformed_qnode = qp.QNode(transformed_qfunc, dev, diff_method=diff_method)
-
-        angles = np.array(rot_angles, requires_grad=True)
-        assert qp.math.allclose(original_qnode(angles), transformed_qnode(angles), atol=1e-7)
-
-        original_grad = qp.grad(original_qnode)(angles)
-        transformed_grad = qp.grad(transformed_qnode)(angles)
-
-        assert qp.math.allclose(original_grad, transformed_grad, atol=1e-7)
-
     @pytest.mark.torch
     @pytest.mark.parametrize("rot_angles,diff_method", angle_diff_pairs)
     def test_gradient_unitary_to_rot_torch(self, rot_angles, diff_method):
@@ -519,12 +483,14 @@ class TestTwoQubitUnitaryDifferentiability:
     when we are decomposing two-qubit unitaries within.
     """
 
-    @pytest.mark.autograd
+    @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    def test_gradient_unitary_to_rot_two_qubit(self, diff_method):
-        """Tests differentiability in autograd interface."""
-        U0 = np.array(test_two_qubit_unitaries[0], requires_grad=False, dtype=np.complex128)
-        U1 = np.array(test_two_qubit_unitaries[1], requires_grad=False, dtype=np.complex128)
+    def test_gradient_unitary_to_rot_two_qubit_all_arguments(self, diff_method):
+        """All three argument gradients survive the 29-operation decomposition."""
+        from jax import numpy as jnp
+
+        U0 = jnp.array(test_two_qubit_unitaries[0], dtype=jnp.complex128)
+        U1 = jnp.array(test_two_qubit_unitaries[1], dtype=jnp.complex128)
 
         def two_qubit_decomp_qnode(x, y, z):
             qp.RX(x, wires=0)
@@ -534,25 +500,30 @@ class TestTwoQubitUnitaryDifferentiability:
             qp.QubitUnitary(U1, wires=[1, 2])
             return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1) @ qp.PauliZ(2))
 
-        x = np.array(0.1, requires_grad=True)
-        y = np.array(0.2, requires_grad=True)
-        z = np.array(0.3, requires_grad=True)
+        x = jnp.array(0.1, dtype=jnp.float64)
+        y = jnp.array(0.2, dtype=jnp.float64)
+        z = jnp.array(0.3, dtype=jnp.float64)
 
         dev = qp.device("default.qubit", wires=3)
 
-        original_qnode = qp.QNode(two_qubit_decomp_qnode, device=dev, diff_method=diff_method)
+        original_qnode = qp.QNode(
+            two_qubit_decomp_qnode, device=dev, interface="jax", diff_method=diff_method
+        )
 
         transformed_qfunc = unitary_to_rot(two_qubit_decomp_qnode)
-        transformed_qnode = qp.QNode(transformed_qfunc, dev, diff_method=diff_method)
+        transformed_qnode = qp.QNode(
+            transformed_qfunc, dev, interface="jax", diff_method=diff_method
+        )
 
         assert qp.math.allclose(original_qnode(x, y, z), transformed_qnode(x, y, z))
 
         tape = qp.workflow.construct_tape(transformed_qnode)(x, y, z)
         assert len(tape.operations) == 29
 
-        original_grad = qp.grad(original_qnode)(x, y, z)
-        transformed_grad = qp.grad(transformed_qnode)(x, y, z)
+        original_grad = qp.grad(original_qnode, argnums=(0, 1, 2))(x, y, z)
+        transformed_grad = qp.grad(transformed_qnode, argnums=(0, 1, 2))(x, y, z)
 
+        assert len(original_grad) == len(transformed_grad) == 3
         assert qp.math.allclose(original_grad, transformed_grad, atol=1e-6)
 
     @pytest.mark.torch

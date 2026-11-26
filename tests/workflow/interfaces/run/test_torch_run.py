@@ -26,6 +26,79 @@ torch = pytest.importorskip("torch")
 
 
 @pytest.mark.torch
+@pytest.mark.parametrize("shots", [None, 1000, (1000, 1000)])
+@pytest.mark.parametrize("max_diff", [1, 2])
+def test_vector_jacobian_reuses_shifted_results(shots, max_diff, seed):
+    """Repeated backward calls reuse a single Jacobian, including sampled rows."""
+    device = qp.device("default.qubit", seed=seed)
+
+    @qp.set_shots(shots)
+    @qp.qnode(
+        device, interface="torch", diff_method="parameter-shift", cache=False, max_diff=max_diff
+    )
+    def circuit(x):
+        qp.RY(x, 0)
+        return qp.probs(wires=0)
+
+    x = torch.tensor(0.3, dtype=torch.float64, requires_grad=True)
+    with device.tracker:
+        jac = torch.autograd.functional.jacobian(circuit, x, create_graph=True)
+
+    assert device.tracker.totals["simulations"] == 3
+    if isinstance(jac, tuple):
+        jac = torch.stack(jac)
+    assert torch.allclose(jac[..., 0], -jac[..., 1], atol=1e-14, rtol=0)
+    expected = torch.stack((-0.5 * torch.sin(x), 0.5 * torch.sin(x)))
+    assert torch.allclose(jac, expected.expand_as(jac), atol=0.1 if shots else 1e-8, rtol=0)
+
+
+@pytest.mark.torch
+def test_cached_vector_jacobian_preserves_second_derivatives():
+    """Cached Jacobians keep the graph required for higher derivatives."""
+    device = qp.device("default.qubit")
+
+    @qp.qnode(device, interface="torch", diff_method="parameter-shift", cache=False, max_diff=2)
+    def circuit(x):
+        qp.RY(x, 0)
+        return qp.probs(wires=0)
+
+    x = torch.tensor(0.3, dtype=torch.float64, requires_grad=True)
+
+    def jacobian(value):
+        return torch.autograd.functional.jacobian(circuit, value, create_graph=True)
+
+    hessian = torch.autograd.functional.jacobian(jacobian, x)
+    expected = torch.stack((-0.5 * torch.cos(x), 0.5 * torch.cos(x)))
+    assert torch.allclose(hessian, expected)
+
+
+@pytest.mark.torch
+def test_cached_jacobian_separates_torch_gradient_modes():
+    """A retained graph can request higher derivatives after an ordinary backward."""
+    device = qp.device("default.qubit")
+
+    @qp.qnode(device, interface="torch", diff_method="parameter-shift", cache=False, max_diff=2)
+    def circuit(x):
+        qp.RY(x, 0)
+        return qp.probs(wires=0)
+
+    x = torch.tensor(0.3, dtype=torch.float64, requires_grad=True)
+    with device.tracker:
+        result = circuit(x)
+        first = torch.autograd.grad(result[0], x, retain_graph=True)[0]
+        second = torch.autograd.grad(result[1], x, retain_graph=True, create_graph=True)[0]
+        third = torch.autograd.grad(result[0], x, retain_graph=True, create_graph=True)[0]
+
+    assert device.tracker.totals["simulations"] == 5
+    assert torch.allclose(first, -0.5 * torch.sin(x))
+    assert torch.allclose(second, -first)
+    assert torch.allclose(third, first)
+    assert second.requires_grad and third.requires_grad
+    hessian = torch.autograd.grad(second, x)[0]
+    assert torch.allclose(hessian, 0.5 * torch.cos(x))
+
+
+@pytest.mark.torch
 @pytest.mark.parametrize("device, config, shots", test_matrix)
 class TestTorchRun:
     """Test the 'torch' interface run function integrates well for both forward and backward execution"""

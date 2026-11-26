@@ -18,7 +18,6 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qp
-from pennylane import numpy as pnp
 from pennylane.exceptions import QuantumFunctionError, WireError
 from pennylane.math.matrix_manipulation import _permute_dense_matrix
 from pennylane.math.quantum import reduce_dm, reduce_statevector
@@ -310,12 +309,14 @@ class TestState:
         assert torch.allclose(state_expected, state_val)
         assert state_val.shape == (16,)
 
-    @pytest.mark.autograd
+    @pytest.mark.jax
     def test_jacobian_not_supported(self):
         """Test if an error is raised if the jacobian method is called via qp.grad"""
+        from jax import numpy as jnp
+
         dev = qp.device("default.qubit", wires=4)
 
-        @qp.qnode(dev, diff_method="parameter-shift")
+        @qp.qnode(dev, interface="jax", diff_method="parameter-shift")
         def func(x):
             for i in range(4):
                 qp.RX(x, wires=i)
@@ -330,7 +331,7 @@ class TestState:
                 "parameter-shift rule gradient transform is not supported"
             ),
         ):
-            d_func(pnp.array(0.1, requires_grad=True))
+            d_func(jnp.array(0.1))
 
     def test_no_state_capability(self, monkeypatch):
         """Test if an error is raised for devices that are not capable of returning the state.
@@ -366,49 +367,29 @@ class TestState:
 
         assert np.allclose(state_val, state_expected)
 
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("diff_method", ["best", "finite-diff", "parameter-shift"])
-    def test_default_qubit_autograd(self, diff_method):
-        """Test that the returned state is equal to the expected returned state for all of
-        PennyLane's built in statevector devices"""
-
-        dev = qp.device("default.qubit", wires=4)
-
-        @qp.qnode(dev, interface="autograd", diff_method=diff_method)
-        def func():
-            for i in range(4):
-                qp.Hadamard(i)
-            return state()
-
-        state_val = func()
-        state_expected = 0.25 * np.ones(16)
-
-        assert np.allclose(state_val, state_expected)
-
-    @pytest.mark.autograd
-    def test_gradient_with_passthru_autograd(self):
+    @pytest.mark.torch
+    def test_gradient_with_passthru_torch(self):
         """Test that the gradient of the state is accessible when using default.qubit
-        with autograd interface and the backprop diff_method."""
+        with Torch interface and the backprop diff_method."""
+        import torch
+        from torch.autograd.functional import jacobian as torch_jacobian
 
         dev = qp.device("default.qubit", wires=1)
 
-        @qp.qnode(dev, interface="autograd", diff_method="backprop")
+        @qp.qnode(dev, interface="torch", diff_method="backprop")
         def func(x):
             qp.RY(x, wires=0)
             return state()
 
-        x = pnp.array(0.1, requires_grad=True)
+        x = torch.tensor(0.1, dtype=torch.float64, requires_grad=True)
 
         def loss_fn(x):
             res = func(x)
-            return pnp.real(res)  # This errors without the real. Likely an issue with complex
-            # numbers in autograd
+            return res.real
 
-        d_loss_fn = qp.jacobian(loss_fn)
-
-        grad = d_loss_fn(x)
-        expected = np.array([-0.5 * np.sin(x / 2), 0.5 * np.cos(x / 2)])
-        assert np.allclose(grad, expected)
+        grad = torch_jacobian(loss_fn, x)
+        expected = np.array([-0.5 * np.sin(0.1 / 2), 0.5 * np.cos(0.1 / 2)])
+        assert np.allclose(grad.detach().numpy(), expected)
 
     @pytest.mark.parametrize("wires", [[0, 2, 3, 1]])
     def test_custom_wire_labels(self, wires):

@@ -116,6 +116,8 @@ def batch_params(
 
     .. code-block:: python
 
+        import torch
+
         dev = qp.device("default.qubit", wires=3)
 
         @qp.batch_params
@@ -130,22 +132,22 @@ def batch_params(
     that have a batch dimension. For example,
 
     >>> batch_size = 3
-    >>> x = pnp.linspace(0.1, 0.5, batch_size)
+    >>> x = torch.linspace(0.1, 0.5, batch_size, dtype=torch.float64, requires_grad=True)
     >>> rng = np.random.default_rng(seed=1234)
-    >>> weights = pnp.array(rng.random((batch_size, 10, 3, 3)))
+    >>> weights = torch.tensor(rng.random((batch_size, 10, 3, 3)), requires_grad=True)
 
     If we evaluate the QNode with these inputs, we will get an output
     of shape ``(batch_size,)``:
 
-    >>> circuit(x, weights)
-    tensor([ 0.008...,  0.273..., -0.24...], requires_grad=True)
+    >>> qp.math.toarray(circuit(x, weights))
+    array([ 0.008...,  0.273..., -0.24...])
 
     QNodes with a batch dimension remain fully differentiable:
 
     >>> def cost_fn(x, weights): return qp.math.sum(circuit(x, weights))
-    >>> cost_fn(x, weights)
-    tensor(0.037..., requires_grad=True)
-    >>> qp.grad(cost_fn)(x, weights)[0]
+    >>> print(qp.math.toarray(cost_fn(x, weights)))
+    0.037...
+    >>> qp.math.toarray(qp.grad(cost_fn)(x, weights)[0])
     array([-0.302...,  0.0632...  0.0081...])
 
     If we pass the ``all_operations`` argument, we can specify that
@@ -164,9 +166,9 @@ def batch_params(
 
     >>> def cost_fn(x, weights): return qp.math.sum(circuit(x, weights))
     >>> weights.requires_grad = False
-    >>> cost_fn(x, weights)
-    tensor(0.037..., requires_grad=True)
-    >>> qp.grad(cost_fn)(x, weights)[0]
+    >>> print(qp.math.toarray(cost_fn(x, weights)))
+    0.037...
+    >>> qp.math.toarray(qp.grad(cost_fn)(x, weights))[0]
     np.float64(-0.302...)
     """
 

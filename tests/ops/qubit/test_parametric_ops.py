@@ -18,6 +18,7 @@ Unit tests for the available built-in parametric qubit operations.
 import copy
 from functools import partial, reduce
 
+import jax.numpy as jnp
 import numpy as np
 import pytest
 from gate_data import CPhaseShift00, CPhaseShift01, CPhaseShift10, Z
@@ -191,7 +192,6 @@ class TestOperations:
     def test_isingxy_subcircuit_replays_dynamic_arguments(self):
         """Test that a captured rotation subcircuit uses each invocation's angle and wires."""
         import jax
-        import jax.numpy as jnp
 
         rule = qp.list_decomps(qp.IsingXY)["to_h_cy"]
         jaxpr = jax.make_jaxpr(lambda phi, wires: rule(phi, wires=wires))(
@@ -1020,7 +1020,6 @@ class TestCPhaseShift:
     def test_jit_vmap(self, cphase_op):
         """Test matrices and eigenvalues with traced angles and wires."""
         import jax
-        import jax.numpy as jnp
 
         def matrix_and_eigvals(phi, wires):
             op = cphase_op(phi, wires=[wires[0], wires[1]])
@@ -1265,7 +1264,6 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("wires", (range(2), range(3)))
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_pcphase_jax(self, phi, dim, wires):
-        import jax.numpy as jnp
 
         phi = jnp.array(phi)
 
@@ -2043,36 +2041,7 @@ class TestGrad:
         for device, method in device_methods:
             configuration.append([device, method, npp.array(phi, requires_grad=True)])
 
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
-    def test_pswap_autograd_grad(self, tol, dev_name, diff_method, phi):
-        """Test the gradient with Autograd for the gate PSWAP."""
-
-        if diff_method in {"adjoint"}:
-            # PSWAP does not have a generator defined
-            pytest.skip("PSWAP does not support adjoint")
-
-        dev = qp.device(dev_name, wires=2)
-
-        psi_0 = 0.1
-        psi_1 = 0.2
-        psi_2 = 0.3
-        psi_3 = 0.4
-
-        init_state = npp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
-        norm = np.linalg.norm(init_state)
-        init_state /= norm
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(phi):
-            qp.StatePrep(init_state, wires=[0, 1])
-            qp.PSWAP(phi, wires=[0, 1])
-            return qp.expval(qp.PauliY(0))
-
-        expected = 2 * np.cos(phi) * (psi_0 * psi_1 - psi_3 * psi_2) / norm**2
-
-        res = qp.grad(circuit)(phi)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+    native_configuration = [[device, method, float(phi)] for device, method, phi in configuration]
 
     @pytest.mark.torch
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
@@ -2121,7 +2090,6 @@ class TestGrad:
             pytest.skip("PSWAP does not support adjoint")
 
         import jax
-        import jax.numpy as jnp
 
         dev = qp.device(dev_name, wires=2)
 
@@ -2147,158 +2115,6 @@ class TestGrad:
         res = jax.grad(circuit, argnums=0)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
-    def test_isingxx_autograd_grad(self, tol, dev_name, diff_method, phi):
-        """Test the gradient for the gate IsingXX."""
-        dev = qp.device(dev_name, wires=2)
-
-        psi_0 = 0.1
-        psi_1 = 0.2
-        psi_2 = 0.3
-        psi_3 = 0.4
-
-        init_state = npp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
-        norm = np.linalg.norm(init_state)
-        init_state /= norm
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(phi):
-            qp.StatePrep(init_state, wires=[0, 1])
-            qp.IsingXX(phi, wires=[0, 1])
-            return qp.expval(qp.PauliZ(0))
-
-        expected = (
-            0.5
-            * (1 / norm**2)
-            * (
-                -np.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
-                + 2
-                * np.sin(phi / 2)
-                * np.cos(phi / 2)
-                * (-(psi_0**2) - psi_1**2 + psi_2**2 + psi_3**2)
-            )
-        )
-
-        res = qp.grad(circuit)(phi)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
-    def test_isingyy_autograd_grad(self, tol, dev_name, diff_method, phi):
-        """Test the gradient for the gate IsingYY."""
-        dev = qp.device(dev_name, wires=2)
-
-        psi_0 = 0.1
-        psi_1 = 0.2
-        psi_2 = 0.3
-        psi_3 = 0.4
-
-        init_state = npp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
-        norm = np.linalg.norm(init_state)
-        init_state /= norm
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(phi):
-            qp.StatePrep(init_state, wires=[0, 1])
-            qp.IsingYY(phi, wires=[0, 1])
-            return qp.expval(qp.PauliZ(0))
-
-        expected = (
-            0.5
-            * (1 / norm**2)
-            * (
-                -np.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
-                + 2
-                * np.sin(phi / 2)
-                * np.cos(phi / 2)
-                * (-(psi_0**2) - psi_1**2 + psi_2**2 + psi_3**2)
-            )
-        )
-
-        res = qp.grad(circuit)(phi)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
-    def test_isingzz_autograd_grad(self, tol, dev_name, diff_method, phi):
-        """Test the gradient for the gate IsingZZ."""
-        dev = qp.device(dev_name, wires=2)
-
-        psi_0 = 0.1
-        psi_1 = 0.2
-        psi_2 = 0.3
-        psi_3 = 0.4
-
-        init_state = npp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
-        norm = np.linalg.norm(init_state)
-        init_state /= norm
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(phi):
-            qp.StatePrep(init_state, wires=[0, 1])
-            qp.IsingZZ(phi, wires=[0, 1])
-            return qp.expval(qp.PauliX(0))
-
-        phi = npp.array(phi, requires_grad=True)
-
-        expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
-
-        res = qp.grad(circuit)(phi)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
-    def test_isingxy_autograd_grad(self, tol, dev_name, diff_method, phi):
-        """Test the gradient with Autograd for the gate IsingXY."""
-        dev = qp.device(dev_name, wires=2)
-
-        psi_0 = 0.1
-        psi_1 = 0.2
-        psi_2 = 0.3
-        psi_3 = 0.4
-
-        init_state = npp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
-        norm = np.linalg.norm(init_state)
-        init_state /= norm
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(phi):
-            qp.StatePrep(init_state, wires=[0, 1])
-            qp.IsingXY(phi, wires=[0, 1])
-            return qp.expval(qp.PauliZ(0))
-
-        phi = npp.array(phi, requires_grad=True)
-
-        expected = (1 / norm**2) * (psi_2**2 - psi_1**2) * np.sin(phi)
-
-        res = qp.grad(circuit)(phi)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name,diff_method", device_methods)
-    @pytest.mark.parametrize("wires", [(0, 1), (1, 0)])
-    def test_globalphase_autograd_grad(self, tol, dev_name, diff_method, wires):
-        """Test the gradient with Autograd for a controlled GlobalPhase."""
-
-        dev = qp.device(dev_name, wires=2)
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(x):
-            qp.Identity(wires[0])
-            qp.GlobalPhase(x)
-            qp.Hadamard(wires[1])
-            qp.ctrl(qp.GlobalPhase(x), control=wires[1])
-            qp.Hadamard(wires[1])
-            return qp.expval(qp.PauliZ(wires[1]))
-
-        phi = npp.array(2.1, requires_grad=True)
-
-        expected = [-0.8632093]
-
-        res = qp.grad(circuit)(phi)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_isingxy_jax_grad(self, tol, dev_name, diff_method, phi):
@@ -2311,7 +2127,6 @@ class TestGrad:
             pytest.skip("Test does not support parameter-shift")
 
         import jax
-        import jax.numpy as jnp
 
         dev = qp.device(dev_name, wires=2)
 
@@ -2349,7 +2164,6 @@ class TestGrad:
             pytest.skip("Test does not support parameter-shift")
 
         import jax
-        import jax.numpy as jnp
 
         dev = qp.device(dev_name, wires=2)
 
@@ -2397,7 +2211,6 @@ class TestGrad:
             pytest.skip("Test does not support parameter-shift")
 
         import jax
-        import jax.numpy as jnp
 
         dev = qp.device(dev_name, wires=2)
 
@@ -2445,7 +2258,6 @@ class TestGrad:
             pytest.skip("Test does not support parameter-shift")
 
         import jax
-        import jax.numpy as jnp
 
         dev = qp.device(dev_name, wires=2)
 
@@ -2492,14 +2304,15 @@ class TestGrad:
         expected = -1 / 2 * np.sin(par / 2), -1 / 2 * 1j * np.cos(par / 2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dev_name,diff_method,phi", native_configuration)
     def test_pcphase_grad(self, dev_name, diff_method, phi):
-        """Test pcphase operator gradient"""
+        """Test the PCPhase gradient through qp.grad with JAX."""
         if diff_method in {"adjoint"}:
             pytest.skip("PCPhase does not support adjoint diff")
 
         dev = qp.device(dev_name, wires=[0, 1])
-        expected_grad = -4 * npp.cos(phi) * npp.sin(phi)  # computed by hand
+        expected_grad = -4 * np.cos(phi) * np.sin(phi)  # computed by hand
 
         @qp.qnode(dev, diff_method=diff_method)
         def circ(phi):
@@ -2512,12 +2325,12 @@ class TestGrad:
             qp.Hadamard(wires=1)
             return qp.expval(qp.PauliZ(wires=0))
 
-        phi = npp.array(phi, requires_grad=True)
+        phi = jnp.array(phi)
         computed_grad = qp.grad(circ)(phi)
         assert np.isclose(computed_grad, expected_grad)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    @pytest.mark.parametrize("dev_name,diff_method,phi", native_configuration)
     def test_pcphase_grad_torch(self, dev_name, diff_method, phi):
         """Test pcphase operator gradient"""
         if diff_method in {"adjoint"}:
@@ -2526,8 +2339,8 @@ class TestGrad:
         import torch
 
         dev = qp.device(dev_name, wires=[0, 1])
-        expected_grad = torch.tensor(-4 * npp.cos(phi) * npp.sin(phi))  # computed by hand
-        phi = torch.tensor(phi, requires_grad=True)
+        expected_grad = torch.tensor(-4 * np.cos(phi) * np.sin(phi))  # computed by hand
+        phi = torch.tensor(phi, dtype=torch.float64, requires_grad=True)
 
         @qp.qnode(dev, diff_method=diff_method)
         def circ(phi):
@@ -2545,17 +2358,16 @@ class TestGrad:
         assert np.isclose(phi.grad, expected_grad)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    @pytest.mark.parametrize("dev_name,diff_method,phi", native_configuration)
     def test_pcphase_grad_jax(self, dev_name, diff_method, phi):
         """Test pcphase operator gradient"""
         if diff_method in {"adjoint"}:
             pytest.skip("PCPHase does not support adjoint diff")
 
         import jax
-        import jax.numpy as jnp
 
         dev = qp.device(dev_name, wires=[0, 1])
-        expected_grad = jnp.array(-4 * npp.cos(phi) * npp.sin(phi))  # computed by hand
+        expected_grad = jnp.array(-4 * np.cos(phi) * np.sin(phi))  # computed by hand
         phi = jnp.array(phi)
 
         @qp.qnode(dev, diff_method=diff_method)
@@ -2579,7 +2391,6 @@ class TestGrad:
         """Test the gradient with JAX for a controlled GlobalPhase."""
 
         import jax
-        import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
 
@@ -2842,7 +2653,6 @@ class TestPauliRot:  # pylint: disable=too-many-public-methods
     def test_PauliRot_jax_traced_wires_jit_compatible(self, tol):
         """Validate that ``len(self._wires)`` used by PauliRot works with JAX-traced wires."""
         jax = pytest.importorskip("jax")
-        jnp = jax.numpy
 
         def circuit():
             return qp.PauliRot(0.37, "Z", wires=jnp.array(0)).matrix()
@@ -2944,7 +2754,8 @@ class TestPauliRot:  # pylint: disable=too-many-public-methods
         qp.assert_equal(cob.target_op, qp.MultiRZ(theta, wires=[0]))
         qp.assert_equal(cob.uncompute_op.decomposition()[0], qp.PPR_4(-1, "X", wires=0))
 
-    @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
+    @pytest.mark.jax
+    @pytest.mark.parametrize("angle", tuple(jnp.linspace(0, 2 * np.pi, 7)))
     @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ"])
     def test_differentiability(self, angle, pauli_word, tol):
         """Test that differentiation of PauliRot works."""
@@ -2960,10 +2771,11 @@ class TestPauliRot:  # pylint: disable=too-many-public-methods
         gradient = np.squeeze(qp.grad(circuit)(angle))
 
         assert gradient == pytest.approx(
-            0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2)), abs=tol
+            float(0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2))), abs=tol
         )
 
     @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ"])
+    @pytest.mark.jax
     def test_differentiability_broadcasted(self, pauli_word, tol):
         """Test that differentiation of PauliRot works with broadcasted parameters."""
 
@@ -2974,7 +2786,7 @@ class TestPauliRot:  # pylint: disable=too-many-public-methods
             qp.PauliRot(theta, pauli_word, wires=[0, 1])
             return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
-        angle = npp.linspace(0, 2 * np.pi, 7, requires_grad=True)
+        angle = jnp.linspace(0, 2 * np.pi, 7)
         jac = qp.jacobian(circuit)(angle)
 
         assert np.allclose(
@@ -2983,7 +2795,8 @@ class TestPauliRot:  # pylint: disable=too-many-public-methods
             atol=tol,
         )
 
-    @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
+    @pytest.mark.jax
+    @pytest.mark.parametrize("angle", tuple(jnp.linspace(0, 2 * np.pi, 7)))
     def test_decomposition_integration(self, angle):
         """Test that the decompositon of PauliRot yields the same results."""
 
@@ -3259,7 +3072,8 @@ class TestMultiRZ:
             state = node(theta, rule)
             assert np.allclose(state, exp_state)
 
-    @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
+    @pytest.mark.jax
+    @pytest.mark.parametrize("angle", tuple(jnp.linspace(0, 2 * np.pi, 7)))
     def test_differentiability(self, angle, tol):
         """Test that differentiation of MultiRZ works."""
 
@@ -3275,9 +3089,10 @@ class TestMultiRZ:
         gradient = np.squeeze(qp.grad(circuit)(angle))
 
         assert gradient == pytest.approx(
-            0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2)), abs=tol
+            float(0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2))), abs=tol
         )
 
+    @pytest.mark.jax
     def test_differentiability_broadcasted(self, tol):
         """Test that differentiation of MultiRZ works."""
 
@@ -3291,17 +3106,18 @@ class TestMultiRZ:
 
             return qp.expval(qp.PauliX(0) @ qp.PauliX(1))
 
-        angle = npp.linspace(0, 2 * np.pi, 7, requires_grad=True)
+        angle = jnp.linspace(0, 2 * np.pi, 7)
         jac = qp.jacobian(circuit)(angle)
 
         assert np.allclose(
             jac, 0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2)), atol=tol
         )
 
-    @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
+    @pytest.mark.jax
+    @pytest.mark.parametrize("angle", tuple(jnp.linspace(0, 2 * np.pi, 7)))
     def test_decomposition_integration(self, angle):
         """Test that the decompositon of MultiRZ yields the same results."""
-        angle = qp.numpy.array(angle)
+        angle = jnp.asarray(angle)
         dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev)
@@ -3435,104 +3251,6 @@ class TestSimplify:
         assert all((p >= 0).all() and (p < 4 * np.pi).all() for p in simplified_op.data)
         assert unsimplified_op.wires == simplified_op.wires
 
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("op", rotations)
-    def test_simplify_rotations_grad_autograd(self, op):
-        """Test the gradient of an op after simplication for the autograd interface"""
-        dev = qp.device("default.qubit", wires=2)
-
-        if issubclass(op, Operator1):
-
-            @qp.qnode(dev)
-            def circuit(simplify, wires, *params, **hyperparams):
-                if simplify:
-                    qp.simplify(op(*params, wires=wires, **hyperparams))
-                else:
-                    op(*params, wires=wires, **hyperparams)
-
-                return qp.expval(qp.PauliZ(0))
-
-            unsimplified_op = self.get_unsimplified_op(op)
-            params, wires = self._get_params_wires(unsimplified_op)
-            hyperparams = {"dim": 2} if unsimplified_op.name == "PCPhase" else {}
-
-            for i in range(params[0].shape[0]):
-                parameters = [p[i] for p in params]
-
-                unsimplified_res = circuit(False, wires, *parameters, **hyperparams)
-                simplified_res = circuit(True, wires, *parameters, **hyperparams)
-
-                unsimplified_grad = qp.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
-                    False,
-                    wires,
-                    *parameters,
-                    **hyperparams,
-                )
-                simplified_grad = qp.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
-                    True,
-                    wires,
-                    *parameters,
-                    **hyperparams,
-                )
-
-                assert qp.math.allclose(unsimplified_res, simplified_res)
-                assert qp.math.allclose(unsimplified_grad, simplified_grad)
-        else:
-
-            @qp.qnode(dev)
-            def circuit(simplify, wires, *args, **kwargs):
-                if simplify:
-                    qp.simplify(op(*args, wires=wires, **kwargs))
-                else:
-                    op(*args, wires=wires, **kwargs)
-
-                return qp.expval(qp.PauliZ(0))
-
-            unsimplified_op = self.get_unsimplified_op(op)
-
-            angle = next(iter(unsimplified_op.dynamic_args))
-            for i in range(unsimplified_op.dynamic_args[angle].shape[0]):
-                flat_dyn_args = [p[i] for p in unsimplified_op.dynamic_args.values()]
-
-                unsimplified_res = circuit(
-                    False,
-                    unsimplified_op.wires,
-                    *flat_dyn_args,
-                    **unsimplified_op.static_args,
-                    **unsimplified_op.compilable_args,
-                    **unsimplified_op.hybrid_args,
-                )
-                simplified_res = circuit(
-                    True,
-                    unsimplified_op.wires,
-                    *flat_dyn_args,
-                    **unsimplified_op.static_args,
-                    **unsimplified_op.compilable_args,
-                    **unsimplified_op.hybrid_args,
-                )
-
-                unsimplified_grad = qp.grad(
-                    circuit, argnums=list(range(2, 2 + len(flat_dyn_args)))
-                )(
-                    False,
-                    unsimplified_op.wires,
-                    *flat_dyn_args,
-                    **unsimplified_op.static_args,
-                    **unsimplified_op.compilable_args,
-                    **unsimplified_op.hybrid_args,
-                )
-                simplified_grad = qp.grad(circuit, argnums=list(range(2, 2 + len(flat_dyn_args))))(
-                    True,
-                    unsimplified_op.wires,
-                    *flat_dyn_args,
-                    **unsimplified_op.static_args,
-                    **unsimplified_op.compilable_args,
-                    **unsimplified_op.hybrid_args,
-                )
-
-                assert qp.math.allclose(unsimplified_res, simplified_res)
-                assert qp.math.allclose(unsimplified_grad, simplified_grad)
-
     @pytest.mark.torch
     @pytest.mark.parametrize("op", rotations)
     def test_simplify_rotations_grad_torch(self, op):
@@ -3619,7 +3337,6 @@ class TestSimplify:
     def test_simplify_rotations_grad_jax(self, op):
         """Test the gradient of an op after simplication for the JAX interface"""
         import jax
-        import jax.numpy as jnp
 
         dev = qp.device("default.qubit")
 
@@ -3714,7 +3431,6 @@ class TestSimplify:
     def test_simplify_rotations_grad_jax_jit(self):
         """Test the gradient of an op after simplication for the JAX interface with jitting"""
         import jax
-        import jax.numpy as jnp
 
         op = qp.U2
 

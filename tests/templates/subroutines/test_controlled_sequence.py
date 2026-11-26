@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as pnp
 from pennylane.wires import Wires
 
 
@@ -224,26 +223,6 @@ class TestIntegration:
         assert res.shape == (16,)
         assert np.allclose(res, self.exp_result, atol=0.002)
 
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("shots", [None, 50000])
-    def test_qnode_autograd(self, shots, seed):
-        """Test that the QNode executes with Autograd."""
-
-        dev = qp.device("default.qubit", wires=4, seed=seed)
-        diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qp.set_shots(
-            qp.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method), shots=shots
-        )
-        x = qp.numpy.array(self.x, requires_grad=True)
-
-        res = qnode(x)
-        assert qp.math.shape(res) == (16,)
-        assert np.allclose(res, self.exp_result, atol=0.002)
-
-        res = qp.jacobian(qnode)(x)
-        assert np.shape(res) == (16,)
-        assert np.allclose(res, self.exp_jac, atol=0.005)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
     @pytest.mark.parametrize("shots", [None, 50000])
@@ -333,6 +312,7 @@ class TestIntegration:
 
         _ = circuit()
 
+    @pytest.mark.jax
     def test_gradient_with_composite_op_base(self):
         """Test executing and getting the gradient of a circuit with a
         ControlledSequence based on a CompositeOp"""
@@ -349,7 +329,9 @@ class TestIntegration:
             qp.ControlledSequence(U(thetas), control=[2, 3])
             return qp.expval(qp.PauliZ(0))
 
-        thetas = pnp.array([1.0, 1.0], requires_grad=True)
+        import jax.numpy as jnp
+
+        thetas = jnp.array([1.0, 1.0])
         _ = circuit(thetas)
         _ = qp.grad(circuit)(thetas)
 

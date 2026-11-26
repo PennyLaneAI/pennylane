@@ -112,7 +112,8 @@ class TestSPSAOptimizer:
         for the SPSA optimizer."""
         spsa_opt = qp.SPSAOptimizer(maxiter=10)
 
-        @qp.qnode(qp.device("default.qubit", wires=1))
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(qp.device("default.qubit", wires=1), interface="numpy")
         def quant_fun(variables):
             qp.RX(variables[0], wires=[0])
             qp.RY(variables[1], wires=[0])
@@ -131,7 +132,8 @@ class TestSPSAOptimizer:
         for the SPSA optimizer."""
         spsa_opt = qp.SPSAOptimizer(maxiter=10)
 
-        @qp.qnode(qp.device("default.qubit", wires=1))
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(qp.device("default.qubit", wires=1), interface="numpy")
         def quant_fun(variables):
             obs = [qp.PauliX(0) @ qp.PauliZ(0), qp.PauliZ(0) @ qp.Hadamard(0)]
             return qp.expval(qp.Hamiltonian(variables, obs))
@@ -147,7 +149,8 @@ class TestSPSAOptimizer:
         """Test that the correct param is returned via the step method."""
         spsa_opt = qp.SPSAOptimizer(maxiter=10)
 
-        @qp.qnode(qp.device("default.qubit", wires=1))
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(qp.device("default.qubit", wires=1), interface="numpy")
         def quant_fun(params):
             qp.RX(params[0], wires=[0])
             qp.RY(params[1], wires=[0])
@@ -194,7 +197,8 @@ class TestSPSAOptimizer:
         spsa_opt = qp.SPSAOptimizer(maxiter=10)
         multid_array = np.array([[0.1, 0.2], [-0.1, -0.4]])
 
-        @qp.qnode(qp.device("default.qubit", wires=1))
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(qp.device("default.qubit", wires=1), interface="numpy")
         def quant_fun_mdarr(var):
             qp.RX(var[0, 1], wires=[0])
             qp.RY(var[1, 0], wires=[0])
@@ -212,7 +216,8 @@ class TestSPSAOptimizer:
         spsa_opt = qp.SPSAOptimizer(maxiter=10)
         multid_array = np.array([[0.1, 0.2], [-0.1, -0.4]])
 
-        @qp.qnode(qp.device("default.qubit", wires=1))
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(qp.device("default.qubit", wires=1), interface="numpy")
         def quant_fun_mdarr(var):
             qp.RX(var[0, 0], wires=[0])
             qp.RX(var[0, 1], wires=[0])
@@ -315,7 +320,8 @@ class TestSPSAOptimizer:
         and not all require grad."""
         spsa_opt = qp.SPSAOptimizer(maxiter=10)
 
-        @qp.qnode(qp.device("default.qubit", wires=1))
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(qp.device("default.qubit", wires=1), interface="numpy")
         def quant_fun(*variables):
             qp.RX(variables[0][1], wires=[0])
             qp.RY(variables[1][2], wires=[0])
@@ -338,7 +344,8 @@ class TestSPSAOptimizer:
         and not all require grad."""
         spsa_opt = qp.SPSAOptimizer(maxiter=10)
 
-        @qp.qnode(qp.device("default.qubit", wires=1))
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(qp.device("default.qubit", wires=1), interface="numpy")
         def quant_fun(*variables):
             qp.RX(variables[0][1], wires=[0])
             qp.RY(variables[1][2], wires=[0])
@@ -361,7 +368,8 @@ class TestSPSAOptimizer:
         require grad."""
         dev = qp.device("default.qubit", wires=1)
 
-        @qp.qnode(dev)
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(dev, interface="numpy")
         def circuit(a):
             qp.RX(a, wires=0)
             return qp.expval(qp.PauliZ(0))
@@ -388,7 +396,8 @@ class TestSPSAOptimizer:
         def circuit(params):
             qp.StronglyEntanglingLayers(params, wires=list(range(n_wires)))
 
-        @qp.qnode(dev)
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(dev, interface="numpy")
         def cost(params):
             circuit(params)
             return qp.probs(wires=[0, 1, 2, 3])
@@ -428,7 +437,8 @@ class TestSPSAOptimizer:
         num_qubits = 4
         dev = qp.device("lightning.qubit", wires=num_qubits)
 
-        @qp.qnode(dev)
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(dev, interface="numpy")
         def cost_fun(params, num_qubits=1):
             qp.BasisState([1, 1, 0, 0], wires=range(num_qubits))
 
@@ -461,7 +471,8 @@ class TestSPSAOptimizer:
         max_iterations = 400
         dev = qp.device("default.mixed", wires=n_qubits)
 
-        @qp.qnode(dev)
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(dev, interface="numpy")
         def circuit(params):
             qp.RX(params[0], wires=0)
             qp.RY(params[1], wires=0)

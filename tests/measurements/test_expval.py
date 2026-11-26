@@ -329,7 +329,7 @@ class TestExpval:  # pylint: disable=too-many-public-methods
         ops = (qp.Hadamard(0), qp.PauliZ(0) @ qp.PauliY(1) @ qp.PauliY(2) @ qp.PauliX(3))
         H = qp.Hamiltonian([0.5, 1.0], ops)
 
-        @qp.qnode(dev, interface="autograd", diff_method="parameter-shift")
+        @qp.qnode(dev, interface="numpy", diff_method="parameter-shift")
         def cost_circuit(params):
             qp.RX(params, 0)
             qp.CNOT([0, 1])

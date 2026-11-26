@@ -15,10 +15,10 @@
 Tests for the OutSquare template.
 """
 
+import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as np
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
 from pennylane.ops.op_math import Adjoint

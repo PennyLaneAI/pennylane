@@ -47,7 +47,7 @@ defvjp(asarray, asarray_gradmaker, argnums=(0,))
 
 
 class tensor(_np.ndarray):
-    """Constructs a PennyLane tensor for use with Autograd QNodes.
+    """Constructs a PennyLane tensor for classical differentiation and legacy optimizer storage.
 
     The ``tensor`` class is a subclass of ``numpy.ndarray``,
     providing the same multidimensional, homogeneous data-structure
@@ -56,9 +56,9 @@ class tensor(_np.ndarray):
 
     .. warning::
 
-        PennyLane ``tensor`` objects are only used as part of the Autograd QNode
-        interface. If using another machine learning library such as PyTorch,
-        use its built-in classes instead (i.e. ``torch.tensor``).
+        The Autograd quantum interface has been removed. For QNodes, use standard NumPy arrays
+        or the native arrays of a supported autodiff framework, such as ``torch.tensor`` or
+        ``jax.numpy.array``.
 
     .. warning::
 

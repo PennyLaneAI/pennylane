@@ -224,6 +224,13 @@ def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
             f = fermionic_observable(constants[i], integrals[i], cutoff=cutoff)
             d_ferm.append(FermiSentence({FermiWord({}): nd[i][0]}) - f)
 
+        parameters = [mol.coordinates, *mol.alpha, *mol.coeff]
+        if not args and not any(qp.math.requires_grad(parameter) for parameter in parameters):
+            for component in d_ferm:
+                for word, coefficient in component.items():
+                    if qp.math.get_interface(coefficient) == "autograd":
+                        component[word] = qp.math.toarray(coefficient)
+
         return d_ferm
 
     return _fermionic_dipole

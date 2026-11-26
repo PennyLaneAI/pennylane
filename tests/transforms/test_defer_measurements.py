@@ -19,11 +19,11 @@ import math
 import re
 from functools import partial
 
+import numpy as np
 import pytest
 from device_shots_to_analytic import shots_to_analytic
 
 import pennylane as qp
-import pennylane.numpy as np
 from pennylane.devices import DefaultQubit
 from pennylane.exceptions import DecompositionWarning, DeviceError
 from pennylane.ops import Controlled, MeasurementValue, MidMeasure

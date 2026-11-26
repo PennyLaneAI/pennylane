@@ -558,6 +558,7 @@ class TestTapePLIntegration:
         assert qp.math.allclose(res1, qp.math.cos(x))
         assert qp.math.allclose(res2, qp.math.cos(y))
 
+    @pytest.mark.jax
     def test_subroutine_gradient(self):
         """Test that SubroutineOp can be handled by gradients (namely parameter shift.)"""
 
@@ -571,7 +572,9 @@ class TestTapePLIntegration:
             Tester(x, y, wires=(0, 1))
             return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
 
-        g0 = qp.grad(lambda x, y: c(x, y)[0])(qp.numpy.array(0.5), 1.2)
+        import jax.numpy as jnp
+
+        g0 = qp.grad(lambda x, y: c(x, y)[0])(jnp.array(0.5), 1.2)
         assert qp.math.allclose(g0, -qp.math.sin(0.5))
 
     def test_mcm_integration(self):

@@ -18,6 +18,7 @@
 import math
 from functools import reduce
 
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -570,10 +571,9 @@ class TestCliffordCompile:
         igrads = []
         coeffs = [1.0, 2.0, 3.0]
         for qcirc in [original_qnode, transfmd_qnode]:
-            # Autograd Interface
-            A = qp.numpy.array(coeffs)
+            # NumPy forward execution
+            A = np.array(coeffs)
             fres_numpy = qcirc(A)
-            grad_numpy = qp.grad(qcirc, argnums=0)(A)
 
             # Jax Interface
             A = jax.numpy.array(coeffs)
@@ -588,7 +588,7 @@ class TestCliffordCompile:
             fres_torch = result
 
             funres.append([fres_numpy, fres_jax, fres_torch])
-            igrads.append([grad_numpy, grad_jax, grad_torch])
+            igrads.append([grad_jax, grad_torch])
 
         # Compare results
         assert all(qp.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*funres))

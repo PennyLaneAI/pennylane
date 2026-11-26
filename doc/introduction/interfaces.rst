@@ -14,12 +14,10 @@ connect them easily to the top scientific computing and machine learning librari
 Training and interfaces
 -----------------------
 
-The bridge between the quantum and classical worlds is provided in PennyLane via interfaces to
-automatic differentiation libraries.
-Currently, three libraries are supported: :doc:`NumPy <interfaces/numpy>`, :doc:`PyTorch
-<interfaces/torch>`, and :doc:`JAX <interfaces/jax>`. PennyLane makes
-each of these libraries quantum-aware, allowing quantum circuits to be treated just
-like any other operation. Any automatic differentiation framework can be chosen with any device.
+PennyLane supports :doc:`NumPy <interfaces/numpy>`, :doc:`PyTorch <interfaces/torch>`,
+and :doc:`JAX <interfaces/jax>` interfaces. PyTorch and JAX provide automatic differentiation,
+allowing quantum circuits to be treated like other operations in hybrid models.
+The NumPy interface supports circuit execution without automatic differentiation.
 
 In PennyLane, an automatic differentiation framework is declared using the ``interface`` argument when creating
 a :class:`QNode <pennylane.QNode>`, e.g.,
@@ -45,10 +43,10 @@ a :class:`QNode <pennylane.QNode>`, e.g.,
         import warnings
         warnings.filterwarnings("ignore", category=np.ComplexWarning)
 
-This will allow native numerical objects of the specified library (NumPy arrays, JAX arrays and Torch Tensors) 
-to be passed as parameters to the quantum circuit. It also makes
-the gradients of the quantum circuit accessible to the classical library, enabling the
-optimization of arbitrary hybrid circuits by making use of the library's native optimizers.
+This allows native numerical objects of the specified library (NumPy arrays, JAX arrays and Torch
+tensors) to be passed as parameters to the quantum circuit. With PyTorch and JAX, it also makes
+quantum circuit gradients accessible to the classical library, enabling optimization of hybrid
+circuits with the library's native optimizers.
 
 When specifying an interface, the objects of the chosen framework are converted
 into NumPy objects and are passed to a device in most cases. Exceptions include
@@ -121,36 +119,6 @@ Optimizers are objects which can be used to automatically update the parameters 
 or hybrid machine learning model. The optimizers you should use are dependent on your choice
 of the classical autodifferentiation library, and are available from different access
 points.
-
-NumPy
-~~~~~
-
-When using the standard NumPy framework, PennyLane offers some built-in optimizers.
-Some of these are specific to quantum optimization, such as the :class:`~.QNGOptimizer`,
-:class:`~.RiemannianGradientOptimizer`, :class:`~.RotosolveOptimizer`, :class:`~.RotoselectOptimizer`,
-:class:`~.ShotAdaptiveOptimizer`, and :class:`~.QNSPSAOptimizer`.
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.AdagradOptimizer
-    ~pennylane.AdamOptimizer
-    ~pennylane.AdaptiveOptimizer
-    ~pennylane.GradientDescentOptimizer
-    ~pennylane.MomentumOptimizer
-    ~pennylane.NesterovMomentumOptimizer
-    ~pennylane.QNGOptimizer
-    ~pennylane.RiemannianGradientOptimizer
-    ~pennylane.RMSPropOptimizer
-    ~pennylane.RotosolveOptimizer
-    ~pennylane.RotoselectOptimizer
-    ~pennylane.ShotAdaptiveOptimizer
-    ~pennylane.SPSAOptimizer
-    ~pennylane.QNSPSAOptimizer
-
-:html:`</div>`
 
 PyTorch
 ~~~~~~~
@@ -294,9 +262,14 @@ rules; these can be applied *directly* to QNodes:
 
 .. code-block:: python
 
+    import jax
+    import jax.numpy as jnp
+    import pennylane as qp
+
+    jax.config.update("jax_enable_x64", True)
     dev = qp.device("default.qubit", wires=2)
 
-    @qp.qnode(dev)
+    @qp.qnode(dev, interface="jax")
     def circuit(weights):
         qp.RX(weights[0], wires=0)
         qp.RY(weights[1], wires=1)
@@ -304,17 +277,16 @@ rules; these can be applied *directly* to QNodes:
         qp.RX(weights[2], wires=1)
         return qp.probs(wires=1)
 
->>> weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
+>>> weights = jnp.array([0.1, 0.2, 0.3])
 >>> circuit(weights)
-tensor([0.9658079, 0.0341921], requires_grad=True)
+Array([0.9658079, 0.0341921], dtype=float64)
 >>> qp.gradients.param_shift(circuit)(weights)
-(tensor([-0.04673668,  0.04673668], requires_grad=True),
- tensor([-0.09442394,  0.09442394], requires_grad=True),
- tensor([-0.14409127,  0.14409127], requires_grad=True))
+Array([[-0.04673668, -0.09442394, -0.14409127],
+       [ 0.04673668,  0.09442394,  0.14409127]], dtype=float64)
 
 Note that, while gradient transforms allow quantum gradient rules to be applied directly to QNodes,
 this is not a replacement --- and should not be used instead of --- standard training workflows (for example,
-``qp.grad()`` if using Autograd, or ``loss.backward()`` for PyTorch).
+``jax.grad()`` for JAX, or ``loss.backward()`` for PyTorch).
 This is because gradient transforms do not take into account classical computation nodes, and only
 support gradients of QNodes.
 For more details on available gradient transforms, as well as learning how to define your own
@@ -331,7 +303,7 @@ gradients to be computed:
 
     dev = qp.device("default.qubit", wires=2)
 
-    @qp.qnode(dev)
+    @qp.qnode(dev, interface="jax")
     def circuit(weights):
         qp.RX(weights[0], wires=0)
         qp.RY(weights[1], wires=1)
@@ -339,26 +311,24 @@ gradients to be computed:
         qp.RX(weights[2], wires=1)
         return qp.expval(qp.PauliZ(1))
 
->>> weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
+>>> weights = jnp.array([0.1, 0.2, 0.3])
 >>> circuit(weights)
-tensor(0.9316158, requires_grad=True)
+Array(0.9316158, dtype=float64)
 >>> qp.gradients.param_shift(circuit)(weights)  # gradient
-(tensor(-0.09347337, requires_grad=True),
- tensor(-0.18884787, requires_grad=True),
- tensor(-0.28818254, requires_grad=True))
+Array([-0.09347337, -0.18884787, -0.28818254], dtype=float64)
 >>> def f(weights):
-...     return np.stack(qp.gradients.param_shift(circuit)(weights))
->>> qp.jacobian(f)(weights)  # hessian
-array([[[-0.9316158 ,  0.01894799,  0.0289147 ],
-        [ 0.01894799, -0.9316158 ,  0.05841749],
-        [ 0.0289147 ,  0.05841749, -0.9316158 ]]])
+...     return qp.gradients.param_shift(circuit)(weights)
+>>> jax.jacobian(f)(weights)  # hessian
+Array([[-0.9316158 ,  0.01894799,  0.0289147 ],
+       [ 0.01894799, -0.9316158 ,  0.05841749],
+       [ 0.0289147 ,  0.05841749, -0.9316158 ]], dtype=float64)
 
 Another way to compute higher-order derivatives is by passing the ``max_diff`` and
 ``diff_method`` arguments to the QNode and by successive differentiation:
 
 .. code-block:: python
 
-    @qp.qnode(dev, diff_method="parameter-shift", max_diff=2)
+    @qp.qnode(dev, interface="jax", diff_method="parameter-shift", max_diff=2)
     def circuit(weights):
         qp.RX(weights[0], wires=0)
         qp.RY(weights[1], wires=1)
@@ -366,11 +336,11 @@ Another way to compute higher-order derivatives is by passing the ``max_diff`` a
         qp.RX(weights[2], wires=1)
         return qp.expval(qp.PauliZ(1))
 
->>> weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
->>> qp.jacobian(qp.jacobian(circuit))(weights)  # hessian
-array([[-0.9316158 ,  0.01894799,  0.0289147 ],
+>>> weights = jnp.array([0.1, 0.2, 0.3])
+>>> jax.jacobian(jax.jacobian(circuit))(weights)  # hessian
+Array([[-0.9316158 ,  0.01894799,  0.0289147 ],
        [ 0.01894799, -0.9316158 ,  0.05841749],
-       [ 0.0289147 ,  0.05841749, -0.9316158 ]])
+       [ 0.0289147 ,  0.05841749, -0.9316158 ]], dtype=float64)
 
 Note that the ``max_diff`` argument only applies to gradient transforms and that its default value is ``1``; failing to
 set its value correctly may yield incorrect results for higher-order derivatives. Also, passing
@@ -444,26 +414,6 @@ At the moment, it takes into account the following parameters:
 |                  | ``"direct-hadamard"``         |    :rd:`2`   |     :rd:`2`   |    :rd:`2`   | :rd:`9`      | :rd:`2`       |   :rd:`2`      | :rd:`2`        | :rd:`2`     | :rd:`2`     | :rd:`2`     |
 +                  +-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"reversed-direct-hadamard"``|   :rd:`2`    |     :rd:`2`   |    :rd:`2`   | :rd:`9`      | :rd:`2`       |   :rd:`2`      | :rd:`2`        | :rd:`2`     | :rd:`2`     | :rd:`2`     |
-+------------------+-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-| ``"autograd"``   | ``"device"``                  |  :rd:`3`     |      :rd:`3`  |    :rd:`3`   | :rd:`9`      |   :rd:`3`     |  :rd:`3`       |   :rd:`3`      | :rd:`3`     | :rd:`3`     | :rd:`3`     |
-+                  +-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"backprop"``                |     :gr:`4`  |   :gr:`4`     |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     | :gr:`5`     | :gr:`5`     |
-+                  +-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"adjoint"``                 |      :gr:`7` |     :gr:`7`   |  :gr:`7`     | :rd:`9`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :gr:`7`     | :gr:`7`     | :gr:`7`     |
-+                  +-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"parameter-shift"``         |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :rd:`10`  |   :rd:`10`  |
-+                  +-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"finite-diff"``             |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :gr:`8`   |   :gr:`8`   |
-+                  +-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"spsa"``                    |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :gr:`8`   |   :gr:`8`   |
-+                  +-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"hadamard"``                |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :rd:`11`  |   :rd:`10`  |   :rd:`10`  |
-+                  +-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"reversed-hadamard"``       |   :rd:`10`   |    :rd:`10`   |   :rd:`2`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :rd:`11`  |   :rd:`10`  |   :rd:`10`  |
-+                  +-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"direct-hadamard"``         |   :rd:`10`   |    :rd:`10`   |   :rd:`2`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :rd:`11`  |   :rd:`10`  |   :rd:`10`  |
-+                  +-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"reversed-direct-hadamard"``|   :rd:`10`   |    :rd:`10`   |   :rd:`2`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :rd:`11`  |   :rd:`10`  |   :rd:`10`  |
 +------------------+-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 | ``"jax"``        | ``"device"``                  |  :rd:`3`     |      :rd:`3`  |    :rd:`3`   | :rd:`9`      |   :rd:`3`     |  :rd:`3`       |   :rd:`3`      | :rd:`3`     | :rd:`3`     | :rd:`3`     |
 +                  +-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+

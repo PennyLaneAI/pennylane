@@ -21,6 +21,7 @@ Unit tests for the Prod arithmetic class of qubit operations
 from functools import reduce
 
 import gate_data as gd  # a file containing matrix rep of each gate
+import jax.numpy as jnp
 import numpy as np
 import pytest
 
@@ -765,7 +766,6 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
     @pytest.mark.jax
     def test_prod_jax(self):
         """Test matrix is cast correctly using jax parameters."""
-        import jax.numpy as jnp
 
         theta = jnp.array(1.23)
         rot_params = jnp.array([0.12, 3.45, 6.78])
@@ -900,7 +900,6 @@ class TestProperties:
     @pytest.mark.jax
     def test_is_hermitian_jax(self):
         """Test that is_hermitian works when a jax type scalar is provided."""
-        import jax.numpy as jnp
 
         theta = jnp.array(1.23)
         prod_ops = (
@@ -1233,7 +1232,6 @@ class TestSimplify:
     @pytest.mark.jax
     def test_simplify_pauli_rep_jax(self):
         """Test that simplifying operators with a valid pauli representation works with jax interface."""
-        import jax.numpy as jnp
 
         c1, c2, c3 = jnp.array(1.23), jnp.array(2.0), jnp.array(2.46j)
 
@@ -1395,6 +1393,7 @@ class TestIntegration:
         assert 1 in results
         assert -1 not in results
 
+    @pytest.mark.jax
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Prod op in the measurement process."""
         prod_op = Prod(qp.PauliZ(wires=0), qp.Hadamard(wires=1))
@@ -1405,7 +1404,7 @@ class TestIntegration:
             qp.RX(weights[0], wires=0)
             return qp.expval(prod_op)
 
-        weights = qnp.array([0.1], requires_grad=True)
+        weights = jnp.array([0.1])
         grad = qp.grad(circuit)(weights)
 
         true_grad = -qnp.sqrt(2) * qnp.cos(weights[0] / 2) * qnp.sin(weights[0] / 2)
@@ -1452,8 +1451,8 @@ class TestIntegration:
 
     def test_batched_operation(self):
         """Test that prod with batching gives expected results."""
-        x = qp.numpy.array([1.0, 2.0, 3.0])
-        y = qp.numpy.array([4.0, 5.0, 6.0])
+        x = np.array([1.0, 2.0, 3.0])
+        y = np.array([4.0, 5.0, 6.0])
 
         dev = qp.device("default.qubit", wires=1)
 

@@ -236,7 +236,6 @@ def preserve_jax_x64():
 
 @pytest.fixture(
     params=[
-        pytest.param("autograd", marks=pytest.mark.autograd),
         pytest.param("jax", marks=pytest.mark.jax),
         pytest.param("jax-jit", marks=pytest.mark.jax),
         pytest.param("torch", marks=pytest.mark.torch),
@@ -244,7 +243,7 @@ def preserve_jax_x64():
     scope="function",
 )
 def interface(request):
-    """Automatically parametrize over all interfaces."""
+    """Automatically parametrize over supported differentiable interfaces."""
     yield request.param
 
 

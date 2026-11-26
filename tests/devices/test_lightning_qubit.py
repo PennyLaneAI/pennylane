@@ -15,14 +15,16 @@
 Tests for the accessibility of the Lightning-Qubit device
 """
 
+import jax.numpy as jnp
+import numpy as np
 import pytest
 from flaky import flaky
 
 import pennylane as qp
-from pennylane import numpy as np
 from pennylane.exceptions import QuantumFunctionError
 
 
+@pytest.mark.jax
 def test_integration():
     """Test that the execution of lightning.qubit is possible and agrees with default.qubit"""
     wires = 2
@@ -34,8 +36,8 @@ def test_integration():
         qp.templates.StronglyEntanglingLayers(weights, wires=range(wires))
         return qp.expval(qp.PauliZ(0))
 
-    weights = np.random.random(
-        qp.templates.StronglyEntanglingLayers.shape(layers, wires), requires_grad=True
+    weights = jnp.array(
+        np.random.random(qp.templates.StronglyEntanglingLayers.shape(layers, wires))
     )
 
     qn_l = qp.QNode(circuit, dev_l)

@@ -762,64 +762,28 @@ def circuit_with_trainable_H(device, grouping_strategy):
 class TestDifferentiability:
     """Tests the differentiability of the ``split_non_commuting`` transform"""
 
-    @pytest.mark.autograd
+    @pytest.mark.torch
     @pytest.mark.parametrize("grouping_strategy", [None, "qwc", "wires"])
-    def test_autograd(self, grouping_strategy):
-        """Tests that the output of ``split_non_commuting`` is differentiable with autograd"""
-
-        import pennylane.numpy as pnp
-
-        dev = qp.device("default.qubit", wires=2)
-        circuit = circuit_to_test(dev, grouping_strategy=grouping_strategy)
-
-        def cost(theta, phi):
-            res = circuit(theta, phi)
-            return qp.math.concatenate([res[0], qp.math.stack(res[1:])], axis=0)
-
-        params = pnp.array(pnp.pi / 4), pnp.array(3 * pnp.pi / 4)
-        grad1, grad2 = qp.jacobian(cost)(*params)
-
-        expected_grad_1 = expected_grad_param_0
-        expected_grad_2 = expected_grad_param_1
-
-        assert qp.math.allclose(grad1, expected_grad_1)
-        assert qp.math.allclose(grad2, expected_grad_2)
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("grouping_strategy", [None, "qwc", "wires"])
-    def test_trainable_hamiltonian_autograd(self, grouping_strategy):
-        """Tests that measurements of trainable Hamiltonians are differentiable"""
-
-        import pennylane.numpy as pnp
-
-        dev = qp.device("default.qubit", wires=2)
-        circuit = circuit_with_trainable_H(dev, grouping_strategy=grouping_strategy)
-
-        params = pnp.array(pnp.pi / 4), pnp.array(3 * pnp.pi / 4)
-        actual = qp.jacobian(circuit)(*params)
-
-        assert qp.math.allclose(actual, [-0.5, np.cos(np.pi / 4)])
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("grouping_strategy", [None, "qwc", "wires"])
-    def test_non_trainable_obs_autograd(self, grouping_strategy):
-        """Test that we can measure a hamiltonian with non-trainable autograd coefficients."""
+    def test_non_trainable_obs_torch(self, grouping_strategy):
+        """Test that fixed coefficients remain constant during native differentiation."""
+        import torch
+        from torch.autograd.functional import jacobian as torch_jacobian
 
         dev = qp.device("default.qubit")
 
         @split_non_commuting(grouping_strategy=grouping_strategy)
-        @qp.qnode(dev)
+        @qp.qnode(dev, interface="torch")
         def circuit(param):
             qp.RX(param, 0)
-            c1 = qp.numpy.array(0.1, requires_grad=False)
-            c2 = qp.numpy.array(0.2, requires_grad=False)
+            c1 = torch.tensor(0.1, dtype=torch.float64, requires_grad=False)
+            c2 = torch.tensor(0.2, dtype=torch.float64, requires_grad=False)
             H = c1 * qp.Z(0) + c2 * qp.X(0) + c2 * qp.I(0)
             return qp.expval(H)
 
-        x = qp.numpy.array(0.5)
-        actual = qp.grad(circuit)(x)
+        x = torch.tensor(0.5, dtype=torch.float64, requires_grad=True)
+        actual = torch_jacobian(circuit, x)
 
-        assert qp.math.allclose(actual, -0.1 * np.sin(x))
+        assert qp.math.allclose(actual, -0.1 * torch.sin(x))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])

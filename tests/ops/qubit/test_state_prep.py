@@ -190,7 +190,7 @@ class TestStandardValidityBasisState:
 
 
 @pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
+@pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
 def test_ml_interface(interface):
     """Tests all the ml interfaces."""
 
@@ -510,19 +510,6 @@ class TestStateVector:
         result = torch.stack([circuit(row, weights) for row in features])
         assert qp.math.get_interface(result) == "torch"
         assert qp.math.shape(result) == (2,)
-
-    def test_StatePrep_backprop_autograd(self):
-        """Test backprop with autograd"""
-
-        @qp.qnode(qp.device("default.qubit"), diff_method="backprop")
-        def circuit(state):
-            qp.StatePrep(state, wires=(0,))
-            qp.S(1)
-            return qp.expval(qp.PauliZ(0))
-
-        state = qp.numpy.array([1.0, 0.0])
-        grad = qp.jacobian(circuit)(state)
-        assert np.array_equal(grad, [2.0, 0.0])
 
     @pytest.mark.torch
     def test_StatePrep_backprop_torch(self):

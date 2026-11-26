@@ -118,8 +118,9 @@ class SProd(ScalarSymbolicOp):
                 qp.RX(theta, wires=0)
                 return qp.expval(qp.s_prod(scalar, qp.Hadamard(wires=0)))
 
-        >>> scalar, theta = (1.2, 3.4)
-        >>> qp.grad(circuit, argnums=[0,1])(scalar, theta)
+        >>> import jax.numpy as jnp
+        >>> scalar, theta = jnp.array([1.2, 3.4])
+        >>> tuple(np.asarray(g, dtype=float) for g in qp.grad(circuit, argnums=[0,1])(scalar, theta))
         (array(-0.6836...), array(0.2168...))
 
     """

@@ -15,14 +15,16 @@
 
 import logging
 
+import jax.numpy as jnp
+import numpy as np
 import pytest
 
 import pennylane as qp
 
 _grad_log_map = {
-    "adjoint": "diff_method=adjoint, interface=autograd, grad_on_execution=best, gradient_kwargs={}",
-    "backprop": "diff_method=backprop, interface=autograd, grad_on_execution=best, gradient_kwargs={}",
-    "parameter-shift": "diff_method=<transform: param_shift>",
+    "adjoint": "diff_method=adjoint, interface=auto, grad_on_execution=best, gradient_kwargs={}",
+    "backprop": "diff_method=backprop, interface=auto, grad_on_execution=best, gradient_kwargs={}",
+    "parameter-shift": "diff_method=parameter-shift, interface=auto, grad_on_execution=best, gradient_kwargs={}",
 }
 
 
@@ -61,7 +63,7 @@ class TestLogging:
         dev = qp.device("default.qubit", wires=2)
 
         with caplog.at_level(logging.DEBUG):
-            params = qp.numpy.array(0.1234)
+            params = np.array(0.1234)
 
             @qp.qnode(dev, diff_method=None)
             def circuit(params):
@@ -69,7 +71,7 @@ class TestLogging:
                 return qp.expval(qp.PauliZ(0))
 
             circuit(params)
-        assert len(caplog.records) == 11
+        assert len(caplog.records) == 10
         log_records_expected = [
             (
                 "pennylane.workflow.qnode",
@@ -100,19 +102,20 @@ class TestLogging:
             ),
         ]
 
-        for expected, actual in zip(log_records_expected, caplog.records[:5]):
+        for expected, actual in zip(log_records_expected, caplog.records):
             assert expected[0] in actual.name
             for msg in expected[1]:
                 assert msg in actual.getMessage()
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
-        "diff_method,num_records", [("parameter-shift", 23), ("backprop", 13), ("adjoint", 17)]
+        "diff_method,num_records", [("parameter-shift", 21), ("backprop", 13), ("adjoint", 15)]
     )
     def test_dq_qnode_execution_grad(self, caplog, diff_method, num_records):
         "Test logging of QNode with parametrized gradients"
 
         dev = qp.device("default.qubit", wires=2)
-        params = qp.numpy.array(0.1234)
+        params = jnp.array(0.1234)
 
         # Single log entry, QNode creation
         with caplog.at_level(logging.DEBUG):
@@ -124,7 +127,8 @@ class TestLogging:
 
             qp.grad(circuit)(params)
 
-        assert len(caplog.records) == num_records
+        records = [record for record in caplog.records if record.name.startswith("pennylane.")]
+        assert len(records) == num_records
 
         log_records_expected = [
             (
@@ -144,7 +148,7 @@ class TestLogging:
             ),
         ]
 
-        for expected, actual in zip(log_records_expected, caplog.records[:1]):
+        for expected, actual in zip(log_records_expected, (records[0], records[3])):
             assert expected[0] in actual.name
             for exp_msg in expected[1]:
                 assert exp_msg in actual.getMessage()
