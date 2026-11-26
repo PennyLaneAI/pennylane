@@ -1063,7 +1063,7 @@ Improvements 🛠
   :class:`~.QROMLoad`. This replaces squaring the momentum with a :class:`~.SignedOutSquare` and
   multiplying it with the coefficient with an :class:`~.OutMultiplier`, and rounds the full phase
   instead of the coefficient to the precision of the phase-gradient register.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10607) <https://github.com/PennyLaneAI/pennylane/pull/10607>`__
 
 * Added ``pennylane.core.get_op_class_by_name``
   to retrieve built-in and user-defined ``Operator2`` classes by name. Operator classes are
