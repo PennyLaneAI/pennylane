@@ -15,8 +15,6 @@
 
 """Built-in decomposition rules for qubit.arithmetic_ops."""
 
-from collections import Counter
-
 from pennylane import ops
 from pennylane.decomposition import (
     add_decomps,
@@ -30,9 +28,10 @@ from pennylane.ops.qubit.arithmetic_ops import (
     QubitCarry,
     QubitSum,
     _integer_comparator_ge_impl,
+    _integer_comparator_greater_equal_resources,
+    _integer_comparator_less_than_resources,
     _integer_comparator_lt_impl,
 )
-from pennylane.typing import Wire
 from pennylane.wires import WiresLike
 
 
@@ -59,82 +58,11 @@ add_decomps("Adjoint(QubitSum)", self_adjoint_legacy)
 add_decomps("Pow(QubitSum)", pow_involutory)
 
 
-def _integer_comparator_less_than_resources(num_wires, value, num_work_wires, **_):
-
-    if value == 0:
-        return {}
-
-    if value > 2 ** (num_wires - 1) - 1:
-        return {ops.X: 1}
-
-    num_controls = num_wires - 1
-    binary_str = format(value, f"0{num_controls}b")
-    last_significant = binary_str.rfind("1")
-    gate_counts = {ops.X: (last_significant + 1) * 2}
-
-    first_significant = binary_str.find("1")
-    gate_counts[
-        ops.MultiControlledX(
-            Wire[first_significant + 2],
-            work_wires=Wire[num_work_wires + num_wires - 2 - first_significant],
-        )
-    ] = 1
-
-    while (first_significant := binary_str.find("1", first_significant + 1)) != -1:
-        gate_counts[
-            ops.MultiControlledX(
-                Wire[first_significant + 2],
-                work_wires=Wire[num_work_wires + num_wires - 2 - first_significant],
-            )
-        ] = 1
-
-    return gate_counts
-
-
 @register_condition(lambda geq, **_: not geq)
 @register_resources(_integer_comparator_less_than_resources, name="less_than")
 def integer_comparator_less_than(wires, value, work_wires, **_):
     """Decompose ``IntegerComparator`` for the ``n < value`` condition."""
     return _integer_comparator_lt_impl(wires, value, work_wires)
-
-
-def _integer_comparator_greater_equal_resources(num_wires, value, num_work_wires, **_):
-
-    # If the value is 0, the flipping condition is always satisfied.
-    if value == 0:
-        return {ops.X: 1}
-
-    num_controls = num_wires - 1
-
-    if value > 2**num_controls - 1:
-        return {}
-
-    binary_str = format(value, f"0{num_controls}b")
-    first_zero = binary_str.find("0")
-
-    if first_zero == -1:
-        return {ops.MultiControlledX(Wire[num_controls + 1], work_wires=Wire[num_work_wires]): 1}
-
-    gate_set = Counter()
-
-    gate_set[
-        ops.MultiControlledX(
-            Wire[first_zero + 2], work_wires=Wire[num_work_wires + num_wires - 2 - first_zero]
-        )
-    ] = 1
-    gate_set[ops.X] = 2
-
-    while (first_zero := binary_str.find("0", first_zero + 1)) != -1:
-        gate_set[
-            ops.MultiControlledX(
-                Wire[first_zero + 2], work_wires=Wire[num_work_wires + num_wires - 2 - first_zero]
-            )
-        ] = 1
-        gate_set[ops.X] += 2
-
-    gate_set[ops.MultiControlledX(Wire[num_controls + 1], work_wires=Wire[num_work_wires])] += 1
-
-    return dict(gate_set)
 
 
 @register_condition(lambda geq, **_: geq)

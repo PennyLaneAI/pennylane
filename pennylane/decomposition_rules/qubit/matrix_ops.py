@@ -31,6 +31,7 @@ from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     _decompose_3_cnots,
     _is_jax_jit,
     _qubit_unitary_multi_qubit_impl,
+    _qubit_unitary_multi_qubit_resources,
     _su2_rot_decomp,
     _su2_xyx_decomp,
     _su2_xzx_decomp,
@@ -105,27 +106,6 @@ def qubit_unitary_two_qubit(U, wires, **_):
     )(U, wires, initial_phase)
     total_phase = initial_phase + additional_phase
     ops.cond(math.logical_not(math.allclose(total_phase, 0)), ops.GlobalPhase)(-total_phase)
-
-
-def _qubit_unitary_multi_qubit_resources(U, wires, **_):  # pylint: disable=unused-argument
-    num_wires = len(wires)
-    return {
-        QubitUnitary(
-            Complex[2 ** (num_wires - 1), 2 ** (num_wires - 1)], wires=Wire[num_wires - 1]
-        ): 4,
-        templates.SelectPauliRot(
-            Float[2 ** (num_wires - 1)],
-            control_wires=Wire[num_wires - 1],
-            target_wire=Wire[1],
-            rot_axis="Z",
-        ): 2,
-        templates.SelectPauliRot(
-            Float[2 ** (num_wires - 1)],
-            control_wires=Wire[num_wires - 1],
-            target_wire=Wire[1],
-            rot_axis="Y",
-        ): 1,
-    }
 
 
 @register_condition(lambda U, wires, **_: len(wires) > 2)

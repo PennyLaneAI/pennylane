@@ -32,6 +32,7 @@ from pennylane.math.decomposition import (
     zxz_rotation_angles,
     zyz_rotation_angles,
 )
+from pennylane.typing import Complex, Float, Wire
 from pennylane.wires import Wires
 
 #: Maximum tolerated error for a valid real SO(4) decomposition.
@@ -331,6 +332,27 @@ def _su2_zxz_decomp(U, wires, **__):
     ops.RX(theta, wires=wires[0])
     ops.RZ(omega, wires=wires[0])
     return alpha
+
+
+def _qubit_unitary_multi_qubit_resources(U, wires, **_):  # pylint: disable=unused-argument
+    num_wires = len(wires)
+    return {
+        ops.QubitUnitary(
+            Complex[2 ** (num_wires - 1), 2 ** (num_wires - 1)], wires=Wire[num_wires - 1]
+        ): 4,
+        templates.SelectPauliRot(
+            Float[2 ** (num_wires - 1)],
+            control_wires=Wire[num_wires - 1],
+            target_wire=Wire[1],
+            rot_axis="Z",
+        ): 2,
+        templates.SelectPauliRot(
+            Float[2 ** (num_wires - 1)],
+            control_wires=Wire[num_wires - 1],
+            target_wire=Wire[1],
+            rot_axis="Y",
+        ): 1,
+    }
 
 
 def _qubit_unitary_multi_qubit_impl(U, wires, **__):

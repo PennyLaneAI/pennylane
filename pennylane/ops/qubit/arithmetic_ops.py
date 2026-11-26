@@ -16,6 +16,7 @@ This submodule contains the discrete-variable quantum operations that perform
 arithmetic operations on their input states.
 """
 
+from collections import Counter
 from copy import copy
 
 import numpy as np
@@ -23,7 +24,7 @@ import numpy as np
 import pennylane as qp
 from pennylane.core.operator import Operation
 from pennylane.decomposition.utils import _to_op_list
-from pennylane.typing import FlatPytree, TensorLike
+from pennylane.typing import FlatPytree, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -581,6 +582,38 @@ class IntegerComparator(Operation):
         return super().pow(z % 2)
 
 
+def _integer_comparator_less_than_resources(num_wires, value, num_work_wires, **_):
+
+    if value == 0:
+        return {}
+
+    if value > 2 ** (num_wires - 1) - 1:
+        return {qp.X: 1}
+
+    num_controls = num_wires - 1
+    binary_str = format(value, f"0{num_controls}b")
+    last_significant = binary_str.rfind("1")
+    gate_counts = {qp.X: (last_significant + 1) * 2}
+
+    first_significant = binary_str.find("1")
+    gate_counts[
+        qp.MultiControlledX(
+            Wire[first_significant + 2],
+            work_wires=Wire[num_work_wires + num_wires - 2 - first_significant],
+        )
+    ] = 1
+
+    while (first_significant := binary_str.find("1", first_significant + 1)) != -1:
+        gate_counts[
+            qp.MultiControlledX(
+                Wire[first_significant + 2],
+                work_wires=Wire[num_work_wires + num_wires - 2 - first_significant],
+            )
+        ] = 1
+
+    return gate_counts
+
+
 def _integer_comparator_lt_impl(wires, value, work_wires):
     """Decompose the ``IntegerComparator`` for when the flipping condition is ``n < value``.
 
@@ -671,6 +704,45 @@ def _integer_comparator_lt_impl(wires, value, work_wires):
     for i in range(last_significant + 1):
         if control_value_tracker[i] == 0:
             qp.X(wires[i])
+
+
+def _integer_comparator_greater_equal_resources(num_wires, value, num_work_wires, **_):
+
+    # If the value is 0, the flipping condition is always satisfied.
+    if value == 0:
+        return {qp.X: 1}
+
+    num_controls = num_wires - 1
+
+    if value > 2**num_controls - 1:
+        return {}
+
+    binary_str = format(value, f"0{num_controls}b")
+    first_zero = binary_str.find("0")
+
+    if first_zero == -1:
+        return {qp.MultiControlledX(Wire[num_controls + 1], work_wires=Wire[num_work_wires]): 1}
+
+    gate_set = Counter()
+
+    gate_set[
+        qp.MultiControlledX(
+            Wire[first_zero + 2], work_wires=Wire[num_work_wires + num_wires - 2 - first_zero]
+        )
+    ] = 1
+    gate_set[qp.X] = 2
+
+    while (first_zero := binary_str.find("0", first_zero + 1)) != -1:
+        gate_set[
+            qp.MultiControlledX(
+                Wire[first_zero + 2], work_wires=Wire[num_work_wires + num_wires - 2 - first_zero]
+            )
+        ] = 1
+        gate_set[qp.X] += 2
+
+    gate_set[qp.MultiControlledX(Wire[num_controls + 1], work_wires=Wire[num_work_wires])] += 1
+
+    return dict(gate_set)
 
 
 def _integer_comparator_ge_impl(wires, value, work_wires):

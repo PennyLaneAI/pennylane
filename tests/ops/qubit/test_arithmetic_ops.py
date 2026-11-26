@@ -412,7 +412,9 @@ class TestIntegerComparator:
     @pytest.mark.parametrize("geq", [True, False])
     def test_compute_decomposition_uses_builtin_helpers(self, geq, mocker):
         """The static API bypasses registry lookup and queues its operations once."""
-        mocker.patch("pennylane.list_decomps", side_effect=AssertionError("unexpected registry lookup"))
+        mocker.patch(
+            "pennylane.list_decomps", side_effect=AssertionError("unexpected registry lookup")
+        )
         with qp.queuing.AnnotatedQueue() as queue:
             decomposition = qp.IntegerComparator.compute_decomposition(2, [0, 1, 2], geq=geq)
 
