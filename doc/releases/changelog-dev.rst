@@ -4,6 +4,10 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* The new :class:`~.RZLayer` applies :class:`~.RZ` rotations by the same angle to each of its
+  wires. The shared angle allows for more efficient decomposition rules than individual rotations.
+  `(#10508) <https://github.com/PennyLaneAI/pennylane/pull/10508>`__
+
 * Added a lattice-surgery decomposition for :class:`~.MultiX` with one control wire,
   using three Pauli product measurements and one auxiliary qubit.
   `(#10558) <https://github.com/PennyLaneAI/pennylane/pull/10558>`__
@@ -1288,6 +1292,11 @@ Improvements 🛠
   register, ``x_wires``, is smaller than the size of the second addend register, ``y_wires``.
   `(#9807) <https://github.com/PennyLaneAI/pennylane/pull/9807>`__
 
+* Updated the decomposition of a controlled :class:`~.SemiAdder` to use one controlled :class:`~.CNOT`
+  fewer if the first addend register ``x_wires`` is at least as large as the second addend register
+  ``y_wires``. The same improvement is applied to the decomposition of :class:`~.OutSquare`.
+  `(#10599) <https://github.com/PennyLaneAI/pennylane/pull/10599>`__
+
 * Type aliases ``Int``, ``Float``, ``Complex``, ``Bool``, and ``Wire`` have been introduced to allow for intuitive
   abstract type notation.
   `(#9701) <https://github.com/PennyLaneAI/pennylane/pull/9701>`__
@@ -1671,6 +1680,10 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
+
+* :func:`~.sign_expand` now requires `controls` wires instead of defaulting to ``("Hadamard", "Target")``
+  as string wires will no longer be supported.
+  `(#10592) <https://github.com/PennyLaneAI/pennylane/pull/10592>`__
 
 * The ``pennylane.noise`` module has been removed, including ``NoiseModel``,
   ``add_noise``, ``insert``, noise mitigation transforms (``mitigate_with_zne``,
@@ -2098,6 +2111,10 @@ Breaking changes 💔
 * :class:`~.Barrier` no longer accepts ``only_visual``. Barriers are preserved by
   simplification and separate compilation into blocks.
   `(#10413) <https://github.com/PennyLaneAI/pennylane/pull/10413>`__
+
+* ``qp.BooleanFn``, the ``pennylane.boolean_fn`` module, and ``qp.operation.is_trainable``
+  have been removed. Legacy device stopping conditions are now ordinary callables.
+  `(#10601) <https://github.com/PennyLaneAI/pennylane/pull/10601>`__
 
 Deprecations 👋
 ~~~~~~~~~~~~~~~
@@ -2690,6 +2707,9 @@ Documentation 📝
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* Fixed :func:`~.ctrl` to return the original operator or callable when the control wires are empty.
+  `(#10595) <https://github.com/PennyLaneAI/pennylane/pull/10595>`__
 
 * Resource analysis of qjit-compiled circuits now reports :func:`~.pauli_measure` operations
   as ``PPM-w<n>`` when Catalyst captures them as generic measurements.
