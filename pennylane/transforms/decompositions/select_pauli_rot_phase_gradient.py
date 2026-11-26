@@ -152,17 +152,18 @@ def make_selectpaulirot_to_phase_gradient_decomp(
         np.random.seed(35)
         angles = np.random.rand(2**3)
 
-        angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
-        phase_grad_wires = qp.wires.Wires([f"phg_{i}" for i in range(prec)])
-        work_wires = qp.wires.Wires([f"work_{i}" for i in range(prec - 1)])
+        angle_wires = qp.wires.Wires(range(4, 4 + prec))
+        phase_grad_wires = qp.wires.Wires(range(4 + prec, 4 + 2 * prec))
+        work_wires = qp.wires.Wires(range(4 + 2 * prec, 4 + 3 * prec - 1))
 
         custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
             angle_wires, phase_grad_wires, work_wires
         )
 
+
         @qp.transforms._tape_decompose(
             gate_set={"QROMLoad", "Adjoint(QROMLoad)", "SemiAdder", "MultiControlledX", "GlobalPhase"},
-            fixed_decomps={qp.SelectPauliRot: custom_decomp}
+            fixed_decomps={qp.SelectPauliRot: custom_decomp},
         )
         @qp.qnode(qp.device("null.qubit"))
         def circuit(angles):
@@ -178,18 +179,18 @@ def make_selectpaulirot_to_phase_gradient_decomp(
 
     >>> wire_order = [0, 1, 2, 3] + angle_wires + phase_grad_wires + work_wires
     >>> print(qp.draw(circuit, wire_order=wire_order, show_matrices=False)(angles))
-         0: ─╭◑─────────────────────────────────────────╭◑─────────────┤ ╭State
-         1: ─├◑─────────────────────────────────────────├◑─────────────┤ ├State
-         2: ─├◑─────────────────────────────────────────├◑─────────────┤ ├State
-         3: ─│─────────────╭○─╭○─╭○────────────╭○─╭○─╭○─│──────────────┤ ├State
-     aux_0: ─├QROMLoad(M0)─│──│──│──╭SemiAdder─│──│──│──├QROMLoad(M0)†─┤ ├State
-     aux_1: ─├QROMLoad(M0)─│──│──│──├SemiAdder─│──│──│──├QROMLoad(M0)†─┤ ├State
-     aux_2: ─├QROMLoad(M0)─│──│──│──├SemiAdder─│──│──│──├QROMLoad(M0)†─┤ ├State
-     phg_0: ─│─────────────╰X─│──│──├SemiAdder─│──│──╰X─│──────────────┤ ├State
-     phg_1: ─│────────────────╰X─│──├SemiAdder─│──╰X────│──────────────┤ ├State
-     phg_2: ─│───────────────────╰X─├SemiAdder─╰X───────│──────────────┤ ├State
-    work_0: ─├work──────────────────├SemiAdder──────────├work──────────┤ ├State
-    work_1: ─╰work──────────────────╰SemiAdder──────────╰work──────────┤ ╰State
+     0: ─╭◑─────────────────────────────────────────╭◑─────────────┤ ╭State
+     1: ─├◑─────────────────────────────────────────├◑─────────────┤ ├State
+     2: ─├◑─────────────────────────────────────────├◑─────────────┤ ├State
+     3: ─│─────────────╭○─╭○─╭○────────────╭○─╭○─╭○─│──────────────┤ ├State
+     4: ─├QROMLoad(M0)─│──│──│──╭SemiAdder─│──│──│──├QROMLoad(M0)†─┤ ├State
+     5: ─├QROMLoad(M0)─│──│──│──├SemiAdder─│──│──│──├QROMLoad(M0)†─┤ ├State
+     6: ─├QROMLoad(M0)─│──│──│──├SemiAdder─│──│──│──├QROMLoad(M0)†─┤ ├State
+     7: ─│─────────────╰X─│──│──├SemiAdder─│──│──╰X─│──────────────┤ ├State
+     8: ─│────────────────╰X─│──├SemiAdder─│──╰X────│──────────────┤ ├State
+     9: ─│───────────────────╰X─├SemiAdder─╰X───────│──────────────┤ ├State
+    10: ─├work──────────────────├SemiAdder──────────├work──────────┤ ├State
+    11: ─╰work──────────────────╰SemiAdder──────────╰work──────────┤ ╰State
 
     .. details::
         :title: Usage details
@@ -221,8 +222,8 @@ def make_selectpaulirot_to_phase_gradient_decomp(
             from pennylane.transforms.decompositions import phase_gradient_precision_stats
 
             angles = [
-                np.array([0, 1/2, 1/4, 0, 0, 1/2, 0, 1/4]) * 4 * np.pi, # at most 2 bits
-                np.array([1/8, 0, 0, 0, 1/2, 0, 0, 0]) * 4 * np.pi, # at most 3 bits
+                np.array([0, 1 / 2, 1 / 4, 0, 0, 1 / 2, 0, 1 / 4]) * 4 * np.pi,  # at most 2 bits
+                np.array([1 / 8, 0, 0, 0, 1 / 2, 0, 0, 0]) * 4 * np.pi,  # at most 3 bits
             ]
             precision_stats = phase_gradient_precision_stats(angles, prec, qp.SelectPauliRot)
 
@@ -230,9 +231,10 @@ def make_selectpaulirot_to_phase_gradient_decomp(
                 angle_wires, phase_grad_wires, work_wires, precision_stats=precision_stats
             )
 
+
             @qp.transforms._tape_decompose(
                 gate_set={"QROMLoad", "Adjoint(QROMLoad)", "SemiAdder", "MultiControlledX", "GlobalPhase"},
-                fixed_decomps={qp.SelectPauliRot: truncating_decomp}
+                fixed_decomps={qp.SelectPauliRot: truncating_decomp},
             )
             @qp.qnode(qp.device("null.qubit"))
             def truncated_circuit(angles):
@@ -244,16 +246,16 @@ def make_selectpaulirot_to_phase_gradient_decomp(
         >>> precision_stats
         {2: 1, 3: 1}
         >>> print(qp.draw(truncated_circuit, wire_order=wire_order, show_matrices=False)(angles[0]))
-             0: ─╭◑───────────────────────────────────╭◑─────────────┤ ╭State
-             1: ─├◑───────────────────────────────────├◑─────────────┤ ├State
-             2: ─├◑───────────────────────────────────├◑─────────────┤ ├State
-             3: ─│─────────────╭○─╭○────────────╭○─╭○─│──────────────┤ ├State
-         aux_0: ─├QROMLoad(M0)─│──│──╭SemiAdder─│──│──├QROMLoad(M0)†─┤ ├State
-         aux_1: ─├QROMLoad(M0)─│──│──├SemiAdder─│──│──├QROMLoad(M0)†─┤ ├State
-         phg_0: ─│─────────────╰X─│──├SemiAdder─│──╰X─│──────────────┤ ├State
-         phg_1: ─│────────────────╰X─├SemiAdder─╰X────│──────────────┤ ├State
-        work_0: ─├work───────────────├SemiAdder───────├work──────────┤ ├State
-        work_1: ─╰work───────────────╰SemiAdder───────╰work──────────┤ ╰State
+         0: ─╭◑───────────────────────────────────╭◑─────────────┤ ╭State
+         1: ─├◑───────────────────────────────────├◑─────────────┤ ├State
+         2: ─├◑───────────────────────────────────├◑─────────────┤ ├State
+         3: ─│─────────────╭○─╭○────────────╭○─╭○─│──────────────┤ ├State
+         4: ─├QROMLoad(M0)─│──│──╭SemiAdder─│──│──├QROMLoad(M0)†─┤ ├State
+         5: ─├QROMLoad(M0)─│──│──├SemiAdder─│──│──├QROMLoad(M0)†─┤ ├State
+         7: ─│─────────────╰X─│──├SemiAdder─│──╰X─│──────────────┤ ├State
+         8: ─│────────────────╰X─├SemiAdder─╰X────│──────────────┤ ├State
+        10: ─├work───────────────├SemiAdder───────├work──────────┤ ├State
+        11: ─╰work───────────────╰SemiAdder───────╰work──────────┤ ╰State
 
         Finally, keep the following in mind when using ``precision_stats``:
 

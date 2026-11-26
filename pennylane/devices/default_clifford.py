@@ -206,9 +206,9 @@ class DefaultClifford(Device):  # pylint: disable=abstract-method
     `stim <https://github.com/quantumlib/stim/>`_.
 
     Args:
-        wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
-            contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
-            (``['aux_wire', 'q1', 'q2']``). Default ``None`` if not specified.
+        wires (int, Iterable[int]): Number of wires present on the device, or iterable that
+            contains unique non-negative integer wire labels (e.g., ``[0, 2, 5]``). Default ``None``
+            if not specified.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots to use in executions involving
             this device.
         check_clifford (bool): Check if all the gate operations in the circuits to be executed are Clifford. Default is ``True``.
