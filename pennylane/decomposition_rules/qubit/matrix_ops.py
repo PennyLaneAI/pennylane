@@ -278,7 +278,7 @@ def multi_qubit_decomposition(U, wires):
     """
 
     with queuing.AnnotatedQueue() as q:
-        _qubit_unitary_multi_qubit_impl(U, wires)
+        qubit_unitary_multi_qubit(U, wires)
 
     # If there is an active queuing context, queue the decomposition so that expand works
     if queuing.QueuingManager.recording():
@@ -326,12 +326,19 @@ def _su2_rot_decomp(U, wires, **__):
     return alpha
 
 
+# RZ is produced in a special case, which has to be accounted for.
+rot_decomp_rule = make_one_qubit_unitary_rule(_su2_rot_decomp, {ops.Rot: 1, ops.RZ: 1}, "rot")
+
+
 def _su2_zyz_decomp(U, wires, **__):
     phi, theta, omega, alpha = zyz_rotation_angles(U)
     ops.RZ(phi, wires=wires[0])
     ops.RY(theta, wires=wires[0])
     ops.RZ(omega, wires=wires[0])
     return alpha
+
+
+zyz_decomp_rule = make_one_qubit_unitary_rule(_su2_zyz_decomp, {ops.RZ: 2, ops.RY: 1}, "zyz")
 
 
 def _su2_xyx_decomp(U, wires, **__):
@@ -343,12 +350,18 @@ def _su2_xyx_decomp(U, wires, **__):
     return alpha
 
 
+xyx_decomp_rule = make_one_qubit_unitary_rule(_su2_xyx_decomp, {ops.RX: 2, ops.RY: 1}, "xyx")
+
+
 def _su2_xzx_decomp(U, wires, **__):
     phi, theta, omega, alpha = xzx_rotation_angles(U)
     ops.RX(phi, wires=wires[0])
     ops.RZ(theta, wires=wires[0])
     ops.RX(omega, wires=wires[0])
     return alpha
+
+
+xzx_decomp_rule = make_one_qubit_unitary_rule(_su2_xzx_decomp, {ops.RX: 2, ops.RZ: 1}, "xzx")
 
 
 def _su2_zxz_decomp(U, wires, **__):
@@ -359,11 +372,6 @@ def _su2_zxz_decomp(U, wires, **__):
     return alpha
 
 
-# RZ is produced in a special case, which has to be accounted for.
-rot_decomp_rule = make_one_qubit_unitary_rule(_su2_rot_decomp, {ops.Rot: 1, ops.RZ: 1}, "rot")
-zyz_decomp_rule = make_one_qubit_unitary_rule(_su2_zyz_decomp, {ops.RZ: 2, ops.RY: 1}, "zyz")
-xyx_decomp_rule = make_one_qubit_unitary_rule(_su2_xyx_decomp, {ops.RX: 2, ops.RY: 1}, "xyx")
-xzx_decomp_rule = make_one_qubit_unitary_rule(_su2_xzx_decomp, {ops.RX: 2, ops.RZ: 1}, "xzx")
 zxz_decomp_rule = make_one_qubit_unitary_rule(_su2_zxz_decomp, {ops.RZ: 2, ops.RX: 1}, "zxz")
 
 
@@ -425,8 +433,10 @@ def _qubit_unitary_multi_qubit_resources(U, wires, **_):  # pylint: disable=unus
     }
 
 
-def _qubit_unitary_multi_qubit_impl(U, wires, **__):
-    """Apply the numerical decomposition of a multi-qubit unitary."""
+@register_condition(lambda U, wires, **_: len(wires) > 2)
+@register_resources(_qubit_unitary_multi_qubit_resources, name="multi_qubit")
+def qubit_unitary_multi_qubit(U, wires, **__):
+    """The decomposition rule for a multi-qubit unitary."""
 
     # Combining the two equalities in Fig. 14 [https://arxiv.org/pdf/quant-ph/0504100], we can express
     # a n-qubit unitary U with four (n-1)-qubit unitaries and three multiplexed rotations ( via `qp.SelectPauliRot`)
@@ -465,13 +475,6 @@ def _qubit_unitary_multi_qubit_impl(U, wires, **__):
     )
 
     ops.QubitUnitary(u11, wires=wires[1:])
-
-
-@register_condition(lambda U, wires, **_: len(wires) > 2)
-@register_resources(_qubit_unitary_multi_qubit_resources, name="multi_qubit")
-def qubit_unitary_multi_qubit(U, wires, **__):
-    """The decomposition rule for a multi-qubit unitary."""
-    return _qubit_unitary_multi_qubit_impl(U, wires, **__)
 
 
 ####################
