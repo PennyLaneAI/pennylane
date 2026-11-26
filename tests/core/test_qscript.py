@@ -101,7 +101,6 @@ class TestInitialization:
         assert qs._trainable_params is None
         assert qs.trainable_params == []
         assert qs._trainable_params == []
-        assert qs._graph is None
         assert qs._shots.total_shots is None
         assert qs._batch_size is _UNSET_BATCH_SIZE
         assert qs.batch_size is None
@@ -165,6 +164,22 @@ class TestInitialization:
         """Test the num_preps property."""
         assert QuantumScript(ops).num_preps == num_preps
 
+    @pytest.mark.parametrize(
+        "shots, total_shots, shot_vector",
+        [
+            (None, None, ()),
+            (1, 1, ((1, 1),)),
+            (10, 10, ((10, 1),)),
+            ([1, 1, 2, 3, 1], 8, ((1, 2), (2, 1), (3, 1), (1, 1))),
+            (Shots([1, 1, 2]), 4, ((1, 2), (2, 1))),
+        ],
+    )
+    def test_set_shots(self, shots, total_shots, shot_vector):
+        qs = QuantumScript([], [], shots=shots)
+        assert isinstance(qs.shots, Shots)
+        assert qs.shots.total_shots == total_shots
+        assert qs.shots.shot_vector == shot_vector
+
 
 sample_measurements = [
     qp.sample(),
@@ -177,15 +192,6 @@ sample_measurements = [
 
 class TestUpdate:
     """Test the methods called by _update."""
-
-    def test_cached_graph_reset(self):
-        """Test that update resets the graph"""
-        # pylint: disable=protected-access
-        qs = QuantumScript()
-        qs._graph = "hello"
-
-        qs._update()
-        assert qs._graph is None
 
     def test_update_circuit_info_wires(self):
         """Test that on construction wires and num_wires are set."""
@@ -618,52 +624,6 @@ class TestIteration:
 
         # Check that the underlying circuit is still as expected
         assert qs.circuit == circuit
-
-
-class TestInfomationProperties:
-    """Tests the graph and specs properties."""
-
-    @pytest.fixture
-    def make_script(self):
-        ops = [
-            qp.RX(-0.543, wires=0),
-            qp.Rot(-4.3, 4.69, 1.2, wires=0),
-            qp.CNOT(wires=[0, 9]),
-            qp.RX(0.54, wires=4),
-        ]
-        m = [qp.expval(qp.PauliX(wires=9)), qp.probs(wires=[0, 9])]
-
-        return QuantumScript(ops, m)
-
-    def test_graph(self, make_script):
-        """Tests the graph is constructed the first time it's requested and then cached."""
-        qs = make_script
-
-        assert qs._graph is None  # pylint: disable=protected-access
-
-        g = qs.graph
-        assert isinstance(g, qp.CircuitGraph)
-        assert g.operations == qs.operations
-        assert g.observables == qs.measurements
-
-        # test that if we request it again, we get the same object
-        assert qs.graph is g
-
-    @pytest.mark.parametrize(
-        "shots, total_shots, shot_vector",
-        [
-            (None, None, ()),
-            (1, 1, ((1, 1),)),
-            (10, 10, ((10, 1),)),
-            ([1, 1, 2, 3, 1], 8, ((1, 2), (2, 1), (3, 1), (1, 1))),
-            (Shots([1, 1, 2]), 4, ((1, 2), (2, 1))),
-        ],
-    )
-    def test_set_shots(self, shots, total_shots, shot_vector):
-        qs = QuantumScript([], [], shots=shots)
-        assert isinstance(qs.shots, Shots)
-        assert qs.shots.total_shots == total_shots
-        assert qs.shots.shot_vector == shot_vector
 
 
 class TestScriptCopying:

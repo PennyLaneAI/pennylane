@@ -68,6 +68,17 @@ def test_repr():
 class TestGradAnalysis:
     """Tests for parameter gradient methods"""
 
+    def test_classical_measurement_dependency(self):
+        """Parameters influencing a Pauli-measurement conditional remain differentiable."""
+        with qp.queuing.AnnotatedQueue() as queue:
+            qp.RX(0.3, 0)
+            measurement = qp.pauli_measure("Z", wires=0)
+            qp.cond(measurement, qp.X)(1)
+            qp.expval(qp.Z(1))
+        tape = qp.tape.QuantumScript.from_queue(queue)
+
+        assert _find_gradient_methods(tape, [0]) == {0: "A"}
+
     def test_non_differentiable(self):
         """Test that a non-differentiable parameter is correctly marked"""
 

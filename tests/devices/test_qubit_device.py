@@ -264,10 +264,10 @@ class TestOperations:
         with monkeypatch.context() as m:
             m.setattr(QubitDevice, "apply", lambda self, x, **kwargs: call_history.update(kwargs))
             dev = mock_qubit_device_with_paulis_rotations_and_methods()
-            dev.execute(tape, hash=tape.graph.hash)
+            dev.execute(tape, hash=tape.hash)
 
         assert len(call_history.items()) == 2
-        assert call_history["hash"] == tape.graph.hash
+        assert call_history["hash"] == tape.hash
         assert call_history["rotations"] == []
 
 

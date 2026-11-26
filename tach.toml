@@ -214,11 +214,6 @@ layer = "core"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
-path = "pennylane.circuit_graph"
-layer = "core"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
 path = "pennylane.allocation"
 layer = "core"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]

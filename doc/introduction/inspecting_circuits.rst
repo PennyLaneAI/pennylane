@@ -356,66 +356,7 @@ See :doc:`/code/qp_debugging` for more information and detailed examples.
 Graph representation
 --------------------
 
-PennyLane makes use of several ways to represent a quantum circuit as a Directed Acyclic Graph (DAG).
-
-DAG of causal relations between ops
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-A DAG can be used to represent which operator in a circuit is causally related to another. There are two
-options to construct such a DAG:
-
-The :class:`~pennylane.CircuitGraph` class takes a list of gates or channels and hermitian observables
-as well as a set of wire labels and constructs a DAG in which the :class:`~.Operator`
-instances are the nodes, and each directed edge corresponds to a wire
-(or a group of wires) on which the "nodes" act subsequently.
-
-For example, this can be used to compute the effective depth of a circuit,
-or to check whether two gates causally influence each other.
-
-.. code-block:: python
-
-    import pennylane as qp
-    from pennylane import CircuitGraph
-    from pennylane.workflow import construct_tape
-
-    dev = qp.device('lightning.qubit', wires=(0,1,2,3))
-
-    @qp.qnode(dev)
-    def circuit():
-        qp.Hadamard(0)
-        qp.CNOT([1, 2])
-        qp.CNOT([2, 3])
-        qp.CNOT([3, 1])
-        return qp.expval(qp.Z(0))
-
-
-    circuit()
-    tape = construct_tape(circuit)()
-    ops = tape.operations
-    obs = tape.observables
-    g = CircuitGraph(ops, obs, tape.wires)
-
-Internally, the :class:`~pennylane.CircuitGraph` class constructs a ``rustworkx`` graph object.
-
->>> type(g.graph)
-rustworkx.PyDiGraph
-
-There is no edge between the ``Hadamard`` and the first ``CNOT``, but between consecutive ``CNOT`` gates:
-
->>> g.has_path(ops[0], ops[1])
-False
->>> g.has_path(ops[1], ops[3])
-True
-
-The Hadamard is connected to the observable, while the ``CNOT`` operators are not. The observable
-does not follow the Hadamard.
-
->>> g.has_path(ops[0], obs[0])
-True
->>> g.has_path(ops[1], obs[0])
-False
->>> g.has_path(obs[0], ops[0])
-False
+PennyLane can represent a circuit's non-commuting operations as a directed acyclic graph (DAG).
 
 DAG of non-commuting ops
 ~~~~~~~~~~~~~~~~~~~~~~~~
