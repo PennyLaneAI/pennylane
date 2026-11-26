@@ -57,8 +57,8 @@ class BasisRotationPair(Operator2):
         check (bool): test unitarity of the provided ``unitary_matrix``
 
     Raises:
-        ValueError: if the matrix is not square, if ``wires_up`` and ``wires_down`` do not have
-            the same number of at least two wires, or if the wire arguments overlap
+        ValueError: if the matrix is not square, if ``wires_up`` and ``wires_down`` differ in
+            length or contain fewer than two wires each, or if the wire arguments overlap
         ValueError: if ``check=True`` and the matrix is not unitary
 
     **Example**
