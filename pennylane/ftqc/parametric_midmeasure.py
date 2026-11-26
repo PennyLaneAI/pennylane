@@ -781,14 +781,23 @@ def diagonalize_mcms(tape):
 
         curr_idx += 1
 
+    def _map_mcms(mv):
+        mps = [mps_mapping.get(m, m) for m in mv.measurements]
+        return MeasurementValue(mps, processing_fn=mv.processing_fn if mv.has_processing else None)
+
     new_measurements = []
     for mp in tape.measurements:
         if mp.mv is None:
             new_measurements.append(mp)
         else:
+            # create new measurement values instead of updating ``mp.mv`` in place, since it
+            # is shared with the input tape and with any measurement values combined from it
             new_mp = copy(mp)
-            mps = [mps_mapping.get(m, m) for m in mp.mv.measurements]
-            new_mp.mv.measurements = mps
+            new_mp.mv = (
+                _map_mcms(mp.mv)
+                if isinstance(mp.mv, MeasurementValue)
+                else [_map_mcms(mv) for mv in mp.mv]
+            )
             new_measurements.append(new_mp)
 
     new_tape = tape.copy(operations=new_operations, measurements=new_measurements)

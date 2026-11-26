@@ -858,6 +858,38 @@ class TestDiagonalizeMCMs:
         assert [fn(0) for fn in processing_fns] == [True, False, False]
         assert [fn(1) for fn in processing_fns] == [False, True, True]
 
+    def test_diagonalize_mcms_does_not_modify_terminal_measurement_values(self):
+        """Test that the measurement values of the terminal measurements are mapped to the
+        diagonalized mps without modifying the input tape or measurement values combined from
+        them"""
+
+        with qp.queuing.AnnotatedQueue() as q:
+            m0 = measure_x(0)
+            m1 = measure_y(1)
+            combined = m0 ^ m1
+            qp.cond(combined, qp.X)(2)
+            qp.sample(m0)
+            qp.probs(op=[m0, m1])
+
+        tape = qp.tape.QuantumScript.from_queue(q)
+        old_mps = tape.operations[:2]
+        (new_tape,), _ = diagonalize_mcms(tape)
+
+        # the input tape is unchanged
+        assert tape.measurements[0].mv.measurements[0] is old_mps[0]
+        assert tape.measurements[1].mv[0].measurements[0] is old_mps[0]
+        assert tape.measurements[1].mv[1].measurements[0] is old_mps[1]
+
+        # the combined measurement value can still be evaluated
+        branches = [(0, 0), (0, 1), (1, 0), (1, 1)]
+        assert [combined.processing_fn(*b) for b in branches] == [0, 1, 1, 0]
+
+        # the measurement values on the new tape refer to the diagonalized mps
+        new_mps = [op for op in new_tape.operations if isinstance(op, MidMeasure)]
+        assert new_tape.measurements[0].mv.measurements[0] is new_mps[0]
+        assert new_tape.measurements[1].mv[0].measurements[0] is new_mps[0]
+        assert new_tape.measurements[1].mv[1].measurements[0] is new_mps[1]
+
 
 class TestWorkflows:
     @pytest.mark.parametrize(
@@ -924,6 +956,27 @@ class TestWorkflows:
             assert np.allclose(circ(), [np.cos(2.345), -1], atol=0.03)
         else:
             assert np.allclose(circ(), [np.cos(2.345), -1])
+
+    @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal", "deferred"])
+    def test_sample_mcm_used_in_combined_condition(self, mcm_method):
+        """Test that a ParametricMidMeasure can be sampled at the end of the circuit when it
+        is also part of a combined condition"""
+
+        dev = qp.device("default.qubit")
+
+        @diagonalize_mcms
+        @qp.set_shots(20)
+        @qp.qnode(dev, mcm_method=mcm_method)
+        def circ():
+            qp.H(0)
+            qp.H(1)
+            m0 = measure_x(0)
+            m1 = measure_y(1)
+            qp.cond(m0 ^ m1, qp.X)(2)
+            return qp.sample(wires=[2]), qp.sample(m0), qp.sample(m1)
+
+        res_2, res_m0, res_m1 = circ()
+        assert np.array_equal(np.ravel(res_2), np.ravel(res_m0) ^ np.ravel(res_m1))
 
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
     @pytest.mark.parametrize("angle", [0.1234, np.array([-0.4321])])
