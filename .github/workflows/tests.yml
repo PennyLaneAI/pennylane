@@ -65,10 +65,7 @@ jobs:
           
       - name: Update lock files
         run: |
-          uv lock \
-            --extra-index-url https://test.pypi.org/simple/ \
-            --index-strategy unsafe-best-match \
-            --prerelease allow
+          uv lock --prerelease allow
 
       - name: Upload frozen requirements 
         uses: actions/upload-artifact@v6
