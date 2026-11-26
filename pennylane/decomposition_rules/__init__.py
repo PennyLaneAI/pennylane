@@ -23,6 +23,8 @@ Import operator-specific rules and helpers from their corresponding rule modules
 
 .. currentmodule:: pennylane.decomposition_rules
 
+.. rubric:: Built-in rules
+
 .. autosummary::
 
     qubit
@@ -31,9 +33,32 @@ Import operator-specific rules and helpers from their corresponding rule modules
     identity
     meta
     templates
+
+.. rubric:: Decomposition algorithms
+
+.. autosummary::
+
+    one_qubit_decomposition
+    two_qubit_decomposition
+    multi_qubit_decomposition
 """
 
 from .common import null_decomp
+from .qubit.matrix_ops import (
+    one_qubit_decomposition,
+    two_qubit_decomposition,
+    multi_qubit_decomposition,
+)
 from . import identity, meta, qubit, templates
 
-__all__ = ["common", "identity", "meta", "null_decomp", "qubit", "templates"]
+__all__ = [
+    "common",
+    "identity",
+    "meta",
+    "null_decomp",
+    "qubit",
+    "templates",
+    "one_qubit_decomposition",
+    "two_qubit_decomposition",
+    "multi_qubit_decomposition",
+]

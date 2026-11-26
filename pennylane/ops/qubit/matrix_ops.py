@@ -337,8 +337,8 @@ class QubitUnitary(Operator2):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        See :func:`~.ops.one_qubit_decomposition`, :func:`~.ops.two_qubit_decomposition`
-        and :func:`~.ops.multi_qubit_decomposition` for more information on how the decompositions are computed.
+        See :func:`~.decomposition_rules.one_qubit_decomposition`, :func:`~.decomposition_rules.two_qubit_decomposition`
+        and :func:`~.decomposition_rules.multi_qubit_decomposition` for more information on how the decompositions are computed.
 
         .. seealso:: :meth:`~.QubitUnitary.decomposition`.
 
@@ -361,6 +361,13 @@ class QubitUnitary(Operator2):
          GlobalPhase(-1.570...)]
 
         """
+        # pylint: disable-next=import-outside-toplevel
+        from pennylane.decomposition_rules import (
+            one_qubit_decomposition,
+            two_qubit_decomposition,
+            multi_qubit_decomposition,
+        )
+
         # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),
         # or a single RZ for diagonal matrices.
         shape = math.shape(U)
@@ -369,7 +376,7 @@ class QubitUnitary(Operator2):
         shape_without_batch_dim = shape[1:] if is_batched else shape
 
         if shape_without_batch_dim == (2, 2):
-            return qp.ops.one_qubit_decomposition(U, Wires(wires)[0], return_global_phase=True)
+            return one_qubit_decomposition(U, Wires(wires)[0], return_global_phase=True)
 
         if shape_without_batch_dim == (4, 4):
             # TODO[dwierichs]: Implement decomposition of broadcasted unitary
@@ -382,9 +389,9 @@ class QubitUnitary(Operator2):
                     "The decomposition of a two-qubit sparse QubitUnitary is undefined."
                 )
 
-            return qp.ops.two_qubit_decomposition(U, Wires(wires))
+            return two_qubit_decomposition(U, Wires(wires))
 
-        return qp.ops.op_math.decompositions.multi_qubit_decomposition(U, Wires(wires))
+        return multi_qubit_decomposition(U, Wires(wires))
 
     @property
     def has_sparse_matrix(self) -> bool:  # pylint: disable=invalid-overridden-method
