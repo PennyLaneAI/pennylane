@@ -2690,7 +2690,7 @@ Bug fixes 🐛
   mid-circuit measurement was both returned and used in a combined condition such as
   ``qp.cond(m0 ^ m1, ...)``. Terminal measurements of a list of measurement values, such as
   ``qp.probs(op=[m0, m1])``, are now also supported by the transform.
-  `(#XXXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXXX>`__
+  `(#10613) <https://github.com/PennyLaneAI/pennylane/pull/10613>`__
 
 * Fixed :func:`~.ctrl` to return the original operator or callable when the control wires are empty.
   `(#10595) <https://github.com/PennyLaneAI/pennylane/pull/10595>`__
