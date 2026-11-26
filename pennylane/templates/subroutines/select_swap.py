@@ -27,12 +27,13 @@ from pennylane.wires import Wires, WiresLike
 from .qrom import preprocess_qrom_inputs
 from .qrom_load import (
     QROMLoad,
-    _calculate_select_swap_sizes,
     _measure_and_reset,
     _measure_and_reset_resources,
     _phase_fixup,
     _phase_fixup_resources,
     _select_ops,
+    _select_swap_sizes,
+    _select_swap_table,
     _swap_ops,
 )
 
@@ -190,12 +191,6 @@ class SelectSwap(Operator2):
         return self.control_wires + self.target_wires + self.work_wires
 
 
-def _select_swap_sizes(bitstrings, control_wires, target_wires, work_wires):
-    return _calculate_select_swap_sizes(
-        len(bitstrings), len(control_wires), len(target_wires), len(work_wires), clean=False
-    )
-
-
 def _select_swap_resources(bitstrings, control_wires, target_wires, work_wires):
     num_control_wires_select, num_work_wires_select, _, num_work_wires_cswap, depth = (
         _select_swap_sizes(bitstrings, control_wires, target_wires, work_wires)
@@ -247,18 +242,6 @@ def _select_swap(bitstrings, control_wires, target_wires, work_wires):
     _swap_ops(control_wires[num_control_wires_select:], swap_wires, target_wires, cswap_work_wires)
 
 
-def _swap_permutations(depth):
-    """For each value ``l`` of the SWAP control wires, the permutation ``perms[l]`` of a column of
-    ``depth`` bitstrings applied by the SWAP network of ``_swap_ops``, which moves bitstring
-    ``perms[l, p]`` of the column into position ``p``. The SWAP layer controlled on bit ``i`` of
-    ``l`` exchanges the first two blocks of ``2**i`` positions."""
-    perms = math.tile(math.arange(depth), (depth, 1))
-    for i in reversed(range(depth.bit_length() - 1)):
-        swapped = (math.arange(depth) >> i) & 1 == 1
-        perms[swapped, : 2 ** (i + 1)] = math.roll(perms[swapped, : 2 ** (i + 1)], 2**i, axis=1)
-    return perms
-
-
 def _adjoint_select_swap_measurement_resources(base):
     *_, depth = _select_swap_sizes(
         base.bitstrings, base.control_wires, base.target_wires, base.work_wires
@@ -294,25 +277,14 @@ def _adjoint_select_swap_measurement(base):
     """
     bitstrings = math.cast(base.bitstrings, int)
     target_wires, work_wires = base.target_wires, base.work_wires
-    num_bitstrings, num_targets = len(bitstrings), len(target_wires)
     _, _, num_work_wires_swap, _, depth = _select_swap_sizes(
         bitstrings, base.control_wires, target_wires, work_wires
     )
-    num_columns = -(-num_bitstrings // depth)
 
     outcomes = _measure_and_reset(Wires(target_wires) + Wires(work_wires[:num_work_wires_swap]))
-    outcomes = math.reshape(math.cast(math.stack(outcomes), int), (depth, num_targets))
-
-    # parities[h, q, p] is the parity of bitstring q of column h when it is moved into position p
-    parities = math.dot(bitstrings, math.transpose(outcomes))
-    padding = math.zeros((num_columns * depth - num_bitstrings, depth), dtype=int, like=parities)
-    parities = math.reshape(math.concatenate([parities, padding]), (num_columns, depth, depth))
-    perms = _swap_permutations(depth)
-    fixups = math.sum(parities[:, perms, math.arange(depth)], axis=-1) % 2
-
-    _phase_fixup(
-        math.reshape(fixups, (-1,)), base.control_wires, Wires(target_wires) + Wires(work_wires)
-    )
+    table = _select_swap_table(bitstrings, depth)
+    fixups = math.dot(table, math.cast(math.stack(outcomes), int)) % 2
+    _phase_fixup(fixups, base.control_wires, Wires(target_wires) + Wires(work_wires))
 
 
 add_decomps(SelectSwap, _select_swap)
