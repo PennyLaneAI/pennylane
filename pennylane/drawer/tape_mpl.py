@@ -378,7 +378,7 @@ def tape_mpl(  # pylint: disable=too-many-arguments
         tape (QuantumTape): the operations and measurements to draw
 
     Keyword Args:
-        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
+        wire_order (Sequence[int]): the order (from top to bottom) to print the wires of the circuit
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             Default ``None`` will omit parameters from operation labels.
@@ -468,7 +468,7 @@ def tape_mpl(  # pylint: disable=too-many-arguments
 
     .. code-block:: python
 
-        fig, ax = qp.drawer.tape_mpl(tape, wire_order=["aux"], show_all_wires=True)
+        fig, ax = qp.drawer.tape_mpl(tape, wire_order=[4], show_all_wires=True)
 
     .. figure:: ../../_static/tape_mpl/show_all_wires.png
             :align: center

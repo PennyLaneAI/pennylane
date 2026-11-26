@@ -38,7 +38,7 @@ from pennylane.capture.autograph import wraps
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.compiler import compiler
-from pennylane.core import Operator2
+from pennylane.core import Operator2, queuing
 from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.exceptions import (
@@ -74,6 +74,8 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
     r"""Construct a symbolic controlled operator or a function that applies controlled operators.
     :func:`~.qjit` compatible.
 
+    If the control wires are empty, the operator or callable is returned without adding controls.
+
     .. note::
 
         When used with :func:`~.qjit`, this function only supports the Catalyst compiler.
@@ -88,7 +90,7 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
         control (Wires): The control wire(s).
         control_values (bool or int or list[bool or int]): The value(s) the control wire(s)
             should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
-        work_wires (Any): Any auxiliary wires that can be used in the decomposition
+        work_wires (Sequence[int] or int): Any auxiliary wires that can be used in the decomposition
         work_wire_type: The type of work wire(s), can be ``"zeroed"`` or ``"borrowed"``. ``"zeroed"``
             indicates that the work wires are in the :math:`|0\rangle` state, whereas ``"borrowed"``
             work wires can be in any arbitrary state. Defaults to ``"borrowed"``.
@@ -160,6 +162,14 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
     >>> workflow(jnp.pi/4, 1, 0)
     Array([0.25      , 0.25      , 0.03661165, 0.46338835], dtype=float64)
     """
+
+    control = Wires(control)
+    if len(control) == 0:
+        if isinstance(op, Operator):
+            queuing.remove_from_program(op)
+            return _apply_if_recording(op)
+        if callable(op) or math.is_tracer(op):
+            return op
 
     if (active_jit := compiler.active_compiler()) and not isinstance(op, Operator2):
         available_eps = compiler.AvailableCompilers.names_entrypoints
@@ -459,13 +469,13 @@ class Controlled(SymbolicOp):  # pylint: disable=too-many-public-methods
 
     Args:
         base (~.operation.Operator): the operator that is controlled
-        control_wires (Any): The wires to control on.
+        control_wires (Sequence[int] or int): The wires to control on.
 
     Keyword Args:
         control_values (Iterable[Bool]): The values to control on. Must be the same
             length as ``control_wires``. Defaults to ``True`` for all control wires.
             Provided values are converted to `Bool` internally.
-        work_wires (Any): Any auxiliary wires that can be used in the decomposition
+        work_wires (Sequence[int] or int): Any auxiliary wires that can be used in the decomposition
         work_wire_type: The type of work wire(s), can be ``"zeroed"`` or ``"borrowed"``. ``"zeroed"``
             indicates that the work wires are in the :math:`|0\rangle` state, whereas ``"borrowed"``
             work wires can be in any arbitrary state. Defaults to ``"borrowed"``.
@@ -509,7 +519,7 @@ class Controlled(SymbolicOp):  # pylint: disable=too-many-public-methods
     Provided control values are converted to booleans internally, so
     any "truthy" or "falsy" objects work.
 
-    >>> Controlled(base, ("a", "b", "c"), control_values=["", None, 5]).control_values
+    >>> Controlled(base, (4, 5, 6), control_values=["", None, 5]).control_values
     [False, False, True]
 
     Representations for an operator are available if the base class defines them.

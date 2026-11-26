@@ -140,7 +140,7 @@ class IQPEmbedding(Operator2):
         A custom entangler pattern can be used by specifying the ``pattern`` argument. A pattern has to be
         a nested list of dimension ``(K, 2)``, where ``K`` is the number of entanglers to apply.
         Each pair contains indices into ``wires``, not wire labels. For example, with
-        ``wires=["z", "a", "k"]``, ``pattern=[[0, 2]]`` entangles ``"z"`` and ``"k"``.
+        ``wires=[4, 5, 6]``, ``pattern=[[0, 2]]`` entangles ``4`` and ``6``.
 
         .. code-block:: python
 

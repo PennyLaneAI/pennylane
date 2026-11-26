@@ -100,7 +100,6 @@ class MultiplexerStatePreparation(Operator2):
     # a MultiplexerStatePreparation operator with a real-valued state vector to decompose
     # differently than a complex-valued one.
     arg_specs = {"wires": Wire[-1]}
-    wire_sizes = (None,)
 
     def __init__(self, state_vector, wires, check=False):
 
