@@ -1060,9 +1060,8 @@ Improvements 🛠
 * The half-signed multipliers of the linear and bilinear terms of :class:`~.TrotterVibronic`
   are cheaper. They add the product up to an offset :math:`\lfloor x/2\rfloor` of the loaded
   coefficient :math:`x`, which is cancelled classically in the constant term of the same
-  position fragment. For a :math:`k`-bit signed register and :math:`b`-bit coefficients, this
-  takes :math:`b + \sum_{i=1}^{k-1}(b-i)` :class:`~.TemporaryAND` gates, e.g., 74 instead of 94
-  for :math:`k=4` and :math:`b=20`, and removes the extra output bit and correction steps.
+  position fragment. This saves :math:`b` :class:`~.TemporaryAND` gates for :math:`b`-bit
+  coefficients.
   `(#10569) <https://github.com/PennyLaneAI/pennylane/pull/10569>`__
 
 * Added ``pennylane.core.get_op_class_by_name``

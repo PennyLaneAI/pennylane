@@ -621,8 +621,20 @@ class TestDecomposition:
             _single_fragment(2, 2, [("P", "P")], seed + 1),
         ]
         hamiltonian = build_hamiltonian(fragments)
-        queue = decomposition_queue(make_op(hamiltonian, make_wires(2, 2), evolution_time=0.1))
+        wires = make_wires(2, 2, b=20)
+        queue = decomposition_queue(make_op(hamiltonian, wires, evolution_time=0.1))
         assert count_ops(queue, SemiAdder) > 0
+
+    def test_constant_term_skipped_for_vanishing_bitstrings(self):
+        """Test that the constant term is skipped if its bit strings vanish, even if its
+        coefficients do not."""
+        n_states, n_modes = 2, 1
+        position = _zero_fragment(n_states, n_modes)
+        position["constant"][0, 0] = 1e-3
+        hamiltonian = build_hamiltonian([position, _zero_fragment(n_states, n_modes)])
+        op = make_op(hamiltonian, make_wires(n_states, n_modes))
+        assert dict(op.arguments["branch_probs"])["constant"] == 0.0
+        assert count_ops(decomposition_queue(op), SemiAdder) == 0
 
     def test_kinetic_queues_aqft_no_basisstate(self, seed):
         """Test that the kinetic fragment queues an AQFT only at non-zero evolution time."""
@@ -669,7 +681,7 @@ class TestDecomposition:
         """Test that the resource function weights the terms with ``branch_probs``, reproducing
         the operations of the decomposition except for the diagonalization upper bounds."""
         hamiltonian = build_hamiltonian(sparse_fragment_list(n_states, n_modes, seed))
-        op = make_op(hamiltonian, make_wires(n_states, n_modes), num_trotter_steps=2)
+        op = make_op(hamiltonian, make_wires(n_states, n_modes, b=20), num_trotter_steps=2)
         assert_resources_match_decomposition(op)
 
     @pytest.mark.parametrize(
@@ -684,7 +696,7 @@ class TestDecomposition:
         for i, fragment in enumerate(fragments[:-1]):
             fragment["linear"][..., i % 2] = magnitude
         hamiltonian = build_hamiltonian(fragments)
-        op = make_op(hamiltonian, make_wires(2, 2), evolution_time=evolution_time)
+        op = make_op(hamiltonian, make_wires(2, 2, b=20), evolution_time=evolution_time)
 
         assert dict(op.arguments["branch_probs"])["linear"] == expected_prob
         assert_resources_match_decomposition(op)
@@ -813,7 +825,7 @@ class TestDecomposition:
         ``branch-prob`` hints that reproduce the number of applied terms."""
         hamiltonian = build_hamiltonian(sparse_fragment_list(n_states, n_modes, seed))
         num_steps = 2
-        wires = make_wires(n_states, n_modes)
+        wires = make_wires(n_states, n_modes, b=20)
         op = make_op(hamiltonian, wires, num_trotter_steps=num_steps)
         decomposition = qp.list_decomps(qp.TrotterVibronic)[0]
 
@@ -831,13 +843,14 @@ class TestDecomposition:
         position_visits = 2 * num_fragments * num_steps
         num_pairs = n_modes * (n_modes - 1) // 2
         # A half-signed multiplier with an ``m``-wire signed register emits ``min(m, b) - 1``
-        # ``SemiAdder`` and ``2 min(m, b)`` controlled ``MultiX`` gates. Its signed register is
-        # a mode register for linear terms and the cache register for bilinear terms.
+        # ``SemiAdder`` and ``2 min(m, b) + 2`` controlled ``MultiX`` gates for ``b > 1``. Its
+        # signed register is a mode register for linear terms and the cache register for bilinear
+        # terms.
         k, b = len(wires["vib_wires"]) // n_modes, len(wires["coefficients"])
         m_linear, m_bilinear = min(k, b), min(2 * k, b)
         num_bilinear = counts["SignedOutMultiplier"]
-        num_ctrl_multix_linear = counts["C(MultiX)"] - 2 * m_bilinear * num_bilinear
-        num_linear = num_ctrl_multix_linear / (2 * m_linear)
+        num_ctrl_multix_linear = counts["C(MultiX)"] - 2 * (m_bilinear + 1) * num_bilinear
+        num_linear = num_ctrl_multix_linear / (2 * (m_linear + 1))
         p_kinetic = counts["AQFT"] / (num_steps * n_modes)
         num_constant = (
             counts["SemiAdder"] - (m_linear - 1) * num_linear - (m_bilinear - 1) * num_bilinear
@@ -865,7 +878,7 @@ class TestDecomposition:
         fragments = fragment_list(n_states=2, n_modes=2, seed=seed)
         # A single position fragment, so that all conditionals belong to terms
         hamiltonian = build_hamiltonian([fragments[0], fragments[-1]])
-        wires = make_wires(2, 2)
+        wires = make_wires(2, 2, b=20)
 
         # The fragment has no bilinear terms
         expected = (
