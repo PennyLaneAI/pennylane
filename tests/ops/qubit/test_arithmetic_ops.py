@@ -246,7 +246,6 @@ class TestIntegerComparator:
 
     def test_flatten_unflatten(self):
         """Tests the flatten and unflatten methods"""
-        # pylint: disable=protected-access
         wires = qp.wires.Wires((0, 1, 2, 3))
         work_wires = qp.wires.Wires(4)
         op = qp.IntegerComparator(
@@ -256,7 +255,7 @@ class TestIntegerComparator:
             work_wires=(4),
         )
 
-        data, metadata = op._flatten()
+        data, metadata = op._flatten()  # pylint: disable=protected-access
         assert data == tuple()
         assert len(metadata) == 2
         assert metadata[0] == wires
@@ -267,7 +266,7 @@ class TestIntegerComparator:
         # check hashable
         assert hash(metadata)
 
-        new_op = type(op)._unflatten(*op._flatten())
+        new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
         qp.assert_equal(new_op, op)
         assert new_op is not op
 
