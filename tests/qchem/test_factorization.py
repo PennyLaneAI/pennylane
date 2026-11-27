@@ -28,7 +28,6 @@ from pennylane import numpy as np
         # symbols  = ['H', 'H']
         # geometry = np.array([[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]], requires_grad = False) / 0.529177
         # mol = qp.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
-        # core, one, two = qp.qchem.electron_integrals(mol)()
         # two = np.swapaxes(two, 1, 3) # convert to chemist notation
         (
             np.array(
@@ -95,7 +94,6 @@ def test_factorize(two_tensor, tol_f, tol_s, factors_ref):
         # symbols  = ['H', 'H']
         # geometry = np.array([[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]], requires_grad = False) / 0.529177
         # mol = qp.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
-        # core, one, two = qp.qchem.electron_integrals(mol)()
         # two = np.swapaxes(two, 1, 3) # convert to chemist notation
         np.array(
             [
@@ -128,7 +126,6 @@ def test_factorize_reproduce(two_tensor):
         # symbols  = ['H', 'H']
         # geometry = np.array([[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]], requires_grad = False) / 0.529177
         # mol = qp.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
-        # core, one, two = qp.qchem.electron_integrals(mol)()
         # two = np.swapaxes(two, 1, 3) # convert to chemist notation
         np.array(
             [
@@ -174,7 +171,6 @@ def test_factorize_compressed_reproduce(two_tensor, cholesky, regularization):
         # symbols  = ['H', 'H']
         # geometry = np.array([[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]], requires_grad = False) / 0.529177
         # mol = qp.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
-        # core, one, two = qp.qchem.electron_integrals(mol)()
         # two = np.swapaxes(two, 1, 3) # convert to chemist notation
         np.array(
             [
@@ -252,7 +248,6 @@ def test_empty_error(two_tensor):
             # symbols  = ['H', 'H']
             # geometry = np.array([[0.0, 0.0, 0.0], [1.39839789, 0.0, 0.0]], requires_grad = False)
             # mol = qp.qchem.Molecule(symbols, geometry)
-            # core, one_matrix, two_tensor = qp.qchem.electron_integrals(mol)()
             np.array([[-1.25330978e00, -2.11164419e-13], [-2.10831352e-13, -4.75068865e-01]]),
             np.array(  # two-electron integral tensor in physicist notation
                 [
@@ -834,14 +829,39 @@ def test_chemist_transform(
 )
 def test_symmetry_shift(core_shifted, one_body_shifted, two_body_shifted):
     """Test that `symmetry_shift` builds correct two-body tensors with accurate correction terms"""
-    symbols = ["He", "H"]
-    geometry = qp.numpy.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False)
-    mol = qp.qchem.Molecule(symbols, geometry, charge=1, basis_name="STO-3G")
-    core, one, two = qp.qchem.electron_integrals(mol)()
+    # Fixed HeH+ STO-3G tensors keep this factorization test independent of an HF solver.
+    core = np.array([2.0])
+    one = np.array(
+        [[-2.8226324195945907, 0.17140220166738263], [0.17140220166738263, -1.2570129972722137]]
+    )
+    two = np.array(
+        [
+            [
+                [
+                    [0.965902417349987, -0.171402201994337],
+                    [-0.17140220199433664, 0.16423484324232565],
+                ],
+                [
+                    [-0.1714022019943368, 0.1642348432423254],
+                    [0.7483224282616013, -0.008709285177909698],
+                ],
+            ],
+            [
+                [
+                    [-0.17140220199433706, 0.7483224282616018],
+                    [0.16423484324232546, -0.008709285177909365],
+                ],
+                [
+                    [0.1642348432423254, -0.008709285177909365],
+                    [-0.008709285177909643, 0.7653032379986113],
+                ],
+            ],
+        ]
+    )
 
     # pylint: disable-next=protected-access
     cone, ctwo = qp.qchem.factorization._chemist_transform(one, two, spatial_basis=True)
-    score, sone, stwo = qp.qchem.symmetry_shift(core, cone, ctwo, n_elec=mol.n_electrons)
+    score, sone, stwo = qp.qchem.symmetry_shift(core, cone, ctwo, n_elec=2)
 
     assert np.allclose(score, core_shifted)
     assert np.allclose(sone, one_body_shifted)

@@ -37,9 +37,6 @@ class DatasetMolecule(DatasetAttribute[HDF5Group, Molecule, Molecule]):
             charge=mapper["charge"].copy_value(),
             mult=mapper["mult"].copy_value(),
             basis_name=mapper["basis_name"].copy_value(),
-            l=mapper["l"].copy_value(),
-            alpha=mapper["alpha"].copy_value(),
-            coeff=mapper["coeff"].copy_value(),
         )
 
     def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Molecule) -> HDF5Group:
@@ -52,8 +49,5 @@ class DatasetMolecule(DatasetAttribute[HDF5Group, Molecule, Molecule]):
         mapper["charge"] = value.charge
         mapper["mult"] = value.mult
         mapper["basis_name"] = value.basis_name
-        mapper["l"] = value.l
-        mapper["alpha"] = value.alpha
-        mapper["coeff"] = value.coeff
 
         return bind

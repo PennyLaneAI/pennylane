@@ -88,7 +88,7 @@ def test_optimize_geometry_methoderror():
 def test_single_point_energy(sym, geom, unit, method, basis, expected_energy):
     r"""Test that correct energy is produced for a given molecule."""
 
-    mol = qp.qchem.Molecule(sym, geom, unit=unit, basis_name=basis, load_data=True)
+    mol = qp.qchem.Molecule(sym, geom, unit=unit, basis_name=basis)
     # pylint: disable-next=protected-access
     scf_obj = qp.qchem.vibrational.vibrational_class._single_point(mol, method=method)
 
@@ -149,7 +149,6 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
         geom_eq,
         unit=mol.unit,
         basis_name=mol.basis_name,
-        load_data=mol.load_data,
     )
 
     scf_result = vibrational_class._single_point(mol_eq)  # pylint: disable=protected-access
@@ -346,7 +345,7 @@ def test_error_mode_localization():
 
     sym = ["H", "F"]
     geom = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
-    mol = qp.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+    mol = qp.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
     # pylint: disable-next=protected-access
     mol_scf = qp.qchem.vibrational.vibrational_class._single_point(mol)
     freqs, vecs = vibrational_class._harmonic_analysis(mol_scf)  # pylint: disable=protected-access
@@ -395,7 +394,7 @@ def test_error_mode_localization():
 def test_get_dipole(sym, geom, mult, charge, method, expected_dipole):
     r"""Test that the get_dipole function produces correct results."""
     mol = qp.qchem.Molecule(
-        sym, geom, mult=mult, charge=charge, basis_name="6-31g", unit="Angstrom", load_data=True
+        sym, geom, mult=mult, charge=charge, basis_name="6-31g", unit="Angstrom"
     )
     # pylint: disable-next=protected-access
     mol_scf = qp.qchem.vibrational.vibrational_class._single_point(mol, method=method)

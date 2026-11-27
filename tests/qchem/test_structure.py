@@ -345,17 +345,14 @@ def test_hf_state(electrons, orbitals, basis, exp_state):
 def test_hf_state_basis(electrons, symbols, geometry, charge):
     r"""Test the correctness of the generated HF state in a circuit."""
 
-    mol = qp.qchem.Molecule(symbols, geometry, charge)
-    h_ferm = qchem.fermionic_hamiltonian(mol)()
-    qubits = len(h_ferm.wires)
+    molecule = qchem.Molecule(symbols, geometry, charge=charge)
+    h_occ, qubits = qchem.molecular_hamiltonian(molecule)
+    h_parity, _ = qchem.molecular_hamiltonian(molecule, mapping="parity")
+    h_bk, _ = qchem.molecular_hamiltonian(molecule, mapping="bravyi_kitaev")
 
     state_occ = qchem.hf_state(electrons, qubits, basis="occupation_number")
     state_parity = qchem.hf_state(electrons, qubits, basis="parity")
     state_bk = qchem.hf_state(electrons, qubits, basis="bravyi_kitaev")
-
-    h_occ = qp.pauli.to_operator(qp.jordan_wigner(h_ferm, ps=True, tol=1e-16))
-    h_parity = qp.pauli.to_operator(qp.parity_transform(h_ferm, qubits, ps=True, tol=1e-16))
-    h_bk = qp.pauli.to_operator(qp.bravyi_kitaev(h_ferm, qubits, ps=True, tol=1e-16))
 
     dev = qp.device("default.qubit", wires=qubits)
 
@@ -364,8 +361,8 @@ def test_hf_state_basis(electrons, symbols, geometry, charge):
         qp.BasisState(hf_state, wires=range(qubits))
         return qp.expval(h)
 
-    assert circuit(state_occ, h_occ) == circuit(state_parity, h_parity)
-    assert circuit(state_occ, h_occ) == circuit(state_bk, h_bk)
+    assert np.isclose(circuit(state_occ, h_occ), circuit(state_parity, h_parity))
+    assert np.isclose(circuit(state_occ, h_occ), circuit(state_bk, h_bk))
 
 
 @pytest.mark.parametrize(

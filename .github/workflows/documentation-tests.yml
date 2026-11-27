@@ -113,7 +113,6 @@ jobs:
           TO_DO="
           --ignore=doc/development
           --ignore=doc/news
-          --ignore=doc/introduction/chemistry.rst
           --ignore=doc/introduction/compiling_circuits.rst
           --ignore=doc/introduction/compiling_workflows.rst
           --ignore=doc/introduction/circuits.rst

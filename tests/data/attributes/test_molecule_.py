@@ -29,11 +29,8 @@ def _assert_molecules_equal(mol_in: Molecule, mol_out: Molecule):
     """Asserts that mol_in and mol_out are identical."""
     assert mol_out.basis_name == mol_in.basis_name
     assert mol_out.symbols == mol_in.symbols
-    assert all((in_ == out).all() for in_, out in zip(mol_in.alpha, mol_out.alpha))
-    assert all((in_ == out).all() for in_, out in zip(mol_in.coeff, mol_out.coeff))
 
     assert (mol_out.coordinates == mol_in.coordinates).all()
-    assert mol_out.l == mol_in.l
     assert mol_out.mult == mol_in.mult
     assert mol_out.charge == mol_in.charge
 
@@ -85,3 +82,11 @@ class TestDatasetMolecule:
         mol_out = dset_mol.get_value()
 
         _assert_molecules_equal(mol_in, mol_out)
+
+
+def test_molecule_stores_metadata_only():
+    """Persist the existing metadata fields without removed solver parameters."""
+    molecule = Molecule(["H", "H"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4]]))
+    attribute = DatasetMolecule(molecule)
+
+    assert set(attribute.bind) == {"symbols", "coordinates", "charge", "mult", "basis_name"}

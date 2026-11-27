@@ -157,7 +157,6 @@ def _local_pes_onemode(  # pylint: disable=too-many-arguments
                 charge=molecule.charge,
                 mult=molecule.mult,
                 unit="angstrom",
-                load_data=True,
             )
 
             displ_scf = _single_point(displ_mol, method=method)
@@ -370,7 +369,6 @@ def _local_pes_twomode(  # pylint: disable=too-many-arguments
                 charge=molecule.charge,
                 mult=molecule.mult,
                 unit="angstrom",
-                load_data=True,
             )
             displ_scf = _single_point(displ_mol, method=method)
             idx = mode_idx * len(jobs_on_rank) + job_idx
@@ -550,7 +548,6 @@ def _local_pes_threemode(  # pylint: disable=too-many-arguments
                 charge=molecule.charge,
                 mult=molecule.mult,
                 unit="angstrom",
-                load_data=True,
             )
             displ_scf = _single_point(displ_mol, method=method)
 
@@ -831,7 +828,6 @@ def vibrational_pes(  # pylint: disable=too-many-arguments
                 basis_name=molecule.basis_name,
                 charge=molecule.charge,
                 mult=molecule.mult,
-                load_data=molecule.load_data,
             )
         else:
             mol_eq = molecule

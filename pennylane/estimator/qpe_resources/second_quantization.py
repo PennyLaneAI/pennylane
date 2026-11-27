@@ -55,7 +55,7 @@ class DoubleFactorization(Operation):  # pylint: disable=too-many-instance-attri
     ...                      [0.00000000,  1.45278171, -1.00662237],
     ...                      [0.00000000, -1.45278171, -1.00662237]])
     >>> mol = qp.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
-    >>> core, one, two = qp.qchem.electron_integrals(mol)()
+    >>> core, one, two = qp.qchem.molecular_integrals(mol)
     >>> algo = qp.estimator.DoubleFactorization(one, two)
     >>> algo.lamb # the 1-Norm of the Hamiltonian
     np.float64(53.6...)
@@ -600,7 +600,7 @@ class DoubleFactorization(Operation):  # pylint: disable=too-many-instance-attri
         ...                      [0.00000000,  1.45278171, -1.00662237],
         ...                      [0.00000000, -1.45278171, -1.00662237]])
         >>> mol = qp.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
-        >>> core, one, two = qp.qchem.electron_integrals(mol)()
+        >>> core, one, two = qp.qchem.molecular_integrals(mol)
         >>> two = np.swapaxes(two, 1, 3) # convert to the chemists notation
         >>> _, eigvals, _ = qp.qchem.factorize(two, 1e-5)
         >>> print(qp.estimator.DoubleFactorization.norm(one, two, eigvals))

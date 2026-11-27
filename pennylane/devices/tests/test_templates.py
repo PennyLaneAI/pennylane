@@ -793,11 +793,28 @@ class TestMoleculeTemplates:
     @pytest.fixture(scope="class")
     def h2(self):
         """Return attributes needed for H2."""
-        symbols, coordinates = (["H", "H"], np.array([0.0, 0.0, -0.66140414, 0.0, 0.0, 0.66140414]))
-        h, qubits = qp.qchem.molecular_hamiltonian(symbols, coordinates)
-        electrons = 2
+        # STO-3G Hamiltonian of H2 at a bond length of 1.32280828 Bohr. It is hard-coded so
+        # that the device tests don't require an electronic structure package.
+        x, y, z = qp.X, qp.Y, qp.Z
+        hamiltonian = (
+            -0.042078970162 * qp.I(0)
+            + 0.177712875346 * (z(0) + z(1))
+            - 0.242742807303 * (z(2) + z(3))
+            + 0.122933050811 * (z(0) @ z(2) + z(1) @ z(3))
+            + 0.167683194768 * (z(0) @ z(3) + z(1) @ z(2))
+            + 0.170597383493 * (z(0) @ z(1))
+            + 0.176276408246 * (z(2) @ z(3))
+            + 0.044750143957
+            * (
+                y(0) @ x(1) @ x(2) @ y(3)
+                - y(0) @ y(1) @ x(2) @ x(3)
+                - x(0) @ x(1) @ y(2) @ y(3)
+                + x(0) @ y(1) @ y(2) @ x(3)
+            )
+        )
+        qubits, electrons = 4, 2
         ref_state = qp.qchem.hf_state(electrons, qubits)
-        return qubits, ref_state, h
+        return qubits, ref_state, hamiltonian.simplify()
 
     def test_GateFabric(self, device, tol, h2, shots):
         """Test the GateFabric template."""

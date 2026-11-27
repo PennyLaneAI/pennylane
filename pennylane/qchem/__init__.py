@@ -16,44 +16,11 @@ This submodule provides the functionality to perform quantum chemistry calculati
 """
 
 from pennylane.math.decomposition import givens_decomposition
-from .basis_data import load_basisset
-from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
 from .convert import import_operator, import_state
 from .convert_openfermion import from_openfermion, to_openfermion
-from .dipole import dipole_integrals, dipole_moment, fermionic_dipole, molecular_dipole
+from .dipole import molecular_dipole
 from .factorization import basis_rotation, factorize, symmetry_shift
-from .hamiltonian import (
-    diff_hamiltonian,
-    electron_integrals,
-    fermionic_hamiltonian,
-    molecular_hamiltonian,
-)
-from .hartree_fock import hf_energy, nuclear_energy, scf
-from .integrals import (
-    attraction_integral,
-    contracted_norm,
-    electron_repulsion,
-    expansion,
-    gaussian_kinetic,
-    gaussian_moment,
-    gaussian_overlap,
-    hermite_moment,
-    kinetic_integral,
-    moment_integral,
-    nuclear_attraction,
-    overlap_integral,
-    primitive_norm,
-    repulsion_integral,
-)
-from .matrices import (
-    attraction_matrix,
-    core_matrix,
-    kinetic_matrix,
-    mol_density_matrix,
-    moment_matrix,
-    overlap_matrix,
-    repulsion_tensor,
-)
+from .hamiltonian import molecular_hamiltonian, molecular_integrals
 from .molecule import Molecule
 from .number import particle_number
 from .observable_hf import fermionic_observable, qubit_observable

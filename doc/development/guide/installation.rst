@@ -30,7 +30,8 @@ be installed alongside PennyLane:
 
 The following Python packages are optional:
 
-* `openfermionpyscf <https://github.com/quantumlib/OpenFermion-PySCF>`_, for the non-differentiable backend of the ``qp.qchem`` module
+* `pyscf <https://github.com/pyscf/pyscf>`_, for :func:`~.qchem.molecular_hamiltonian` and :func:`~.qchem.molecular_integrals`
+* `openfermionpyscf <https://github.com/quantumlib/OpenFermion-PySCF>`_, for :func:`~.qchem.molecular_dipole` and the ``method="openfermion"`` backend of the ``qp.qchem`` module
 * ``matplotlib``: for ``qp.draw_mpl`` and associated code
 * ``quimb``: for the ``default.tensor`` device
 * ``pyzx>=0.10``: for ``qp.transforms.to_zx``, ``qp.transforms.from_zx``, and ZX optimization transforms

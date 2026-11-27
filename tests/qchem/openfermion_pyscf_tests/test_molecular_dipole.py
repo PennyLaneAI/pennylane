@@ -270,48 +270,6 @@ def test_openfermion_molecular_dipole(
 
 
 @pytest.mark.parametrize(
-    (
-        "symbols",
-        "geometry",
-        "charge",
-        "active_el",
-        "active_orb",
-        "mapping",
-        "eig_ref",
-    ),
-    [
-        (h2, x_h2, 0, None, None, "jordan_wigner", eig_h2),
-        (h2, x_h2, 0, None, None, "parity", eig_h2),
-        (h3p, x_h3p, 1, None, None, "jordan_wigner", eig_h3p),
-        (h2o, x_h2o, 0, 2, 2, "bravyi_kitaev", eig_h2o),
-    ],
-)
-def test_differentiable_molecular_dipole(
-    symbols, geometry, charge, active_el, active_orb, mapping, eig_ref, tmpdir
-):
-    r"""Test that molecular_dipole returns the correct eigenvalues with the dhf backend."""
-
-    molecule = qp.qchem.Molecule(symbols, geometry, charge=charge)
-    dip_dhf = qp.qchem.molecular_dipole(
-        molecule,
-        method="dhf",
-        active_electrons=active_el,
-        active_orbitals=active_orb,
-        mapping=mapping,
-        outpath=tmpdir.strpath,
-    )
-
-    for idx, dip in enumerate(dip_dhf):
-        wires = dip.wires
-        if not wires:
-            eig = [0, 0]
-        else:
-            # Sparse eigensolvers may miss multiplicities when k cuts through a degenerate subspace.
-            eig = qp.math.linalg.eigvalsh(dip.sparse_matrix().toarray())[:3]
-        assert np.allclose(np.sort(eig), np.sort(eig_ref[idx]))
-
-
-@pytest.mark.parametrize(
     ("wiremap"),
     [
         [6, 8, 9, 10],
@@ -324,16 +282,7 @@ def test_custom_wiremap_dipole(wiremap, tmpdir):
 
     symbols = ["H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
-    method = "dhf"
-
     mol = qchem.Molecule(symbols, geometry)
-    dipole_dhf = qchem.molecular_dipole(
-        mol,
-        method=method,
-        wires=wiremap,
-        outpath=tmpdir.strpath,
-    )
-
     method = "openfermion"
     dipole_of = qchem.molecular_dipole(
         mol,
@@ -342,7 +291,6 @@ def test_custom_wiremap_dipole(wiremap, tmpdir):
         outpath=tmpdir.strpath,
     )
 
-    assert all(set(dip.wires).issubset(set(wiremap)) for dip in dipole_dhf)
     assert all(set(dip.wires).issubset(set(wiremap)) for dip in dipole_of)
 
 
@@ -352,7 +300,7 @@ def test_molecular_dipole_error():
     symbols = ["H", "H"]
     geometry = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
     molecule = qchem.Molecule(symbols, geometry)
-    with pytest.raises(ValueError, match="Only 'dhf', and 'openfermion' backends are supported"):
+    with pytest.raises(ValueError, match="Only the 'openfermion' backend is supported"):
         qchem.molecular_dipole(molecule, method="psi4")
 
     molecule = qchem.Molecule(symbols, geometry, mult=3)
@@ -363,43 +311,18 @@ def test_molecular_dipole_error():
         qchem.molecular_dipole(molecule, mapping="bksf")
 
 
-@pytest.mark.parametrize(
-    ("method", "args"),
-    [
-        ("openfermion", None),
-        (
-            "dhf",
-            None,
-        ),
-        (
-            "dhf",
-            [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
-        ),
-    ],
-)
-@pytest.mark.usefixtures("skip_if_no_openfermion_support")
-def test_real_dipole(method, args, tmpdir):
-    r"""Test that the generated operator has real coefficients."""
+def test_real_dipole(tmp_path):
+    """The retained OpenFermion backend produces real dipole coefficients."""
+    molecule = qchem.Molecule(["H", "H"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]))
+    dipole = qchem.molecular_dipole(molecule, method="openfermion", outpath=str(tmp_path))
 
-    symbols = ["H", "H"]
-    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
-    molecule = qchem.Molecule(symbols, geometry)
-
-    dipole = qchem.molecular_dipole(
-        molecule,
-        method=method,
-        args=args,
-        outpath=tmpdir.strpath,
-    )
-
-    assert all(np.isrealobj(op.terms()[0]) for op in dipole)
+    assert all(np.isrealobj(operator.terms()[0]) for operator in dipole)
 
 
 @pytest.mark.parametrize(
     ("method"),
     [
         "openfermion",
-        "dhf",
     ],
 )
 def test_coordinate_units_for_molecular_dipole(method, tmpdir):
@@ -424,3 +347,19 @@ def test_coordinate_units_for_molecular_dipole(method, tmpdir):
     )
     for o1, o2 in zip(dipole_ang, dipole_bohr):
         qp.assert_equal(o1, o2)
+
+
+def test_dhf_backend_removed():
+    """Reject the removed differentiable dipole backend."""
+    mol = qp.qchem.Molecule(["H", "H"], np.zeros((2, 3)))
+    with pytest.raises(ValueError, match=r"method='dhf'\) has been removed"):
+        qp.qchem.molecular_dipole(mol, method="dhf")
+
+
+def test_default_backend(tmp_path):
+    """The default dipole backend is OpenFermion-PySCF."""
+    mol = qp.qchem.Molecule(["H", "H"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4]]))
+    default = qp.qchem.molecular_dipole(mol, outpath=str(tmp_path))
+    explicit = qp.qchem.molecular_dipole(mol, method="openfermion", outpath=str(tmp_path))
+    for actual, expected in zip(default, explicit, strict=True):
+        qp.assert_equal(actual, expected)

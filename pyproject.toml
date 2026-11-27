@@ -126,7 +126,6 @@ external-libraries = [
 ]
 qchem = [
     "openfermionpyscf",
-    "basis-set-exchange",
     "geometric",
     "scikit-learn",
     "numpy<2.4"
@@ -139,6 +138,7 @@ doctest = [
     # Used in docstrings of tested modules
     "matplotlib",
     "torch",
+    "pyscf",
     "pyzx>=0.10",
     "stim",
     "quimb",

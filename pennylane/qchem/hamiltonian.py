@@ -21,236 +21,15 @@ from scipy.constants import angstrom, physical_constants
 
 import pennylane as qp
 
-from .basis_data import atomic_numbers
-from .hartree_fock import nuclear_energy, scf
+from .atomic_numbers import atomic_numbers
 from .molecule import Molecule
-from .observable_hf import fermionic_observable, qubit_observable
 
 BOHR_TO_ANG = physical_constants["Bohr radius"][0] / angstrom
 
 
-def electron_integrals(mol, core=None, active=None):
-    r"""Return a function that computes the one- and two-electron integrals in the molecular orbital
-    basis.
-
-    The one- and two-electron integrals are required to construct a molecular Hamiltonian in the
-    second-quantized form
-
-    .. math::
-
-        H = \sum_{pq} h_{pq} c_p^{\dagger} c_q + \frac{1}{2} \sum_{pqrs} h_{pqrs} c_p^{\dagger} c_q^{\dagger} c_r c_s,
-
-    where :math:`c^{\dagger}` and :math:`c` are the creation and annihilation operators,
-    respectively, and :math:`h_{pq}` and :math:`h_{pqrs}` are the one- and two-electron integrals.
-    These integrals can be computed by integrating over molecular orbitals :math:`\phi` as
-
-    .. math::
-
-        h_{pq} = \int \phi_p(r)^* \left ( -\frac{\nabla_r^2}{2} - \sum_i \frac{Z_i}{|r-R_i|} \right )  \phi_q(r) dr,
-
-    and
-
-    .. math::
-
-        h_{pqrs} = \int \frac{\phi_p(r_1)^* \phi_q(r_2)^* \phi_r(r_2) \phi_s(r_1)}{|r_1 - r_2|} dr_1 dr_2.
-
-    The molecular orbitals are constructed as a linear combination of atomic orbitals as
-
-    .. math::
-
-        \phi_i = \sum_{\nu}c_{\nu}^i \chi_{\nu}.
-
-    The one- and two-electron integrals can be written in the molecular orbital basis as
-
-    .. math::
-
-        h_{pq} = \sum_{\mu \nu} C_{p \mu} h_{\mu \nu} C_{\nu q},
-
-    and
-
-    .. math::
-
-        h_{pqrs} = \sum_{\mu \nu \rho \sigma} C_{p \mu} C_{q \nu} h_{\mu \nu \rho \sigma} C_{\rho r} C_{\sigma s}.
-
-    The :math:`h_{\mu \nu}` and :math:`h_{\mu \nu \rho \sigma}` terms refer to the elements of the
-    core matrix and the electron repulsion tensor, respectively, and :math:`C` is the molecular
-    orbital expansion coefficient matrix.
-
-    Args:
-        mol (~qchem.molecule.Molecule): the molecule object
-        core (list[int]): indices of the core orbitals
-        active (list[int]): indices of the active orbitals
-
-    Returns:
-        function: function that computes the core constant and the one- and two-electron integrals
-
-    **Example**
-
-    >>> symbols  = ['H', 'H']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-    >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
-    >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qp.qchem.Molecule(symbols, geometry, alpha=alpha)
-    >>> args = [alpha]
-    >>> electron_integrals(mol)(*args)
-    (1.0,
-     array([[-1.3902192695e+00,  0.0000000000e+00],
-            [-4.4408920985e-16, -2.9165331336e-01]]),
-     array([[[[ 7.1443907755e-01, -2.7755575616e-17],
-              [ 5.5511151231e-17,  1.7024144301e-01]],
-             [[ 5.5511151231e-17,  1.7024144301e-01],
-              [ 7.0185315353e-01,  6.6613381478e-16]]],
-            [[[-1.3877787808e-16,  7.0185315353e-01],
-              [ 1.7024144301e-01,  2.2204460493e-16]],
-             [[ 1.7024144301e-01, -4.4408920985e-16],
-              [ 6.6613381478e-16,  7.3883668974e-01]]]]))
-    """
-
-    def _electron_integrals(*args):
-        r"""Compute the one- and two-electron integrals in the molecular orbital basis.
-
-        Args:
-            *args (array[array[float]]): initial values of the differentiable parameters
-
-        Returns:
-            tuple[array[float]]: 1D tuple containing core constant, one- and two-electron integrals
-        """
-        _, coeffs, _, h_core, repulsion_tensor = scf(mol)(*args)
-        one = qp.math.einsum("qr,rs,st->qt", coeffs.T, h_core, coeffs)
-        two = qp.math.swapaxes(
-            qp.math.einsum(
-                "ab,cd,bdeg,ef,gh->acfh", coeffs.T, coeffs.T, repulsion_tensor, coeffs, coeffs
-            ),
-            1,
-            3,
-        )
-        core_constant = nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
-
-        if core is None and active is None:
-            return core_constant, one, two
-
-        for i in core:
-            core_constant = core_constant + 2 * one[i][i]
-            for j in core:
-                core_constant = core_constant + 2 * two[i][j][j][i] - two[i][j][i][j]
-
-        for p in active:
-            for q in active:
-                for i in core:
-                    o = qp.math.zeros(one.shape)
-                    o[p, q] = 1.0
-                    one = one + (2 * two[i][p][q][i] - two[i][p][i][q]) * o
-
-        one = one[qp.math.ix_(active, active)]
-        two = two[qp.math.ix_(active, active, active, active)]
-
-        return core_constant, one, two
-
-    return _electron_integrals
-
-
-def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
-    r"""Return a function that computes the fermionic Hamiltonian.
-
-    Args:
-        mol (~qchem.molecule.Molecule): the molecule object
-        cutoff (float): cutoff value for discarding the negligible electronic integrals
-        core (list[int]): indices of the core orbitals
-        active (list[int]): indices of the active orbitals
-
-    Returns:
-        function: function that computes the fermionic hamiltonian
-
-    **Example**
-
-    >>> symbols  = ['H', 'H']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-    >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
-    >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qp.qchem.Molecule(symbols, geometry, alpha=alpha)
-    >>> args = [alpha]
-    >>> h = fermionic_hamiltonian(mol)(*args)
-    """
-
-    def _fermionic_hamiltonian(*args):
-        r"""Compute the fermionic hamiltonian.
-
-        Args:
-            *args (array[array[float]]): initial values of the differentiable parameters
-
-        Returns:
-            FermiSentence: fermionic Hamiltonian
-        """
-
-        core_constant, one, two = electron_integrals(mol, core, active)(*args)
-
-        return fermionic_observable(core_constant, one, two, cutoff)
-
-    return _fermionic_hamiltonian
-
-
-def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, mapping="jordan_wigner"):
-    r"""Return a function that computes the qubit Hamiltonian.
-
-    Args:
-        mol (~qchem.molecule.Molecule): the molecule object
-        cutoff (float): cutoff value for discarding the negligible electronic integrals
-        core (list[int]): indices of the core orbitals
-        active (list[int]): indices of the active orbitals
-        mapping (str): Specifies the fermion-to-qubit mapping. Input values can
-            be ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
-
-    Returns:
-        function: function that computes the qubit hamiltonian
-
-    **Example**
-
-    >>> from pennylane import numpy as np
-    >>> symbols  = ['H', 'H']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-    >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
-    >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qp.qchem.Molecule(symbols, geometry, alpha=alpha)
-    >>> args = [alpha]
-    >>> h = qp.qchem.diff_hamiltonian(mol)(*args)
-    >>> h.terms()[0]
-    [tensor(0.29817878, requires_grad=True),
-    tensor(0.20813366, requires_grad=True),
-    tensor(-0.34724872, requires_grad=True),
-    tensor(0.13290292, requires_grad=True),
-    tensor(0.20813366, requires_grad=True),
-    tensor(0.17860977, requires_grad=True),
-    tensor(0.04256036, requires_grad=True),
-    tensor(-0.04256036, requires_grad=True),
-    tensor(-0.04256036, requires_grad=True),
-    tensor(0.04256036, requires_grad=True),
-    tensor(-0.34724872, requires_grad=True),
-    tensor(0.17546328, requires_grad=True),
-    tensor(0.13290292, requires_grad=True),
-    tensor(0.17546328, requires_grad=True),
-    tensor(0.18470917, requires_grad=True)]
-    """
-
-    def _molecular_hamiltonian(*args):
-        r"""Compute the qubit hamiltonian.
-
-        Args:
-            *args (array[array[float]]): initial values of the differentiable parameters
-
-        Returns:
-            Hamiltonian: the qubit Hamiltonian
-        """
-
-        h_ferm = fermionic_hamiltonian(mol, cutoff, core, active)(*args)
-
-        return qubit_observable(h_ferm, mapping=mapping)
-
-    return _molecular_hamiltonian
-
-
 def molecular_hamiltonian(*args, **kwargs):
-    """molecular_hamiltonian(molecule, method="dhf", active_electrons=None, active_orbitals=None,\
-    mapping="jordan_wigner", outpath=".", wires=None, args=None, convert_tol=1e12)
+    """molecular_hamiltonian(molecule, method="pyscf", active_electrons=None, active_orbitals=None,\
+    mapping="jordan_wigner", outpath=".", wires=None, convert_tol=1e12)
     Generate the qubit Hamiltonian of a molecule.
 
     This function drives the construction of the second-quantized electronic Hamiltonian
@@ -277,9 +56,8 @@ def molecular_hamiltonian(*args, **kwargs):
     Args:
         molecule (~qchem.molecule.Molecule): the molecule object
         method (str): Quantum chemistry method used to solve the
-            mean field electronic structure problem. Available options are ``method="dhf"``
-            to specify the built-in differentiable Hartree-Fock solver, ``method="pyscf"`` to use
-            the PySCF package (requires ``pyscf`` to be installed), or ``method="openfermion"`` to
+            mean field electronic structure problem. Available options are ``method="pyscf"``
+            to use the PySCF package (requires ``pyscf`` to be installed), or ``method="openfermion"`` to
             use the OpenFermion-PySCF plugin (this requires ``openfermionpyscf`` to be installed).
         active_electrons (int): Number of active electrons. If not specified, all electrons
             are considered to be active.
@@ -293,7 +71,6 @@ def molecular_hamiltonian(*args, **kwargs):
             corresponding to the qubit number equal to its index.
             For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted for
             partial mapping. If None, will use identity map.
-        args (array[array[float]]): initial values of the differentiable parameters
         convert_tol (float): Tolerance in `machine epsilon <https://numpy.org/doc/stable/reference/generated/numpy.real_if_close.html>`_
             for the imaginary part of the Hamiltonian coefficients created by openfermion.
             Coefficients with imaginary part less than 2.22e-16*tol are considered to be real.
@@ -317,22 +94,6 @@ def molecular_hamiltonian(*args, **kwargs):
     >>> H, qubits = qp.qchem.molecular_hamiltonian(molecule)
     >>> print(qubits)
     4
-    >>> print(H)
-    (-0.04207897647782188) [I0]
-    + (0.17771287465139934) [Z0]
-    + (0.1777128746513993) [Z1]
-    + (-0.24274280513140484) [Z2]
-    + (-0.24274280513140484) [Z3]
-    + (0.17059738328801055) [Z0 Z1]
-    + (0.04475014401535161) [Y0 X1 X2 Y3]
-    + (-0.04475014401535161) [Y0 Y1 X2 X3]
-    + (-0.04475014401535161) [X0 X1 Y2 Y3]
-    + (0.04475014401535161) [X0 Y1 Y2 X3]
-    + (0.12293305056183801) [Z0 Z2]
-    + (0.1676831945771896) [Z0 Z3]
-    + (0.1676831945771896) [Z1 Z2]
-    + (0.12293305056183801) [Z1 Z3]
-    + (0.176276408043196) [Z2 Z3]
 
     .. details::
         :title: Usage Details
@@ -340,8 +101,8 @@ def molecular_hamiltonian(*args, **kwargs):
         The old interface for this method involved passing molecular information as separate arguments:
 
             ``molecular_hamiltonian``\\ (`symbols, coordinates, name='molecule', charge=0, mult=1, basis='sto-3g',`
-            `method='dhf', active_electrons=None, active_orbitals=None, mapping='jordan_wigner', outpath='.',`
-            `wires=None, alpha=None, coeff=None, args=None, load_data=False, convert_tol=1e12`)
+            `method='pyscf', active_electrons=None, active_orbitals=None, mapping='jordan_wigner', outpath='.',`
+            `wires=None, convert_tol=1e12`)
 
         Molecule-based Arguments:
           - **symbols** (list[str]): symbols of the atomic species in the molecule
@@ -354,8 +115,6 @@ def molecular_hamiltonian(*args, **kwargs):
             unpaired electrons occupying the HF orbitals. Possible values of ``mult`` are :math:`1, 2, 3, \\ldots`.
             If not specified, a closed-shell HF state is assumed.
           - **basis** (str): atomic basis set used to represent the molecular orbitals
-          - **alpha** (array[float]): exponents of the primitive Gaussian functions
-          - **coeff** (array[float]): coefficients of the contracted Gaussian functions
 
         Therefore, a molecular Hamiltonian had to be constructed in the following manner:
 
@@ -398,13 +157,12 @@ def _molecular_hamiltonian_dispatch(*args, **kwargs):
 @_molecular_hamiltonian_dispatch.register(Molecule)
 def _(  # pylint: disable=too-many-arguments
     molecule,
-    method="dhf",
+    method="pyscf",
     active_electrons=None,
     active_orbitals=None,
     mapping="jordan_wigner",
     outpath=".",
     wires=None,
-    args=None,
     convert_tol=1e12,
 ):
     return _molecular_hamiltonian(
@@ -420,76 +178,8 @@ def _(  # pylint: disable=too-many-arguments
         mapping,
         outpath,
         wires,
-        molecule.alpha,
-        molecule.coeff,
-        args,
-        molecule.load_data,
         convert_tol,
     )
-
-
-def _dhf_molecular_hamiltonian(  # pylint: disable=too-many-arguments
-    symbols,
-    coordinates,
-    *,
-    geometry_dhf,
-    charge,
-    mult,
-    basis,
-    active_electrons,
-    active_orbitals,
-    mapping="jordan_wigner",
-    wires=None,
-    alpha=None,
-    coeff=None,
-    args=None,
-    load_data=False,
-):
-
-    if args is None and isinstance(geometry_dhf, qp.numpy.tensor):
-        geometry_dhf.requires_grad = False
-    mol = qp.qchem.Molecule(
-        symbols,
-        geometry_dhf,
-        charge=charge,
-        mult=mult,
-        basis_name=basis,
-        load_data=load_data,
-        alpha=alpha,
-        coeff=coeff,
-    )
-    core, active = qp.qchem.active_space(
-        mol.n_electrons, mol.n_orbitals, mult, active_electrons, active_orbitals
-    )
-
-    requires_grad = args is not None
-    interface = qp.math.get_interface(coordinates, alpha, coeff)
-    if interface == "autograd":
-        interface_args = {"like": "autograd", "requires_grad": requires_grad}
-    elif interface in {"numpy", "jax"}:
-        interface_args = {"like": interface}
-    else:
-        raise ValueError(f"unsupported interface {interface} for molecular_hamiltonian")
-    h = (
-        qp.qchem.diff_hamiltonian(mol, core=core, active=active, mapping=mapping)(*args)
-        if requires_grad
-        else qp.qchem.diff_hamiltonian(mol, core=core, active=active, mapping=mapping)()
-    )
-
-    h_as_ps = qp.pauli.pauli_sentence(h)
-    coeffs = qp.math.real(qp.math.array(list(h_as_ps.values()), **interface_args))
-    h_as_ps = qp.pauli.PauliSentence(dict(zip(h_as_ps.keys(), coeffs, strict=True)))
-    h = (
-        qp.s_prod(0, qp.Identity(h.wires[0]))
-        if len(h_as_ps) == 0
-        else qp.pauli.to_operator(h_as_ps)
-    )
-
-    if wires:
-        wires_new = qp.qchem.convert._process_wires(wires)  # pylint: disable=protected-access
-        wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels), strict=True))
-        h = qp.map_wires(h, wires_map)
-    return h, 2 * len(active)
 
 
 @_molecular_hamiltonian_dispatch.register(list)
@@ -501,16 +191,12 @@ def _(  # pylint: disable=too-many-arguments
     charge=0,
     mult=1,
     basis="sto-3g",
-    method="dhf",
+    method="pyscf",
     active_electrons=None,
     active_orbitals=None,
     mapping="jordan_wigner",
     outpath=".",
     wires=None,
-    alpha=None,
-    coeff=None,
-    args=None,
-    load_data=False,
     convert_tol=1e12,
 ):
 
@@ -536,39 +222,36 @@ def _(  # pylint: disable=too-many-arguments
         mapping=mapping,
         outpath=outpath,
         wires=wires,
-        alpha=alpha,
-        coeff=coeff,
-        args=args,
-        load_data=load_data,
         convert_tol=convert_tol,
     )
 
 
 def _molecular_hamiltonian(  # pylint: disable=too-many-arguments
-    symbols=None,
-    coordinates=None,
+    symbols,
+    coordinates,
     name="molecule",
     charge=0,
     mult=1,
     basis="sto-3g",
-    method="dhf",
+    method="pyscf",
     active_electrons=None,
     active_orbitals=None,
     mapping="jordan_wigner",
     outpath=".",
     wires=None,
-    alpha=None,
-    coeff=None,
-    args=None,
-    load_data=False,
     convert_tol=1e12,
 ):
     r"""Generate the qubit Hamiltonian of a molecule."""
     # pylint: disable=protected-access
 
     method = method.strip().lower()
-    if method not in ["dhf", "pyscf", "openfermion"]:
-        raise ValueError("Only 'dhf', 'pyscf' and 'openfermion' backends are supported.")
+    if method == "dhf":
+        raise ValueError(
+            "The differentiable Hartree-Fock solver (method='dhf') has been removed. "
+            "Use method='pyscf' (the default) or method='openfermion'."
+        )
+    if method not in ["pyscf", "openfermion"]:
+        raise ValueError("Only 'pyscf' and 'openfermion' backends are supported.")
 
     mapping = mapping.strip().lower()
     if mapping not in ["jordan_wigner", "parity", "bravyi_kitaev"]:
@@ -577,12 +260,7 @@ def _molecular_hamiltonian(  # pylint: disable=too-many-arguments
             f"Please set the mapping to 'jordan_wigner', 'parity' or 'bravyi_kitaev'."
         )
 
-    if len(coordinates) == len(symbols) * 3:
-        geometry_dhf = coordinates.reshape(len(symbols), 3)
-        geometry_hf = coordinates
-    elif len(coordinates) == len(symbols):
-        geometry_dhf = qp.math.array(coordinates, like=qp.math.get_deep_interface(coordinates))
-        geometry_hf = coordinates.flatten()
+    geometry_hf = coordinates.flatten()
 
     wires_map = None
 
@@ -590,9 +268,8 @@ def _molecular_hamiltonian(  # pylint: disable=too-many-arguments
         wires_new = qp.qchem.convert._process_wires(wires)
         wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels), strict=True))
 
-    if method in ("dhf", "pyscf"):
-        # pylint: disable-next=consider-using-generator
-        n_electrons = sum([atomic_numbers[s] for s in symbols]) - charge
+    if method == "pyscf":
+        n_electrons = sum(atomic_numbers[s] for s in symbols) - charge
 
         if n_electrons % 2 == 1 or mult != 1:
             raise ValueError(
@@ -600,27 +277,9 @@ def _molecular_hamiltonian(  # pylint: disable=too-many-arguments
                 "method = 'openfermion' or change the charge or spin multiplicity of the molecule."
             )
 
-    if method == "dhf":
-        return _dhf_molecular_hamiltonian(
-            symbols,
-            coordinates,
-            geometry_dhf=geometry_dhf,  # pylint: disable=possibly-used-before-assignment
-            charge=charge,
-            mult=mult,
-            basis=basis,
-            active_electrons=active_electrons,
-            active_orbitals=active_orbitals,
-            mapping=mapping,
-            wires=wires,
-            alpha=alpha,
-            coeff=coeff,
-            args=args,
-            load_data=load_data,
-        )
-    if method == "pyscf":
         core_constant, one_mo, two_mo = qp.qchem.openfermion_pyscf._pyscf_integrals(
             symbols,
-            geometry_hf,  # pylint: disable=possibly-used-before-assignment
+            geometry_hf,
             charge,
             mult,
             basis,
@@ -659,3 +318,65 @@ def _molecular_hamiltonian(  # pylint: disable=too-many-arguments
     )
 
     return h_pl, len(h_pl.wires)
+
+
+def molecular_integrals(molecule, active_electrons=None, active_orbitals=None):
+    r"""Compute the one- and two-electron integrals of a molecule in the molecular orbital basis.
+
+    The integrals are obtained from a Hartree-Fock calculation with PySCF and define the
+    second-quantized electronic Hamiltonian
+
+    .. math::
+
+        H = E_\text{core} + \sum_{pq} h_{pq} c_p^{\dagger} c_q
+        + \frac{1}{2} \sum_{pqrs} h_{pqrs} c_p^{\dagger} c_q^{\dagger} c_r c_s,
+
+    where :math:`E_\text{core}` is the core constant, :math:`h_{pq}` and :math:`h_{pqrs}` are the
+    one- and two-electron integrals, and :math:`c^{\dagger}` and :math:`c` are the creation and
+    annihilation operators. The two-electron integrals use the physicists' notation expected by
+    :func:`~.qchem.fermionic_observable` and :func:`~.qchem.basis_rotation`.
+    For :func:`~.qchem.factorize`, convert the tensor to chemists' notation with
+    ``np.swapaxes(two, 1, 3)``.
+
+    Args:
+        molecule (~qchem.molecule.Molecule): the molecule object
+        active_electrons (int): Number of active electrons. If not specified, all electrons are
+            considered to be active.
+        active_orbitals (int): Number of active spatial orbitals. If not specified, all orbitals
+            are considered to be active.
+
+    Returns:
+        tuple[array[float], array[float], array[float]]: the core constant and the one- and
+        two-electron integrals
+
+    .. note::
+
+        This function requires PySCF, which can be installed with ``pip install pyscf``.
+        The integrals are not differentiable with respect to the molecular parameters.
+
+    **Example**
+
+    >>> symbols = ["H", "H"]
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4]])
+    >>> mol = qp.qchem.Molecule(symbols, geometry)
+    >>> core, one, two = qp.qchem.molecular_integrals(mol)
+    >>> core
+    array([0.71428571])
+    >>> np.round(np.diag(one), 6)
+    array([-1.252797, -0.475602])
+    >>> two.shape
+    (2, 2, 2, 2)
+    >>> factors, _, _ = qp.qchem.factorize(np.swapaxes(two, 1, 3))
+    >>> factors.shape
+    (3, 2, 2)
+    """
+    # pylint: disable-next=protected-access
+    return qp.qchem.openfermion_pyscf._pyscf_integrals(
+        molecule.symbols,
+        qp.math.toarray(molecule.coordinates).flatten(),
+        molecule.charge,
+        molecule.mult,
+        molecule.basis_name,
+        active_electrons,
+        active_orbitals,
+    )

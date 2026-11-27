@@ -1018,6 +1018,10 @@ Improvements 🛠
   and point to native JAX optimizers such as Optax.
   `(#10560) <https://github.com/PennyLaneAI/pennylane/pull/10560>`__
 
+* The new :func:`~.qchem.molecular_integrals` computes molecular integrals with PySCF
+  for Hamiltonian construction and factorization.
+  `(#10581) <https://github.com/PennyLaneAI/pennylane/pull/10581>`__
+
 * :class:`~.ControlledSequence` now has two registered decomposition variants: one uses
   powers that can simplify eagerly for faster execution, while the other uses nested
   loops to keep the captured intermediate representation compact. Both variants include
@@ -2104,6 +2108,13 @@ Breaking changes 💔
   have been removed. Legacy device stopping conditions are now ordinary callables.
   `(#10601) <https://github.com/PennyLaneAI/pennylane/pull/10601>`__
 
+* The differentiable Hartree-Fock solver and ``method="dhf"`` have been removed.
+  :func:`~.qchem.molecular_hamiltonian` now defaults to ``method="pyscf"`` (requires ``pyscf``),
+  and :func:`~.qchem.molecular_dipole` to ``method="openfermion"`` (requires ``openfermionpyscf``).
+  :class:`~.qchem.Molecule` stores only metadata. Use :func:`~.qchem.molecular_integrals`
+  for molecular integrals; automatic differentiation of molecular parameters is unsupported.
+  `(#10581) <https://github.com/PennyLaneAI/pennylane/pull/10581>`__
+
 Deprecations 👋
 ~~~~~~~~~~~~~~~
 
@@ -2709,6 +2720,9 @@ Bug fixes 🐛
 * Fixed the extra-control-wire test for :class:`~.QROM` to omit work-register sampling
   when no work wires are present, and removed its outdated expected-failure marker.
   `(#10586) <https://github.com/PennyLaneAI/pennylane/pull/10586>`__
+
+* Fixed PySCF active-space truncation when no core orbitals are frozen.
+  `(#10581) <https://github.com/PennyLaneAI/pennylane/pull/10581>`__
 
 * Fixed resource callbacks in :class:`~.SingleExcitation` decompositions to accept positional arguments.
   `(#10575) <https://github.com/PennyLaneAI/pennylane/pull/10575>`__
