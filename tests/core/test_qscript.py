@@ -1416,6 +1416,7 @@ def test_jax_pytree_integration():
     assert qp.math.allclose(data[8], eye_mat)
 
 
+# pylint: disable=protected-access
 class TestParameters:
     """Tests for parameter processing, setting, and manipulation"""
 
