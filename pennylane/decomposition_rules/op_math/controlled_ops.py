@@ -24,6 +24,7 @@ from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.ops.op_math.controlled import _resolve_ctrl_values
 from pennylane.ops.op_math.controlled_ops import (
     CCZ,
     CH,

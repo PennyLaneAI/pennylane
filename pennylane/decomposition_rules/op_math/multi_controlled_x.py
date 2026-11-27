@@ -25,6 +25,7 @@ from pennylane.decomposition.decomposition_rule import (
 )
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
+from pennylane.ops.op_math.controlled import _resolve_ctrl_values
 from pennylane.ops.op_math.controlled_ops import MultiControlledX
 from pennylane.ops.op_math.pow2 import pow_involutory
 from pennylane.typing import Bool, Complex, Float, Wire
