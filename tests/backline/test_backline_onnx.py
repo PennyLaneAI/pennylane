@@ -78,6 +78,19 @@ class TestOnnxFunction:
         with pytest.raises(ValueError, match="must not contain ';'"):
             _function(model=Path("/models/a;b.onnx"))
 
+    def test_the_function_declares_its_model_and_onnxruntime_as_files(self):
+        """The model and the onnxruntime library are the files a remote coprocessor needs."""
+        assert _function().files == ("model", "ort_lib")
+
+    def test_the_provider_libraries_beside_onnxruntime_are_extra_files(self, tmp_path):
+        """onnxruntime loads its execution providers from its own directory, so they travel with
+        it as extra files, and nothing else in that directory does."""
+        (tmp_path / "libonnxruntime.so.1.2.3").write_bytes(b"")
+        (tmp_path / "libonnxruntime_providers_shared.so").write_bytes(b"")
+        (tmp_path / "onnxruntime_pybind11_state.so").write_bytes(b"")
+        fn = _onnx_function(Path("/m.onnx"), str(tmp_path / "libonnxruntime.so.1.2.3"), (8, 8))
+        assert fn.extra_files == (str(tmp_path / "libonnxruntime_providers_shared.so"),)
+
 
 class TestOnnxDecoder:
     """The arguments onnx_decoder checks before it reads the model, and a model it reads."""
