@@ -287,14 +287,15 @@ class TestDiagonalization:
 
         assert len(hints) == 2
 
+        # Fragment 0 is not diagonalized by ``TrotterVibronic``
         num_hadamards = num_cnots = 0
-        for fragment_idx in range(num_fragments):
+        for fragment_idx in range(1, num_fragments):
             ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, fragment_idx).operations
             num_hadamards += sum(isinstance(op, qp.Hadamard) for op in ops)
             num_cnots += sum(isinstance(op, qp.CNOT) for op in ops)
 
         # Hints for the Hadamard (with nested CNOT loop) and for each CNOT in the loop
-        assert hints[0][0] == pytest.approx(num_hadamards / num_fragments)
+        assert hints[0][0] == pytest.approx(num_hadamards / (num_fragments - 1))
         assert hints[1][0] == pytest.approx(num_cnots / (num_hadamards * n))
 
     def test_matrix_is_orthogonal(self):
@@ -602,12 +603,16 @@ class TestDecomposition:
 
     @pytest.mark.parametrize("num_steps", [1, 2, 3])
     def test_num_steps_scales(self, num_steps, seed):
-        """Test that the number of queued operations scales linearly with the Trotter steps."""
+        """Test that the number of queued operations scales linearly with the Trotter steps,
+        where each step adds one visit of fragment 0 instead of two."""
         hamiltonian = build_hamiltonian(fragment_list(seed=seed))
         wires = make_wires(2, 2)
-        one = decomposition_queue(make_op(hamiltonian, wires, num_trotter_steps=1))
-        many = decomposition_queue(make_op(hamiltonian, wires, num_trotter_steps=num_steps))
-        assert len(many) == num_steps * len(one)
+        one, two, many = (
+            decomposition_queue(make_op(hamiltonian, wires, num_trotter_steps=r))
+            for r in (1, 2, num_steps)
+        )
+        assert len(many) == len(one) + (num_steps - 1) * (len(two) - len(one))
+        assert len(two) < 2 * len(one)
 
     def test_constant_term_queues_semiadder(self, seed):
         """Test that a constant position term queues a SemiAdder."""
@@ -823,7 +828,7 @@ class TestDecomposition:
 
         # Infer the number of applied terms from the arithmetic operations specific to them
         num_fragments = hamiltonian.num_fragments
-        position_visits = 2 * num_fragments * num_steps
+        position_visits = 2 * (num_fragments - 1) * num_steps + num_steps + 1
         num_pairs = n_modes * (n_modes - 1) // 2
         # A half-signed multiplier with an ``m``-wire signed register emits one ``SemiAdder`` and
         # ``2 min(m, b + 1)`` controlled ``MultiX`` gates. Its signed register is a mode register
@@ -846,7 +851,8 @@ class TestDecomposition:
         diag = [pytest.approx((p, 1 - p)) for p in _diagonalize_probs(num_fragments, n)]
         terms = [skip_hint(p) for p in (p_constant, p_linear, p_quadratic, p_bilinear)]
         fragment_hints = [*diag, *terms, *diag]
-        expected = [*fragment_hints, skip_hint(p_kinetic), *fragment_hints]
+        # Fragment 0 is not diagonalized, and visited before and at the end of each step
+        expected = [*terms, *fragment_hints, skip_hint(p_kinetic), *fragment_hints, *terms]
         assert hint_helpers.cond_hints(plxpr.jaxpr) == expected
 
     @pytest.mark.capture
@@ -1081,6 +1087,44 @@ class TestNumericalCorrectness:
 
         expected = -(theta(1) - theta(0))  # arg(e^{-i theta_1} conj(e^{-i theta_0}))
         assert np.isclose(np.exp(1j * measured), np.exp(1j * expected))
+
+    def test_merged_fragment_zero_matches_separate_steps(self):
+        """Test that merging the half time steps of fragment 0 between consecutive Trotter steps
+        realizes the same unitary as applying the Trotter steps separately, for coefficients
+        that are exact binary fractions of ``2 pi`` at both time steps."""
+        n_states, n_modes, k, b = 2, 1, 2, 3
+        # Half time steps of 0.5 and integer multiples of ``scale`` give exact encodings
+        scale = 2 * np.pi / 2 ** (b - 1)
+        constant = np.zeros((2, n_states, n_states))
+        linear = np.zeros((2, n_states, n_states, n_modes))
+        constant[0] = np.diag([1, -1]) * scale
+        linear[0, :, :, 0] = np.diag([1, 2]) * scale
+        # Fragment 1 couples the electronic states, so it does not commute with fragment 0
+        constant[1] = np.array([[0, 1], [1, 0]]) * scale
+        linear[1, :, :, 0] = np.array([[0, -1], [-1, 0]]) * scale
+        hamiltonian = qp.VibronicHamiltonian(
+            constant=constant,
+            linear=linear,
+            quadratic=np.zeros((2, n_states, n_states, n_modes, n_modes)),
+            kinetic=np.einsum("ab,cd->abcd", np.eye(n_states), np.diag([2 * scale])),
+        )
+        wires = make_wires(n_states, n_modes, k=k, b=b)
+        num_wires = max(w for reg in wires.values() for w in reg) + 1
+
+        @qp.qnode(qp.device("default.qubit", wires=num_wires))
+        def circuit(num_ops):
+            qp.Hadamard(wires["electronic"][0])
+            qp.RY(0.4, wires["vib_wires"][0])
+            qp.RX(0.7, wires["vib_wires"][1])
+            qp.CNOT(wires["vib_wires"])
+            qp.PhaseGradientStatePrep(wires["phase_gradient"])
+            for _ in range(num_ops):
+                make_op(
+                    hamiltonian, wires, evolution_time=2.0 / num_ops, num_trotter_steps=2 // num_ops
+                )
+            return qp.state()
+
+        assert np.allclose(circuit(1), circuit(2))
 
     def test_kinetic_aqft_with_phase_gradient_rotations(self):
         """Test that the ``AQFT`` of the kinetic fragment may be decomposed into phase-gradient
