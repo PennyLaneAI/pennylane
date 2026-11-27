@@ -1063,6 +1063,13 @@ Improvements 🛠
   `(#10401) <https://github.com/PennyLaneAI/pennylane/pull/10401>`__
   `(#10445) <https://github.com/PennyLaneAI/pennylane/pull/10445>`__
 
+* The half-signed multipliers of the linear and bilinear terms of :class:`~.TrotterVibronic`
+  are cheaper. They add the product up to an offset :math:`\lfloor x/2\rfloor` of the loaded
+  coefficient :math:`x`, which is cancelled classically in the constant term of the same
+  position fragment. This saves :math:`b` :class:`~.TemporaryAND` gates for :math:`b`-bit
+  coefficients.
+  `(#10569) <https://github.com/PennyLaneAI/pennylane/pull/10569>`__
+
 * Added ``pennylane.core.get_op_class_by_name``
   to retrieve built-in and user-defined ``Operator2`` classes by name. Operator classes are
   automatically registered when they are defined.
