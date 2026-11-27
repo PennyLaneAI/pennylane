@@ -701,6 +701,16 @@ New features since last release
   declare, so the resources can also differ from those of :func:`~.analyze`.
   `(#10541) <https://github.com/PennyLaneAI/pennylane/pull/10541>`__
 
+  At the ``level`` values after the transforms, such as ``"user"``, ``"all-user"``, an ``int`` or
+  a list of levels, :func:`~pennylane.estimate` estimates the resources that :func:`~.analyze`
+  gives at those levels, without applying the transforms. A first :func:`~.transforms.decompose`
+  transform is estimated from the resources that its rules declare, and the following transforms
+  from the resource effects that Catalyst declares for their passes, such as
+  :func:`~.transforms.to_ppr`, :func:`~.transforms.ppr_to_ppm`,
+  :func:`~.transforms.combine_global_phases` and :func:`~.transforms.gridsynth`. The peak number
+  of live qubits is reported along with the total number of allocations.
+  `(#10604) <https://github.com/PennyLaneAI/pennylane/pull/10604>`__
+
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
   that can't be resolved at compile time.
   In such cases the returned :class:`~.resource.CircuitSpecs` will contain :class:`~.resource.Expression` instances where ``int`` values would normally appear.

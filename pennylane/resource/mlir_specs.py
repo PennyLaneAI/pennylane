@@ -30,6 +30,22 @@ from .resource import SpecsResources
 _RESOURCE_ANALYSIS_PREFIX = "pennylane_specs_analysis_pass"
 
 
+def _level_name(
+    level: int,
+    pipeline: CompilePipeline,
+    level_to_markers: dict[int, list[str]],
+    level_to_name: dict[int, str],
+) -> str:
+    """Return the name of a level before the device level, unique among ``level_to_name``."""
+    if level == 0:
+        return ", ".join(level_to_markers[0]) if 0 in level_to_markers else "Before MLIR Passes"
+    if level in level_to_markers:
+        name = ", ".join(level_to_markers[level])
+    else:
+        name = pipeline[level - 1].pass_name or f"Level {level}"
+    return make_level_name_unique(name, frozenset(level_to_name.values()))
+
+
 def resources_from_analysis_pass(  # pylint: disable=too-many-arguments,too-many-statements
     qjit,
     original_qnode,
@@ -97,9 +113,7 @@ def resources_from_analysis_pass(  # pylint: disable=too-many-arguments,too-many
         if 0 in level:
             fname = f"{fname_prefix}before.json"
             fname_to_level[fname] = 0
-            level_to_name[0] = (
-                ", ".join(level_to_markers[0]) if 0 in level_to_markers else "Before MLIR Passes"
-            )
+            level_to_name[0] = _level_name(0, iter_pipeline, level_to_markers, level_to_name)
             new_compile_pipeline += transform(pass_name=analysis_pass_name)(
                 output_json=True, output_fname=fname, **analysis_pass_kwargs
             )
@@ -110,14 +124,8 @@ def resources_from_analysis_pass(  # pylint: disable=too-many-arguments,too-many
             new_compile_pipeline += comp_pass
             if i in level:
                 fname = f"{fname_prefix}{i}.json"
-                level_name = (
-                    ", ".join(level_to_markers[i])
-                    if i in level_to_markers
-                    else comp_pass.pass_name or f"Level {i}"
-                )
-                level_name = make_level_name_unique(level_name, frozenset(level_to_name.values()))
                 fname_to_level[fname] = i
-                level_to_name[i] = level_name
+                level_to_name[i] = _level_name(i, iter_pipeline, level_to_markers, level_to_name)
                 new_compile_pipeline += transform(pass_name=analysis_pass_name)(
                     output_json=True, output_fname=fname, **analysis_pass_kwargs
                 )
@@ -173,5 +181,74 @@ def resources_from_analysis_pass(  # pylint: disable=too-many-arguments,too-many
                 cur_level_resources = cur_level_resources[0]
 
             results[level_to_name[curr_level]] = cur_level_resources
+
+    return results
+
+
+def resources_from_estimate_stage(
+    qjit,
+    original_qnode,
+    level: list[int],
+    level_to_markers: dict[int, list[str]],
+    level_to_name: dict[int, str],
+    *args,
+    **kwargs,
+) -> dict[str, SpecsResources | list[SpecsResources]]:
+    """
+    Helper function to get specs information at the specified levels from Catalyst's estimate of
+    the compile pipeline, which applies the declared resource effects of the passes instead of
+    the passes.
+
+    .. warning::
+
+        This function is intended for internal use and may be subject to change without deprecation.
+
+    Args:
+        qjit (:class:`~catalyst.QJIT`): the QNode to estimate the specifications for.
+        original_qnode (:class:`~pennylane.QNode`): the original QNode before any compilation
+        level (list[int]): the levels before the device level at which to estimate the resources
+        level_to_markers (dict[int, list[str]]): mapping from level number to a list of marker names
+        level_to_name (dict[int, str]): mapping from level number to the name to use for that level
+            in the output. Note that this argument is mutated by this function
+        *args: the arguments to pass to the QNode when compiling
+        **kwargs: the keyword arguments to pass to the QNode when compiling
+    Returns:
+        dict[str, SpecsResources | list[SpecsResources]]: A mapping from level name to the
+            corresponding resource information.
+    """
+
+    from catalyst import QJIT  # pylint: disable=import-outside-toplevel
+
+    pipeline = original_qnode.compile_pipeline
+    with tempfile.TemporaryDirectory(
+        prefix=f"{_RESOURCE_ANALYSIS_PREFIX}_{os.getpid()}_"
+    ) as tmpdirname:
+        fname = Path(tmpdirname) / f"{_RESOURCE_ANALYSIS_PREFIX}_levels.json"
+
+        # Only the passes up to the highest level are estimated, and the device preprocessing is
+        # skipped
+        new_qnode = original_qnode.update_pipelines(
+            pipeline[: max(level)], post_device_pipeline=CompilePipeline()
+        )
+        compile_options = copy.deepcopy(qjit.compile_options)
+        compile_options.skip_preprocess = True
+        compile_options.target = "mlir_opt"
+        compile_options.enable_aot_compilation = False
+        # The decompositions are estimated rather than applied, which only needs rules without bodies
+        compile_options.estimate_decomps = True
+        compile_options.pipelines = [
+            ("pipe", [f"estimate-transform-stage{{output-fname={fname}}}"])
+        ]
+        QJIT(new_qnode, compile_options=compile_options).aot_compile(*args, **kwargs)
+
+        levels = json.loads(fname.read_text(encoding="utf-8"))
+
+    results = {}
+    for i in sorted(level):
+        level_to_name[i] = _level_name(i, pipeline, level_to_markers, level_to_name)
+        level_resources = parse_resources_json(levels[i]["resources"], peak_wires=True)
+        results[level_to_name[i]] = (
+            level_resources[0] if len(level_resources) == 1 else level_resources
+        )
 
     return results

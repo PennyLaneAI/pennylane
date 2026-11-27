@@ -512,7 +512,7 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
 
     def test_marker_levels(self, qnode):
         """Test that a marker before every pass is the same as level="top", and that a marker
-        after a pass is not supported."""
+        after a pass is estimated from the resource effect of the pass."""
 
         circuit = qp.marker(qnode, "start")
         circuit = qp.transforms.cancel_inverses(circuit)
@@ -521,8 +521,11 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         specs = qp.estimate(circuit, level="start", target=TARGET)(0.5)
         assert specs == qp.estimate(circuit, level="top", target=TARGET)(0.5)
 
-        with pytest.raises(NotImplementedError, match="qp.estimate only supports level='top'"):
-            qp.estimate(circuit, level="end", target=TARGET)(0.5)
+        with pytest.raises(
+            catalyst.utils.exceptions.CompileError,
+            match="no resource effect is declared for the pass 'cancel-inverses'",
+        ):
+            qp.estimate(circuit, level="end")(0.5)
 
     @pytest.mark.parametrize("level", [slice(0, 0), slice(1, 1)])
     def test_levels_equivalent_to_top(self, circuit, level):
@@ -535,44 +538,43 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         assert specs == qp.estimate(circuit, level="top", target=TARGET)(0.5)
 
     @pytest.mark.parametrize(
-        "level",
-        [
-            1,
-            "user",
-            "all",
-            [0],
-            ("top",),
-            ["device"],
-            [1],
-            ["user"],
-            (0, 1),
-            slice(0, 1),
-            slice(1, 2),
-            slice(0, None),
-        ],
+        "level", [1, "user", [0], ("top",), [1], ["user"], (0, 1), [1, 0], "all-user"]
     )
-    def test_unsupported_level(self, circuit, level):
-        """Test that an error is raised for levels other than "top"."""
-
-        with pytest.raises(NotImplementedError, match="qp.estimate only supports level='top'"):
-            qp.estimate(circuit, level=level, target=TARGET)(0.5)
-
-    def test_unsorted_sequence_does_not_warn(self, circuit):
-        """Test that an unsupported unsorted Sequence of levels raises an error without warning
-        about sorting it."""
+    def test_target_after_transforms(self, circuit, level):
+        """Test that an error is raised for a target at the levels other than "top", without
+        warning about sorting the levels."""
 
         with warnings.catch_warnings():
             warnings.filterwarnings("error", message="The 'level' argument has been sorted")
-            with pytest.raises(NotImplementedError, match="qp.estimate only supports"):
-                qp.estimate(circuit, level=[1, 0], target=TARGET)(0.5)
+            with pytest.raises(ValueError, match="target is only used at level='top'"):
+                qp.estimate(circuit, level=level, target=TARGET)(0.5)
+
+    @pytest.mark.parametrize("level", [slice(0, 1), slice(1, 2), slice(0, None)])
+    def test_slices_with_transforms(self, circuit, level):
+        """Test that an error is raised for slices that select transforms."""
+
+        with pytest.raises(NotImplementedError, match="does not support slices that select"):
+            qp.estimate(circuit, level=level)(0.5)
 
     @pytest.mark.parametrize("level", ["all-user", ["top", 0]])
     def test_multiple_levels_without_transforms(self, qnode, level):
-        """Test that several levels are not supported, even if they all are level 0 because the
-        QNode has no transforms."""
+        """Test that several levels of a QNode without transforms are all level 0, which has the
+        resources before the transforms, as in qp.analyze."""
 
-        with pytest.raises(NotImplementedError, match="qp.estimate only supports level='top'"):
-            qp.estimate(qp.qjit(qnode), level=level, target=TARGET)(0.5)
+        specs = qp.estimate(qp.qjit(qnode), level=level)(0.5)
+
+        assert specs.level == {0: "Before MLIR Passes"}
+        resources = specs.resources["Before MLIR Passes"]
+        assert resources.counts == {"Hadamard": 2, "CZ": 1, "RX": 1}
+        assert resources.num_wires == 2
+        assert resources.extra == {"qubit_liveness": {"peak_wires": 2}}
+
+    @pytest.mark.parametrize("level", ["all", [0, "device"], [2]])
+    def test_device_level_after_transforms(self, circuit, level):
+        """Test that an error is raised for the device level among several levels."""
+
+        with pytest.raises(NotImplementedError, match="does not support the device level yet"):
+            qp.estimate(circuit, level=level)(0.5)
 
     def test_device_level(self, circuit):
         """Test that an error is raised for level="device"."""
@@ -613,6 +615,7 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         specs = qp.estimate(circuit)(0.5)
 
         assert specs == qp.estimate(circuit, target="user")(0.5)
+        assert specs == qp.estimate(circuit, target=None)(0.5)
         assert specs.resources.quantum_operations == {"Hadamard": 4, "CNOT": 1, "RX": 1}
 
     @pytest.mark.parametrize("target", [2, np.int64(2)])
@@ -1031,13 +1034,11 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         with pytest.raises(ValueError, match="contains 'user', .* such as target='user'.$"):
             qp.estimate(circuit, target=["user"])(0.5)
 
-    @pytest.mark.parametrize("target", [True, None])
-    def test_invalid_target(self, circuit, target):
-        """Test that an error is raised for a bool target, which is not an integer level, and for
-        None."""
+    def test_invalid_target(self, circuit):
+        """Test that an error is raised for a bool target, which is not an integer level."""
 
-        with pytest.raises(ValueError, match=f"Invalid target={target}, expected a gate set"):
-            qp.estimate(circuit, target=target)(0.5)
+        with pytest.raises(ValueError, match="Invalid target=True, expected a gate set"):
+            qp.estimate(circuit, target=True)(0.5)
 
     @pytest.mark.parametrize("target", [-1, 3])
     def test_integer_target_out_of_bounds(self, circuit, target):
@@ -1142,6 +1143,193 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
             "PauliX": 4,
             "T": 4,
         }
+
+
+CLIFFORD_T = {"Hadamard", "S", "Adjoint(S)", "T", "Adjoint(T)", "PauliX", "CNOT", "GlobalPhase"}
+
+
+def _clifford_t_circuit(n):
+    """A Clifford+T circuit on 3 qubits, with a Toffoli gate and a loop of ``n`` iterations."""
+    qp.Hadamard(0)
+    qp.Toffoli([0, 1, 2])
+
+    @qp.for_loop(n)
+    def loop(i):
+        qp.T(i % 3)
+        qp.CNOT([i % 3, (i + 1) % 3])
+
+    loop()
+    return qp.expval(qp.Z(0))
+
+
+@pytest.mark.capture
+class TestEstimateAfterTransforms:
+    """Test qp.estimate() at the levels after the transforms, which are estimated from the
+    resource effects of their passes, against qp.analyze(), which applies them."""
+
+    @staticmethod
+    def assert_same_as_analyze(circuit, *args, level="all-user"):
+        """Assert that the estimated resources at each level are those found by analyzing the
+        compiled circuit."""
+        estimated = qp.estimate(circuit, level=level)(*args)
+        analyzed = qp.analyze(circuit, level=level)(*args)
+
+        assert estimated.level == analyzed.level
+        if isinstance(analyzed.resources, dict):
+            pairs = [(estimated.resources[name], res) for name, res in analyzed.resources.items()]
+        else:
+            pairs = [(estimated.resources, analyzed.resources)]
+        for estimated_resources, resources in pairs:
+            assert estimated_resources.counts == resources.counts
+            assert estimated_resources.measurement_processes == resources.measurement_processes
+            assert estimated_resources.num_wires == resources.num_wires
+        return estimated
+
+    @pytest.mark.parametrize("static_loop", [True, False])
+    def test_pbc(self, static_loop):
+        """Test the resources after lowering a Clifford+T circuit to Pauli-based computation,
+        with a loop of known or unknown length."""
+
+        @qp.qjit(capture=True)
+        @qp.transforms.ppr_to_ppm
+        @qp.transforms.to_ppr
+        @qp.transforms.combine_global_phases
+        @qp.decompose(gate_set=CLIFFORD_T)
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def circuit(n):
+            return _clifford_t_circuit(3 if static_loop else n)
+
+        estimated = self.assert_same_as_analyze(circuit, 3)
+
+        # The ancilla of each PPR is released before the next one
+        peak_wires = [
+            res.extra["qubit_liveness"]["peak_wires"] for res in estimated.resources.values()
+        ]
+        assert peak_wires == [3, 3, 3, 3, 4]
+
+    @pytest.mark.parametrize("ppr_basis", [False, True])
+    @pytest.mark.parametrize("method", ["deterministic", "mixed", "mixed-fallback"])
+    def test_gridsynth(self, ppr_basis, method):
+        """Test the expected resources after discretizing rotations with gridsynth."""
+
+        @qp.qjit(capture=True)
+        @qp.transforms.gridsynth(epsilon=1e-6, ppr_basis=ppr_basis, method=method)
+        @qp.decompose(gate_set=CLIFFORD_T | {"RZ", "PhaseShift"})
+        @qp.qnode(qp.device("null.qubit", wires=2))
+        def circuit(x):
+            qp.RX(x, 0)
+            qp.CNOT([0, 1])
+            qp.PhaseShift(x, 1)
+            return qp.expval(qp.Z(0))
+
+        self.assert_same_as_analyze(circuit, 0.5)
+
+    def test_without_decompose(self):
+        """Test the resources after transforms of a circuit that is not decomposed first."""
+
+        @qp.qjit(capture=True)
+        @qp.transforms.to_ppr
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def circuit():
+            qp.Hadamard(0)
+            qp.T(1)
+            qp.CNOT([0, 1])
+            qp.RZ(0.5, 2)
+            return qp.expval(qp.Z(0))
+
+        self.assert_same_as_analyze(circuit)
+
+    @pytest.mark.parametrize(
+        "level", [2, 4, "lowered", [0, 2], ["decomposed", 4], "user", "all-user"]
+    )
+    def test_levels(self, level):
+        """Test that a level, several levels, markers and repeated passes are named as in
+        qp.analyze."""
+
+        circuit = qp.decompose(
+            qp.qnode(qp.device("null.qubit", wires=3))(_clifford_t_circuit), gate_set=CLIFFORD_T
+        )
+        circuit = qp.marker(circuit, "decomposed")
+        circuit = qp.transforms.combine_global_phases(circuit)
+        circuit = qp.marker(qp.transforms.to_ppr(circuit), "lowered")
+        circuit = qp.qjit(qp.transforms.combine_global_phases(circuit))
+
+        self.assert_same_as_analyze(circuit, 2, level=level)
+
+    def test_level_zero_among_levels(self):
+        """Test that level 0 among several levels has the resources before the transforms, as in
+        qp.analyze, rather than projected onto a target as for level="top" on its own."""
+
+        @qp.qjit(capture=True)
+        @qp.transforms.to_ppr
+        @qp.decompose(gate_set=CLIFFORD_T)
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def circuit():
+            return _clifford_t_circuit(1)
+
+        specs = qp.estimate(circuit, level=[0, 1])()
+
+        assert specs.resources["Before MLIR Passes"].counts == {
+            "CNOT": 1,
+            "Hadamard": 1,
+            "T": 1,
+            "Toffoli": 1,
+        }
+        assert qp.estimate(circuit, level=0)().resources.counts == (
+            specs.resources["graph-decomposition"].counts
+        )
+
+    def test_decompose_after_another_transform(self):
+        """Test that an error is raised for a decomposition that is not the first transform."""
+
+        @qp.qjit(capture=True)
+        @qp.decompose(gate_set=CLIFFORD_T)
+        @qp.transforms.combine_global_phases
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def circuit():
+            return _clifford_t_circuit(1)
+
+        with pytest.raises(
+            catalyst.utils.exceptions.CompileError,
+            match="only supports graph-decomposition as the first pass",
+        ):
+            qp.estimate(circuit, level=2)()
+
+    def test_unsupported_options(self):
+        """Test that an error is raised for the options of a pass that its resource effect does
+        not support."""
+
+        @qp.qjit(capture=True)
+        @qp.transforms.ppr_to_ppm(avoid_y_measure=True)
+        @qp.transforms.to_ppr
+        @qp.qnode(qp.device("null.qubit", wires=1))
+        def circuit():
+            qp.T(0)
+            return qp.expval(qp.Z(0))
+
+        with pytest.raises(
+            catalyst.utils.exceptions.CompileError,
+            match="only supports ppr-to-ppm with decompose-method=pauli-corrected",
+        ):
+            qp.estimate(circuit, level=2)()
+
+    def test_tape_transforms(self):
+        """Test that an error is raised for tape transforms before the levels."""
+
+        @qp.transform
+        def tape_transform(tape):
+            """A tape transform without a pass."""
+            return (tape,), lambda res: res[0]
+
+        @qp.qjit(capture=True)
+        @tape_transform
+        @qp.qnode(qp.device("null.qubit", wires=1))
+        def circuit():
+            qp.T(0)
+            return qp.expval(qp.Z(0))
+
+        with pytest.raises(ValueError, match="Tape transforms are no longer supported"):
+            qp.estimate(circuit, level=1)()
 
 
 @pytest.mark.usefixtures("disable_capture")

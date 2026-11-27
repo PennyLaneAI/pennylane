@@ -171,6 +171,12 @@ Note that both ``PauliX`` gates are counted (:func:`~.cancel_inverses` is ignore
 ``level=0``) and the ``CZ`` gate's decomposition pathway to ``CNOT`` and ``Hadamard`` is shown in
 the final resource estimate.
 
+At the levels after the transforms, such as ``level="user"``, :func:`~pennylane.estimate`
+instead estimates the resources that :func:`~pennylane.analyze` gives at those levels, without
+applying the transforms. Each transform is estimated from the resource effect that Catalyst
+declares for its pass, so only the transforms with a declared effect are supported, such as
+:func:`~.transforms.to_ppr`, :func:`~.transforms.ppr_to_ppm` and :func:`~.transforms.gridsynth`.
+
 
 Circuit drawing
 ---------------
