@@ -156,6 +156,8 @@ class GQSP(Operator2):
              [0.   -0.03j 0.396+0.2j ]]
     """
 
+    grad_method = None
+
     dynamic_argnames = ("angles",)
     static_argnames = ("work_wire_type", "shift")
     hybrid_argnames = ("unitary",)

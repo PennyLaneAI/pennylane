@@ -280,6 +280,24 @@ class TestGQSP:
         assert np.allclose(expected_output, generated_output)
         assert qp.math.get_interface(generated_output) == "jax"
 
+    @pytest.mark.autograd
+    def test_gqsp_ps_rule_gradient(self, tol):
+        """Test parameter-shift rule gradient."""
+
+        dev = qp.device("default.qubit")
+
+        def circuit(angles):
+            qp.GQSP(qp.RX(0.3, wires=1), angles, control=0)
+            return qp.expval(qp.Z(0))
+
+        backprop_grad = qp.grad(qp.QNode(circuit, dev, diff_method="backprop"))
+        ps_rule_grad = qp.grad(qp.QNode(circuit, dev, diff_method="parameter-shift"))
+
+        angles = qp.numpy.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]], requires_grad=True)
+        res = backprop_grad(angles)
+        res2 = ps_rule_grad(angles)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
     @pytest.mark.torch
     def test_gqsp_torch(self):
         """Test that GQSP works with torch"""

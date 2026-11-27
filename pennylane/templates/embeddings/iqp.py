@@ -192,6 +192,7 @@ class IQPEmbedding(Operator2):
     compilable_argnames = ("n_repeats",)
     arg_specs = {"features": Float[-1], "pattern": Int[-1, 2], "wires": Wire[-1]}
 
+    grad_method = None
     ndim_params = (1, 2)
 
     def __init__(self, features, wires, n_repeats=1, pattern=None):
