@@ -715,7 +715,7 @@ class TestMeasurementQROM:
         initial_state = qp.math.zeros((*logical_state.shape, 2**num_work), dtype=complex)
         initial_state[:, :, 0] = logical_state
 
-        @qp.qjit(capture=True, seed=seed)
+        @qp.qjit(seed=seed)
         @qp.decompose(
             gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ | {"PauliMeasure"},
             fixed_decomps={
@@ -826,8 +826,8 @@ class TestMeasurementQROM:
 
         shots = 10
 
-        @qp.qjit(capture=True)
-        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
+        @qp.qjit
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ | {"PauliMeasure"})
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):
@@ -868,10 +868,8 @@ class TestMeasurementQROM:
         x_state = rng.random(L) + 1j * rng.random(L)
         x_state /= np.linalg.norm(x_state)
 
-        @qp.qjit(
-            capture=True, seed=seed
-        )  # Provide a seed for deterministic measurement projections
-        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
+        @qp.qjit(seed=seed)  # Provide a seed for deterministic measurement projections
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ | {"PauliMeasure"})
         @qp.qnode(dev)
         def circuit():
             qp.StatePrep(x_state, wires=control_wires, pad_with=0.0)
@@ -934,8 +932,8 @@ class TestMeasurementQROM:
 
         shots = 10
 
-        @qp.qjit(capture=True)
-        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
+        @qp.qjit
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ | {"PauliMeasure"})
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):
@@ -993,8 +991,8 @@ class TestMeasurementQROM:
 
         shots = 10
 
-        @qp.qjit(capture=True)
-        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
+        @qp.qjit
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ | {"PauliMeasure"})
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):
