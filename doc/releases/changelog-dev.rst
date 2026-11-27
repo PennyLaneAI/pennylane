@@ -307,7 +307,9 @@ New features since last release
   :class:`~.TrotterCGF`, and :class:`~.TrotterVibronic` have been added to encode
   fragmentation-based Trotterization procedures of :class:`pennylane.CDFHamiltonian`,
   :class:`pennylane.CGFHamiltonian`, and :class:`pennylane.VibronicHamiltonian` Hamiltonians,
-  respectively.
+  respectively. For fixed, real-valued NumPy Hamiltonians, :class:`~.TrotterCDF` prepares
+  its time-independent basis rotations once so captured circuits can reuse the angles
+  across Trotter steps and both spin channels.
   `(#9459) <https://github.com/PennyLaneAI/pennylane/pull/9459>`__
   `(#9789) <https://github.com/PennyLaneAI/pennylane/pull/9789>`__
   `(#10015) <https://github.com/PennyLaneAI/pennylane/pull/10015>`__
@@ -317,6 +319,7 @@ New features since last release
   `(#10120) <https://github.com/PennyLaneAI/pennylane/pull/10120>`__
   `(#10340) <https://github.com/PennyLaneAI/pennylane/pull/10340>`__
   `(#10450) <https://github.com/PennyLaneAI/pennylane/pull/10450>`__
+  `(#10556) <https://github.com/PennyLaneAI/pennylane/pull/10556>`__
 
 * Three new operators called :class:`pennylane.PPR_2`, :class:`pennylane.PPR_4` and
   :class:`pennylane.PPR_8` have been added, which represent the Pauli product rotations
