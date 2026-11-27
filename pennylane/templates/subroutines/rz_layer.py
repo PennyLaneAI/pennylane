@@ -14,13 +14,17 @@
 """Contains the RZLayer template."""
 
 from pennylane import capture, compiler, math
+from pennylane.allocation import allocate
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import RZ
+from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.ops import RZ, GlobalPhase, PhaseShift, subcircuit
+from pennylane.ops.op_math import ChangeOpBasis2, change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle as adjoint_rotation2
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
+
+from .arithmetic.hamming_weight import _HammingWeight
 
 
 class RZLayer(Operator2):
@@ -57,6 +61,22 @@ class RZLayer(Operator2):
                 :image: /_static/decomposition_thumbnails/rz_layer_individual.svg
 
                 :class:`~.RZ` | :math:`m` | 3
+
+            .. decomposition-rule:: hamming_weight_phasing
+                :image: /_static/decomposition_thumbnails/rz_layer_hwp_synthesis.svg
+                :lightbox:
+                :requires: :math:`m \geq 3` and :math:`a` work wires
+                :where: :math:`n = m - 1` if :math:`m` is a power of two and :math:`n = m`
+                    otherwise, :math:`a = n - \|n\|_H` with the Hamming weight :math:`\|n\|_H` of
+                    :math:`n`, and
+                    :math:`\ell(x) = \lfloor \log_2 x \rfloor + 1` is the number of bits of
+                    :math:`x`
+
+                :class:`~.TemporaryAND` | :math:`a` | 1
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`a` | 1
+                :class:`~.CNOT` | :math:`2(5n - 4\ell(n) - \|n\|_H)` | 10
+                :class:`~.PhaseShift` | :math:`\ell(m)` | 2
+                :class:`~.GlobalPhase` | :math:`1` | 1
 
             .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/rz_layer_adjoint.svg
@@ -99,5 +119,71 @@ def _rzlayer_individual(angle, wires, **_):
     for_loop(len(wires))(_rz)()
 
 
-add_decomps(RZLayer, _rzlayer_individual)
+def _hwp_num_hw_wires(num_wires):
+    """Helper method for Hamming-weight-phasing (HWP).
+
+    Number of wires for which the synthesis rule computes the Hamming weight: either all of them or
+    one less, which is then rotated separately. Prefers fewer rotations, then fewer ANDs."""
+
+    def _cost(num_hw_wires):
+        num_rotations = num_hw_wires.bit_length() + num_wires - num_hw_wires
+        return num_rotations, num_hw_wires - num_hw_wires.bit_count()
+
+    return min(num_wires, num_wires - 1, key=_cost)
+
+
+@subcircuit(dynamic_argnames=("angle",), wire_argnames=("wires", "extra_wires"))
+@register_resources(lambda wires, extra_wires, **_: {PhaseShift: len(wires) + len(extra_wires)})
+def _HWPPhaseShifts(angle, wires, extra_wires):
+    """Rotate the wire of bit ``j`` of a Hamming weight, ``wires[j]``, by ``2**j * angle`` and each
+    of the ``extra_wires`` by ``angle``."""
+    for j, wire in enumerate(wires):
+        PhaseShift(2**j * angle, wires=wire)
+    for wire in extra_wires:
+        PhaseShift(angle, wires=wire)
+
+
+def _rzlayer_hwp_synthesis_resources(wires, **_):
+    """Resources of the Hamming-weight-phasing (HWP) decomposition."""
+    num_hw_wires = _hwp_num_hw_wires(len(wires))
+    num_work = num_hw_wires - num_hw_wires.bit_count()
+    compute_op = _HammingWeight(Wire[num_hw_wires], Wire[num_work])
+    target_op = _HWPPhaseShifts(
+        Float, Wire[num_hw_wires.bit_length()], Wire[len(wires) - num_hw_wires]
+    )
+    return {ChangeOpBasis2(compute_op, target_op): 1, GlobalPhase: 1}
+
+
+def _rzlayer_hwp_synthesis_work_wires(wires, work_wires, **_):
+    num_hw_wires = _hwp_num_hw_wires(len(wires))
+    num_work = num_hw_wires - num_hw_wires.bit_count()
+    return {"zeroed": max(num_work - len(work_wires), 0)}
+
+
+@register_condition(lambda wires, **_: len(wires) >= 3)
+@register_resources(
+    _rzlayer_hwp_synthesis_resources,
+    work_wires=_rzlayer_hwp_synthesis_work_wires,
+    name="hamming_weight_phasing",
+)
+def _rzlayer_hwp_synthesis(angle, wires, work_wires):
+    """Hamming-weight phasing (HWP) decomposition: :math:`m` rotations ``RZ(theta)`` equal
+    ``PhaseShift(2**j * theta)`` on bit :math:`j` of the Hamming weight of their wires and
+    a ``GlobalPhase(m * theta / 2)``."""
+    num_hw_wires = _hwp_num_hw_wires(len(wires))
+    num_work = num_hw_wires - num_hw_wires.bit_count()
+    work_wires = work_wires[:num_work]
+    # extra_wires is empty or the single wire that _hwp_num_hw_wires leaves out
+    hw_wires, extra_wires = wires[:num_hw_wires], wires[num_hw_wires:]
+
+    with allocate(num_work - len(work_wires), restored=True) as extra_work_wires:
+        work_wires = [*work_wires, *extra_work_wires]
+        out_wires = [hw_wires[-1], *work_wires[: num_hw_wires.bit_length() - 1]]
+        phase_shifts = _HWPPhaseShifts(angle, out_wires, extra_wires)
+        change_op_basis(_HammingWeight(hw_wires, work_wires), phase_shifts)
+
+    GlobalPhase(len(wires) * angle / 2)
+
+
+add_decomps(RZLayer, _rzlayer_individual, _rzlayer_hwp_synthesis)
 add_decomps("Adjoint(RZLayer)", adjoint_rotation2)
