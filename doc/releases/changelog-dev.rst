@@ -1142,6 +1142,11 @@ Improvements 🛠
   installed Catalyst is older.
   `(#10369) <https://github.com/PennyLaneAI/pennylane/pull/10369>`__
 
+* :class:`~.Backline` takes a ``frame`` argument to choose the layout its messages travel in.
+  ``"auto"``, the default, leaves the choice to the compiler as before; ``"cuqr"`` selects
+  cudaq-realtime's format, to talk to a cudaq-realtime peer over RDMA.
+  `(#10379) <https://github.com/PennyLaneAI/pennylane/pull/10379>`__
+
 * The ``_mcx_no_work_wires`` decomposition rule for :class:`~.MultiControlledX` now only
   applies when no work wires are provided, matching ``MultiControlledX.compute_decomposition``.
   This removes controlled ``GlobalPhase`` and ``PhaseShift`` rules from the decomposition graph and
