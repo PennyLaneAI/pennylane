@@ -373,6 +373,8 @@ class DecompositionRule:  # pylint: disable=too-many-instance-attributes
 
         self.name = func.__name__.lstrip("_") if name is None else name
 
+        self.name = func.__name__
+
         if isinstance(resources, dict):
 
             def resource_fn(*_, **__):
