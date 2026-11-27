@@ -204,6 +204,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    introduction/devices
    introduction/dynamic_quantum_circuits
    introduction/inspecting_circuits
+   introduction/qjit
    introduction/compiling_circuits
    introduction/compiling_workflows
    introduction/importing_workflows
