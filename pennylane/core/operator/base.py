@@ -711,10 +711,9 @@ class LegacyOperator(abc.ABC, metaclass=ABCCaptureMeta):
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
-        # pylint: disable-next=comparison-with-callable
         return (
             cls.compute_matrix != LegacyOperator.compute_matrix
-            or cls.matrix != LegacyOperator.matrix
+            or cls.matrix != LegacyOperator.matrix  # pylint: disable=comparison-with-callable
         )
 
     def matrix(self, wire_order: WiresLike | None = None) -> TensorLike:
