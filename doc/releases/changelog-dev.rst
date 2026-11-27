@@ -1690,6 +1690,11 @@ Breaking changes 💔
 * Catalyst (``pennylane-catalyst``) is now a required dependency of PennyLane. Installing
   PennyLane automatically installs Catalyst and its dependencies.
   `(#10547) <https://github.com/PennyLaneAI/pennylane/pull/10547>`__
+  
+* The public decomposition functions ``one_qubit_decomposition``,
+  ``two_qubit_decomposition``, and ``multi_qubit_decomposition`` have moved from
+  ``pennylane.ops`` to ``pennylane.decomposition_rules``.
+  `(#10596) <https://github.com/PennyLaneAI/pennylane/pull/10596>`__
 
 * :func:`~.sign_expand` now requires `controls` wires instead of defaulting to ``("Hadamard", "Target")``
   as string wires will no longer be supported.
@@ -2138,6 +2143,9 @@ Internal changes ⚙️
   isolates its PennyLane mock.
   `(#10547) <https://github.com/PennyLaneAI/pennylane/pull/10547>`__
   
+* Decomposition rules have been migrated to the new ``pennylane.decomposition_rules`` module.
+  `(#10596) <https://github.com/PennyLaneAI/pennylane/pull/10596>`__
+
 * The helper that inserts the resource analysis passes for :func:`~.analyze` and
   :func:`~pennylane.estimate` now inserts the requested analysis pass at every level, instead of
   ``resource-analysis`` at every level other than 0.
