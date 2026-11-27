@@ -284,7 +284,7 @@ class TestTOML:
         with pytest.raises(
             InvalidCapabilitiesError,
             match=re.escape(
-                "LegacyOperator 'PauliX' has unknown attributes: ['invalid_attribute']"
+                "Operator 'PauliX' has unknown attributes: ['invalid_attribute']"
             ),
         ):
             _get_operations(document)
@@ -338,7 +338,7 @@ class TestTOML:
         with pytest.raises(
             InvalidCapabilitiesError,
             match=re.escape(
-                "LegacyOperator 'Hamiltonian' has unknown conditions: ['invalid_condition']"
+                "Operator 'Hamiltonian' has unknown conditions: ['invalid_condition']"
             ),
         ):
             _get_observables(document)
