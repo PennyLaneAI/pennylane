@@ -1488,6 +1488,7 @@ def test_error_generator_not_registered(allow_nonunitary):
     x = np.array(0.5, requires_grad=True)
     z = np.array(0.1, requires_grad=True)
 
+    # pylint: disable=too-few-public-methods
     class RX(qp.RX):
         def generator(self):
             return qp.Hadamard(self.wires)

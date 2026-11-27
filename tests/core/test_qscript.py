@@ -42,6 +42,7 @@ def test_adjoint_deprecated():
         qs.adjoint()
 
 
+# pylint: disable=too-few-public-methods
 class Op2(Operator2):
     """A simple ``Operator2`` subclass for testing."""
 
@@ -1229,6 +1230,7 @@ class TestFromQueue:
     def test_from_queue_child_class_preserved(self):
         """Test that a child of QuantumScript gets its own type when calling from_queue."""
 
+        # pylint: disable=too-few-public-methods
         class MyScript(QuantumScript):
             pass
 
@@ -1241,6 +1243,7 @@ class TestFromQueue:
     def test_from_queue_child_with_different_init_fails(self):
         """Test that if a child class overrides init to take different arguments, from_queue will fail."""
 
+        # pylint: disable=too-few-public-methods
         class ScriptWithNewInit(QuantumScript):
             """An arbitrary class that has a different constructor from QuantumScript."""
 
