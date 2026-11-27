@@ -17,7 +17,7 @@ import pytest
 import pennylane as qp
 
 # Defines the device used for all tests
-dev = qp.device("default.qubit", wires=[0, 1, 2, 3, "Hadamard", "Target"])
+dev = qp.device("default.qubit", wires=5)
 
 # Defines circuits to be used in queueing/output tests
 with qp.core.queuing.AnnotatedQueue() as tape1_queue:
@@ -104,7 +104,7 @@ class TestSignExpand:
     def test_hamiltonians(self, tape, output):
         """Tests that the sign_expand transform returns the correct value"""
 
-        tapes, fn = qp.transforms.sign_expand(tape)
+        tapes, fn = qp.transforms.sign_expand(tape, controls=(3, 4))
         results = dev.execute(tapes)
         expval = fn(results)
 
@@ -114,7 +114,7 @@ class TestSignExpand:
     def test_hamiltonians_qnode(self, tape, output):
         """Tests that the sign_expand transform returns the correct value as a transform program"""
 
-        @qp.transforms.sign_expand
+        @qp.transforms.sign_expand(controls=(3, 4))
         @qp.qnode(dev)
         def qnode():
             for op in tape.operations:
@@ -130,7 +130,7 @@ class TestSignExpand:
         """Tests that the sign_expand transform returns the correct value
         if we do not calculate analytical expectation values of groups but rely on their circuit approximations
         """
-        tapes, fn = qp.transforms.sign_expand(tape, circuit=True)
+        tapes, fn = qp.transforms.sign_expand(tape, circuit=True, controls=(3, 4))
         results = dev.execute(tapes)
         expval = fn(results)
 
@@ -143,7 +143,7 @@ class TestSignExpand:
         if we do not calculate analytical expectation values of groups but rely on their circuit approximations
         """
 
-        @qp.transforms.sign_expand(circuit=True)
+        @qp.transforms.sign_expand(circuit=True, controls=(3, 4))
         @qp.qnode(dev)
         def qnode():
             for op in tape.operations:
@@ -164,9 +164,40 @@ class TestSignExpand:
             qp.expval(H1)
 
         tape = qp.tape.QuantumScript.from_queue(q, shots=shots)
-        new_tapes, _ = qp.transforms.sign_expand(tape, circuit=circuit)
+        new_tapes, _ = qp.transforms.sign_expand(tape, circuit=circuit, controls=(3, 4))
 
         assert all(new_tape.shots == tape.shots for new_tape in new_tapes)
+
+    @pytest.mark.parametrize("circuit", [True, False])
+    def test_missing_controls(self, circuit):
+        """Tests that controls must be explicitly specified."""
+        with pytest.raises(ValueError, match="controls is now a required argument"):
+            qp.transforms.sign_expand(tape1, circuit=circuit)
+
+    @pytest.mark.parametrize("circuit", [True, False])
+    @pytest.mark.parametrize("controls", [(), (3,), (3, 4, 5)])
+    def test_invalid_control_count(self, controls, circuit):
+        """Tests that exactly two control wires must be specified."""
+        with pytest.raises(ValueError, match="sign_expand requires two wires"):
+            qp.transforms.sign_expand(tape1, circuit=circuit, controls=controls)
+
+    @pytest.mark.parametrize("overlapping_wire", [3, 4])
+    @pytest.mark.parametrize("measurement", [qp.expval, qp.var])
+    def test_controls_overlap_state_preparation(self, overlapping_wire, measurement):
+        """Tests that circuit controls cannot reuse state preparation wires."""
+        tape = qp.tape.QuantumScript([qp.X(0), qp.X(overlapping_wire)], [measurement(H1)])
+
+        with pytest.raises(ValueError, match="Control wires must not overlap with the input tape"):
+            qp.transforms.sign_expand(tape, circuit=True, controls=(3, 4))
+
+    @pytest.mark.parametrize("overlapping_wire", [3, 4])
+    def test_analytic_controls_overlap_state_preparation(self, overlapping_wire):
+        """Tests that unused analytic controls may overlap state preparation wires."""
+        tape = qp.tape.QuantumScript([qp.X(0), qp.X(overlapping_wire)], [qp.expval(H1)])
+
+        tapes, fn = qp.transforms.sign_expand(tape, controls=(3, 4))
+
+        assert np.isclose(fn(dev.execute(tapes)), -1.5)
 
     def test_hamiltonian_error(self):
         """Tests if wrong observables get caught in the test"""
@@ -177,7 +208,7 @@ class TestSignExpand:
         tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
 
         with pytest.raises(ValueError, match=r"Passed tape must end in"):
-            qp.transforms.sign_expand(tape)
+            qp.transforms.sign_expand(tape, controls=(3, 4))
 
     def test_hamiltonian_error_not_jointly_measurable(self):
         """Test if hamiltonians that are not jointly measurable throw an error"""
@@ -189,13 +220,13 @@ class TestSignExpand:
         tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
 
         with pytest.raises(ValueError, match=r"Passed hamiltonian"):
-            qp.transforms.sign_expand(tape)
+            qp.transforms.sign_expand(tape, controls=(3, 4))
 
     @pytest.mark.parametrize(("tape", "output"), list(zip(TAPES_var, OUTPUTS_var)))
     def test_hamiltonians_vars(self, tape, output):
         """Tests that the sign_expand transform returns the correct value"""
 
-        tapes, fn = qp.transforms.sign_expand(tape)
+        tapes, fn = qp.transforms.sign_expand(tape, controls=(3, 4))
         results = dev.execute(tapes)
         expval = fn(results)
 
@@ -207,7 +238,7 @@ class TestSignExpand:
         if we do not calculate analytical expectation values of groups but rely on their circuit approximations
         """
 
-        tapes, fn = qp.transforms.sign_expand(tape, circuit=True)
+        tapes, fn = qp.transforms.sign_expand(tape, circuit=True, controls=(3, 4))
         results = dev.execute(tapes)
         expval = fn(results)
 

@@ -42,8 +42,12 @@ New features since last release
   measurement-based uncomputation from
   Appendix C of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__, which reduces their Toffoli 
   cost to roughly :math:`2\sqrt{L}` for :math:`L` bitstrings, given enough work wires.
+  The same technique gives ``QROMLoad`` a new decomposition, which loads with ``SelectSwap`` and
+  then cleans up the garbage on the work wires with ``Adjoint(QROMLoad)``, instead of repeating
+  the Select-SWAP circuit.
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
   `(#10363) <https://github.com/PennyLaneAI/pennylane/pull/10363>`__
+  `(#10588) <https://github.com/PennyLaneAI/pennylane/pull/10588>`__
 
   For example, we may use ``QROMLoad`` on a zeroed target register, but need ``QROM`` to XOR more
   data onto it afterwards:
@@ -889,9 +893,10 @@ New features since last release
 * Added :class:`~.QubitizationTHC`, the qubitization walk operator of a tensor hypercontracted
   Hamiltonian. It composes the (also newly added) :class:`~.SuperpositionTHC` and
   :class:`~.AliasSamplingTHC` into ``PREPARE``, applies :class:`~.SelectTHC`, and reflects about
-  :math:`|\vec 0\rangle` on the ``PREPARE`` register. Use :func:`~.qubitization_thc_wires` to
-  determine the register sizes, as well as :func:`~.alias_sampling_thc_wires` and
-  :func:`~.select_thc_wires` to determine the register sizes of the respective component.
+  :math:`|\vec 0\rangle` on the ``PREPARE`` wires that end up in superposition. Use
+  :func:`~.qubitization_thc_wires` to determine the register sizes, as well as
+  :func:`~.alias_sampling_thc_wires` and :func:`~.select_thc_wires` to determine the register
+  sizes of the respective component.
   `(#9554) <https://github.com/PennyLaneAI/pennylane/pull/9554>`__
   `(#9940) <https://github.com/PennyLaneAI/pennylane/pull/9940>`__
   `(#10119) <https://github.com/PennyLaneAI/pennylane/pull/10119>`__
@@ -899,6 +904,7 @@ New features since last release
   `(#10158) <https://github.com/PennyLaneAI/pennylane/pull/10158>`__
   `(#10163) <https://github.com/PennyLaneAI/pennylane/pull/10163>`__
   `(#10184) <https://github.com/PennyLaneAI/pennylane/pull/10184>`__
+  `(#10588) <https://github.com/PennyLaneAI/pennylane/pull/10588>`__
 
 * Added :class:`~.OneBodyBlockEncoding`, a block-encoding of a real symmetric one-body operator
   :math:`\hat O`, normalized as :math:`\hat O / \lambda` with :math:`\lambda = \sum_p |\mu_p|`,
@@ -1700,6 +1706,9 @@ Breaking changes 💔
           qp.X(0)
           qp.probs()
       qp.core.QuantumScript.from_queue(queue)
+* :func:`~.sign_expand` now requires `controls` wires instead of defaulting to ``("Hadamard", "Target")``
+  as string wires will no longer be supported.
+  `(#10592) <https://github.com/PennyLaneAI/pennylane/pull/10592>`__
 
 * The ``pennylane.noise`` module has been removed, including ``NoiseModel``,
   ``add_noise``, ``insert``, noise mitigation transforms (``mitigate_with_zne``,

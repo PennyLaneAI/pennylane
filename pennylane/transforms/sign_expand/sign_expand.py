@@ -14,6 +14,7 @@ Contains the sign (and xi) decomposition tape transform, implementation of ideas
 """
 
 import json
+from collections.abc import Sequence
 from os import path
 
 import numpy as np
@@ -199,7 +200,7 @@ def construct_sgn_circuit(hamiltonian, tape, mus, times, phis, controls):
 
 @transform
 def sign_expand(
-    tape: QuantumScript, circuit=False, J=10, delta=0.0, controls=("Hadamard", "Target")
+    tape: QuantumScript, circuit=False, J=10, delta=0.0, controls: None | Sequence[int] = None
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""
     Splits a tape measuring a (fast-forwardable) Hamiltonian expectation into mutliple tapes of
@@ -217,7 +218,7 @@ def sign_expand(
         J (int): The times the time evolution of the hamiltonian is repeated in the quantum signal
           processing approximation of the sgn-decomposition
         delta (float): The minimal
-        controls (List[control1, control2]): The two additional controls to implement the
+        controls (Sequence[int]): The two additional controls to implement the
           Hadamard test and the quantum signal processing part on, have to be wires on the device
 
     Returns:
@@ -235,13 +236,13 @@ def sign_expand(
 
     .. code-block:: python
 
-        dev = qp.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
+        dev = qp.device("default.qubit", wires=5)
 
     and a circuit of the form, with the transform as decorator.
 
     .. code-block:: python
 
-        @qp.transforms.sign_expand
+        @qp.transforms.sign_expand(controls=(3,4))
         @qp.qnode(dev)
         def circuit():
             qp.Hadamard(wires=0)
@@ -263,25 +264,18 @@ def sign_expand(
     We can use the ``sign_expand`` transform to generate new tapes and a classical
     post-processing function for computing the expectation value of the Hamiltonian in these new decompositions
 
-    >>> tapes, fn = qp.transforms.sign_expand(tape)
-
-    We can evaluate these tapes on a device, it needs two additional auxiliary gates labeled 'Hadamard' and 'Target' if
-    one wants to make the circuit approximation of the decomposition:
-
-    >>> dev = qp.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
-    >>> res = dev.execute(tapes)
-    >>> fn(res)
-    np.float64(-0.499...)
+    >>> tapes, fn = qp.transforms.sign_expand(tape, controls=(3,4))
 
     To evaluate the circuit approximation of the decomposition one can construct the sgn-decomposition by changing the
     kwarg circuit to True:
 
-    >>> tapes, fn = qp.transforms.sign_expand(tape, circuit=True, J=20, delta=0)
-    >>> dev = qp.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
-    >>> dev.execute(tapes)
+    >>> tapes, fn = qp.transforms.sign_expand(tape, circuit=True, J=20, delta=0, controls=(3,4))
+    >>> dev = qp.device("default.qubit", wires=5)
+    >>> res = dev.execute(tapes)
+    >>> res
     (np.float64(0.017...), np.float64(0.006...), np.float64(-0.0009...), np.float64(0.0023...), np.float64(-0.977...))
     >>> fn(res)
-    np.float64(-0.249...)
+    np.float64(-0.476...)
 
 
     Lastly, as the paper is about minimizing variance, one can also calculate the variance of the estimator by
@@ -294,13 +288,20 @@ def sign_expand(
         measurements = [qp.var(H)]
         tape = qp.core.QuantumScript(operations, measurements)
 
-    >>> tapes, fn = qp.transforms.sign_expand(tape, circuit=True, J=20, delta=0)
-    >>> dev = qp.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
+    >>> tapes, fn = qp.transforms.sign_expand(tape, circuit=True, J=20, delta=0, controls=(3,4))
+    >>> dev = qp.device("default.qubit", wires=5)
     >>> res = dev.execute(tapes)
     >>> fn(res)
     np.float64(10.108...)
 
     """
+    if controls is None:
+        raise ValueError("controls is now a required argument to sign_expand.")
+    if not len(controls) == 2:
+        raise ValueError("sign_expand requires two wires to be specified in sign_expand.")
+    if circuit and any(wire in tape.wires for wire in controls):
+        raise ValueError("Control wires must not overlap with the input tape wires.")
+
     path_str = path.dirname(__file__)
     with open(path_str + "/sign_expand_data.json", encoding="utf-8") as f:
         data = json.load(f)

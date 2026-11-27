@@ -42,12 +42,10 @@ def _alias_wire_split(M, N, aleph):
 
     That template takes a single ``work_wires`` register, but only its lower part is
     garbage. With ``f = n_d + 1 + 2 n`` everything up to and including the sampling
-    register at ``f + aleph + 2 : f + 2 aleph + 2`` stays entangled and must be reflected:
-    the conditional swaps correlate the sampling register with the index registers, so the
-    closing ``Hadamard`` layer rotates it rather than returning it to
-    :math:`\lvert 0 \rangle`. The inequality-test flag at ``f + 2 aleph + 2`` and the
-    comparator/QROM scratch above it *are* restored, so they do not have to live inside the
-    reflected register and are drawn from the shared clean pool instead.
+    register at ``f + aleph + 2 : f + 2 aleph + 2`` stays entangled until the adjoint, so it
+    lives in ``prep_garbage_wires``. The inequality-test flag at ``f + 2 aleph + 2`` and the
+    comparator/QROM scratch above it *are* restored, so they are drawn from the shared clean
+    pool instead.
 
     Returns:
         tuple[int, int]: ``(swap_index, num_garbage)``, the index of
@@ -79,18 +77,17 @@ def qubitization_thc_wires(M, N, aleph, beth, num_batches=1):
           :math:`\nu`, i.e. the register ``PREPARE`` writes the coefficient amplitudes on and
           ``SELECT`` reads to pick which :math:`V` to apply
         * ``prep_garbage_wires``: *not* a state preparation register. These are the wires
-          ``PREPARE`` leaves entangled with the index and that therefore have to be reflected
-          along with it, laid out as the :class:`~.SuperpositionTHC` work register, then
-          whatever :class:`~.AliasSamplingTHC` garbage it cannot supply, then the two spin
-          flags. The spin flags are the exception to the name: they are genuine LCU index
-          wires, placed here because ``index_wires`` is sized exactly ``2 n`` by
-          :func:`~.select_thc_wires`. Exact: the reflection acts on
-          ``index_wires + prep_garbage_wires``, so a spare wire here changes the walk operator
+          ``PREPARE`` leaves entangled with the index until ``PREPARE``:math:`^\dagger`,
+          laid out as the :class:`~.SuperpositionTHC` work register, then whatever
+          :class:`~.AliasSamplingTHC` garbage it cannot supply, then the two spin flags.
+          Only the ``aleph + 4`` of them that ``PREPARE`` puts in
+          superposition are reflected, see the note below.
         * ``gradient_wires`` (``beth + 1``): the phase gradient register, which must be
           prepared by the caller and is left unchanged
         * ``work_wires``: the shared clean pool, returned to :math:`\lvert 0 \rangle`. This
-          is a minimum; extra wires are forwarded to ``SELECT``, to ``PREPARE``'s ``QROM``
-          and to the multi-controlled :math:`Z` of the reflection to lower their T counts
+          is a minimum; extra wires are forwarded to ``SELECT``, to ``PREPARE``'s
+          :class:`~.QROMLoad` and to the multi-controlled :math:`Z` of the reflection to lower
+          their T counts
 
     .. note::
 
@@ -103,35 +100,32 @@ def qubitization_thc_wires(M, N, aleph, beth, num_batches=1):
         * of :class:`~.AliasSamplingTHC`'s work register, only
           ``n_d + 2 n + 2 aleph + 3`` wires stay entangled; the rest (its inequality-test
           flag, the comparator scratch and the ``QROM`` scratch) are restored, so they are taken from
-          ``work_wires`` instead of ``prep_garbage_wires``. This both saves qubits and
-          removes controls from the reflection
+          ``work_wires`` instead of ``prep_garbage_wires``
         * ``work_wires`` is idle during ``PREPARE`` and clean again during ``SELECT``, so
           the same pool serves ``PREPARE``'s comparator and ``QROM``, ``SELECT``, and the
           reflection's multi-controlled :math:`Z`
 
-        The remaining ``prep_garbage_wires`` are genuine garbage and must stay inside the
-        reflection. Note that dropping them from it does *not* change the
-        :math:`\lvert 0 \rangle` block: for any reflection whose fixed subspace contains
-        :math:`\lvert 0 \rangle`, :math:`\langle 0 \rvert \mathcal{R} = \langle 0 \rvert`, so
-        a single walk looks correct either way. What breaks is the Chebyshev property
-        :math:`\langle 0 \rvert W^k \lvert 0 \rangle = T_k(H / \lambda)` from :math:`k = 2`
-        on, since
+    .. note::
 
-        .. math::
+        The reflection :math:`\mathcal{R}` only acts on the ``2 n + aleph + 4`` wires that
+        ``PREPARE`` puts in superposition: the index, the amplitude amplification wire of
+        :class:`~.SuperpositionTHC` (its work wire ``0``), the sampling register and the
+        symmetrization flag of :class:`~.AliasSamplingTHC`, and the two spin flags. This
+        matches the reflection cost of `Lee et al. (2021) <https://arxiv.org/abs/2011.03494>`_.
 
-            \langle 0 \rvert U \Pi U \lvert 0 \rangle = B^2
-            \quad \text{but} \quad
-            \langle 0 \rvert U \Pi_{\text{idx}} U \lvert 0 \rangle
-            = B^2 + \sum_{g \neq 0} \langle 0 \rvert U \lvert 0, g \rangle
-              \langle 0, g \rvert U \lvert 0 \rangle
-
-        with :math:`U =` ``PREPARE``:math:`^\dagger \cdot` ``SELECT`` :math:`\cdot`
-        ``PREPARE``, :math:`B = \langle 0 \rvert U \lvert 0 \rangle` and :math:`\Pi` the
-        projector onto :math:`\lvert 0 \rangle` on *all* of ``index_wires +
-        prep_garbage_wires``. The extra terms are the branches that are
-        :math:`\lvert 0 \rangle` on the index but not on the garbage; reflecting only the
-        index gives them :math:`+1` instead of :math:`-1`. The failure is therefore silent
-        until phase estimation.
+        Every other wire of ``prep_garbage_wires`` is only ever acted on by permutations of
+        computational basis states, which write classical functions of the wires in
+        superposition: the contiguous address, the loaded alias data, the comparison and
+        one-body flags. ``SELECT`` acts on the index and flags as a basis permutation
+        :math:`\tau` (the index and spin swaps and the flip of the symmetrization flag) times
+        a diagonal, and conjugating :math:`\tau` with the permutation part of ``PREPARE``
+        gives a permutation of the wires in superposition alone. Therefore,
+        :math:`U =` ``PREPARE``:math:`^\dagger \cdot` ``SELECT`` :math:`\cdot` ``PREPARE``
+        returns those wires to :math:`\lvert 0 \rangle` on every input on which they start
+        in :math:`\lvert 0 \rangle`, and so does :math:`\mathcal{R}`. Reflecting them as well
+        would not change the walk operator on this invariant subspace, which contains all
+        states reachable from :math:`\lvert 0 \rangle`. In contrast, none of the reflected
+        wires may be dropped.
 
     **Example**
 
@@ -165,12 +159,13 @@ def _prepare_registers(M, N, aleph, index_wires, prep_garbage_wires, work_wires)
     The layout is the one documented by :func:`qubitization_thc_wires`. The returned
     ``alias_work`` is split rather than interleaved: :class:`~.AliasSamplingTHC` keeps every
     wire it leaves entangled in the lower part of its work register, so that part is fed
-    from the reflected register and the restored tail from the shared clean pool, leaving
+    from ``prep_garbage_wires`` and the restored tail from the shared clean pool, leaving
     no wire in ``prep_garbage_wires`` that ends in :math:`\lvert 0 \rangle`.
 
     Returns:
         dict: the registers each sub-template receives, plus the three flags that
-        ``PREPARE`` hands to ``SELECT`` and the register the reflection acts on
+        ``PREPARE`` hands to ``SELECT``, the garbage register and the wires the reflection
+        acts on
     """
     n = _num_index_wires(M)
     index = list(index_wires)
@@ -179,12 +174,13 @@ def _prepare_registers(M, N, aleph, index_wires, prep_garbage_wires, work_wires)
 
     n_sup = alias_sampling_thc_wires(M, N, aleph)["superposition_work_wires"]
     swap_index, n_garbage = _alias_wire_split(M, N, aleph)
+    f = _num_address_wires(M, N) + 1 + 2 * n
 
     superposition_work = garbage[:n_sup]
     spin_wires = garbage[-2:]
 
     # SuperpositionTHC returns every work wire to |0> except its three flags (indices 0, 3
-    # and 6), so the rest are reflected wires that are free to carry alias garbage; the
+    # and 6), so the rest are garbage wires that are free to carry alias garbage; the
     # alias adjoint clears them again before SuperpositionTHC's adjoint runs.
     garbage_pool = (
         [w for i, w in enumerate(superposition_work) if i not in (0, 3, 6)] + garbage[n_sup:-2]
@@ -211,7 +207,16 @@ def _prepare_registers(M, N, aleph, index_wires, prep_garbage_wires, work_wires)
         # alternate edge flag, below the sampling register.
         "swap_flag": alias_work[swap_index],
         "spin_wires": spin_wires,
-        "reflected": index + garbage,
+        "prep_garbage": garbage,
+        # The wires PREPARE puts in superposition: the index, the amplitude amplification
+        # wire of SuperpositionTHC, the sampling register, the symmetrization flag and the
+        # spin flags. Every other garbage wire only ever holds a classical function of these,
+        # so it is |0> again after PREPARE^dagger, see qubitization_thc_wires.
+        "reflected": index
+        + [superposition_work[0]]
+        + alias_work[f + aleph + 2 : f + 2 * aleph + 2]
+        + [alias_work[swap_index]]
+        + spin_wires,
     }
 
 
@@ -226,7 +231,9 @@ class QubitizationTHC(Operator2):
         \cdot \mathrm{PREPARE} ,
         \qquad \mathcal{R} = 2 \lvert \vec 0 \rangle \langle \vec 0 \rvert - I ,
 
-    with :math:`\mathcal{R}` the reflection on ``index_wires + prep_garbage_wires``, following
+    with :math:`\mathcal{R}` the reflection on ``index_wires`` and the wires of
+    ``prep_garbage_wires`` that ``PREPARE`` puts in superposition (see
+    :func:`~.qubitization_thc_wires`), following
     `Lee et al. (2021) <https://arxiv.org/abs/2011.03494>`_ (Figs. 3, 5 and 7).
     ``PREPARE`` is :class:`~.SuperpositionTHC` followed by :class:`~.AliasSamplingTHC` and a
     ``Hadamard`` on each of the two spin flags; ``SELECT`` is :class:`~.SelectTHC`.
@@ -355,8 +362,8 @@ class QubitizationTHC(Operator2):
 
             return qp.probs(wires=wires["index_wires"] + wires["prep_garbage_wires"])
 
-    The first entry of the returned distribution is the probability that the reflected
-    register returns to :math:`\lvert \vec 0 \rangle`, i.e. the squared norm of
+    The first entry of the returned distribution is the probability that ``index_wires`` and
+    ``prep_garbage_wires`` return to :math:`\lvert \vec 0 \rangle`, i.e. the squared norm of
     :math:`(\hat{\mathcal{H}} / \lambda) \lvert \psi \rangle`.
 
     .. details::
@@ -545,7 +552,7 @@ def _prepare_select(  # pylint: disable=too-many-arguments
     prepare = _THCPrepare(
         (zeta, t_ell, aleph),
         index_wires,
-        registers["reflected"][len(index_wires) :],
+        registers["prep_garbage"],
         work_wires,
     )
     # The sign of each LCU coefficient must be applied an *odd* number of times between
@@ -667,7 +674,7 @@ def _qubitization_thc_standard(  # pylint: disable=too-many-arguments
         num_batches,
     )
 
-    # R = 2|0><0| - I on the full PREPARE register. The global sign is fixed so that the
+    # R = 2|0><0| - I on the PREPARE wires in superposition. The global sign is fixed so that the
     # |0> block is + H / lambda: the sign flip of |0> that a bare I - 2|0><0| would give
     # is exactly what SELECT's rewriting of n = (1 - V) / 2 already supplies.
     reflected = registers["reflected"]
