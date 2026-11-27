@@ -21,8 +21,8 @@ for quantum algorithms in first quantization using a plane-wave basis.
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
+import pennylane2 as qp
+from pennylane2 import numpy as np
 
 
 @pytest.mark.parametrize(

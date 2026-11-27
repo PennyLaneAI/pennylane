@@ -24,10 +24,10 @@ from gate_data import CNOT, II, SWAP, I, Toffoli
 from scipy.sparse import csr_matrix
 from scipy.stats import unitary_group
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.math import expand_vector, sqrt_matrix, sqrt_matrix_sparse
-from pennylane.math.quantum import _denman_beavers_iterations
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.math import expand_vector, sqrt_matrix, sqrt_matrix_sparse
+from pennylane2.math.quantum import _denman_beavers_iterations
 
 # Define a list of dtypes to test
 dtypes = ["complex64", "complex128"]

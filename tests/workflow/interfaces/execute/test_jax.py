@@ -17,11 +17,11 @@ import numpy as np
 import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
 
-import pennylane as qp
-from pennylane import execute
-from pennylane.core.shots import Shots
-from pennylane.devices import DefaultQubit
-from pennylane.gradients import param_shift
+import pennylane2 as qp
+from pennylane2 import execute
+from pennylane2.core.shots import Shots
+from pennylane2.devices import DefaultQubit
+from pennylane2.gradients import param_shift
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")

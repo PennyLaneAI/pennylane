@@ -1,6 +1,6 @@
 qp.testing
 ==========
 
-.. currentmodule:: pennylane.testing
+.. currentmodule:: pennylane2.testing
 
-.. automodule:: pennylane.testing
+.. automodule:: pennylane2.testing

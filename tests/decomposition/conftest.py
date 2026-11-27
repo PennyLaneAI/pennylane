@@ -17,26 +17,26 @@
 from collections import defaultdict
 from contextvars import ContextVar
 
-import pennylane as qp
-from pennylane.core.operator import abstractify
-from pennylane.decomposition import Resources
-from pennylane.decomposition.decomposition_rule import DecompCollection
-from pennylane.decomposition.symbolic_decomposition import (
+import pennylane2 as qp
+from pennylane2.core.operator import abstractify
+from pennylane2.decomposition import Resources
+from pennylane2.decomposition.decomposition_rule import DecompCollection
+from pennylane2.decomposition.symbolic_decomposition import (
     _adjoint_negate_angle,
     _pow_scale_angle,
     self_adjoint,
 )
-from pennylane.ops.identity import _controlled_g_phase_standard
-from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle as adjoint_rotation2
-from pennylane.ops.op_math.controlled2 import flip_zero_control
-from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
-from pennylane.ops.qubit.non_parametric_ops import (
+from pennylane2.ops.identity import _controlled_g_phase_standard
+from pennylane2.ops.op_math.adjoint2 import _adjoint_negate_angle as adjoint_rotation2
+from pennylane2.ops.op_math.controlled2 import flip_zero_control
+from pennylane2.ops.op_math.pow2 import pow_involutory as pow_involutory2
+from pennylane2.ops.qubit.non_parametric_ops import (
     _controlled_hadamard_standard,
     _controlled_z_standard,
     _controlled_z_to_ccz,
     _ctrl_x_to_mcx,
 )
-from pennylane.ops.qubit.parametric_ops_single_qubit import (
+from pennylane2.ops.qubit.parametric_ops_single_qubit import (
     _controlled_phase_shift_standard,
     _controlled_rot_standard,
     _controlled_rx_standard,

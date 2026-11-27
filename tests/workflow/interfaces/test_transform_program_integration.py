@@ -21,9 +21,9 @@ import copy
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
-from pennylane.typing import PostprocessingFn
+import pennylane2 as qp
+from pennylane2.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane2.typing import PostprocessingFn
 
 device_suite = (
     qp.device("default.qubit"),

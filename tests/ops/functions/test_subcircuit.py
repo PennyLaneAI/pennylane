@@ -19,10 +19,10 @@ import inspect
 
 import pytest
 
-import pennylane as qp
-from pennylane.core import Operator2
-from pennylane.testing import assert_valid
-from pennylane.typing import Bool, Float, Wire
+import pennylane2 as qp
+from pennylane2.core import Operator2
+from pennylane2.testing import assert_valid
+from pennylane2.typing import Bool, Float, Wire
 
 
 @qp.subcircuit(dynamic_argnames=("phi",), arg_specs={"phi": float, "wires": Wire[1]})

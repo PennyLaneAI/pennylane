@@ -6,14 +6,14 @@
 Measurements
 ============
 
-.. currentmodule:: pennylane.measure
+.. currentmodule:: pennylane2.measure
 
 PennyLane can extract different types of measurement results from quantum
 devices: the expectation of an observable, its variance,
 samples of a single measurement, or computational basis state probabilities.
 
 For example, the following circuit returns the expectation value of the
-:class:`~pennylane.PauliZ` observable on wire 1:
+:class:`~pennylane2.PauliZ` observable on wire 1:
 
 .. code-block:: python
 
@@ -29,26 +29,26 @@ The available measurement functions are
 
 .. autosummary::
 
-    ~pennylane.expval
-    ~pennylane.sample
-    ~pennylane.counts
-    ~pennylane.var
-    ~pennylane.probs
-    ~pennylane.state
-    ~pennylane.density_matrix
-    ~pennylane.vn_entropy
-    ~pennylane.mutual_info
-    ~pennylane.purity
-    ~pennylane.classical_shadow
-    ~pennylane.shadow_expval
+    ~pennylane2.expval
+    ~pennylane2.sample
+    ~pennylane2.counts
+    ~pennylane2.var
+    ~pennylane2.probs
+    ~pennylane2.state
+    ~pennylane2.density_matrix
+    ~pennylane2.vn_entropy
+    ~pennylane2.mutual_info
+    ~pennylane2.purity
+    ~pennylane2.classical_shadow
+    ~pennylane2.shadow_expval
 
 :html:`</div>`
 
 .. note::
 
     All measurement functions support analytic differentiation, with the
-    exception of :func:`~.pennylane.sample`, :func:`~.pennylane.counts`, and
-    :func:`~.pennylane.classical_shadow`, as they return *stochastic*
+    exception of :func:`~.pennylane2.sample`, :func:`~.pennylane2.counts`, and
+    :func:`~.pennylane2.classical_shadow`, as they return *stochastic*
     results.
 
 Combined measurements
@@ -83,8 +83,8 @@ by a ``Hadamard`` and ``CNOT`` gate.
 
 .. code-block:: python
 
-    import pennylane as qp
-    from pennylane import numpy as np
+    import pennylane2 as qp
+    from pennylane2 import numpy as np
 
     dev = qp.device("default.qubit", wires=2)
 
@@ -97,7 +97,7 @@ by a ``Hadamard`` and ``CNOT`` gate.
 
 The combined PauliZ-measurement of the
 first and second qubit returns a tuple of two arrays, each containing
-the measurement results of the respective qubit. :func:`~.pennylane.sample`
+the measurement results of the respective qubit. :func:`~.pennylane2.sample`
 returns 1000 samples per observable as defined on the device.
 
 >>> results = circuit()
@@ -133,14 +133,14 @@ implicitly assumed.
 
 The tensor observable notation can be used inside all measurement functions that
 accept observables as arguments,
-including :func:`~.pennylane.expval`, :func:`~.pennylane.var`,
-and :func:`~.pennylane.sample`.
+including :func:`~.pennylane2.expval`, :func:`~.pennylane2.var`,
+and :func:`~.pennylane2.sample`.
 
 Counts
 ------
 
-To avoid dealing with long arrays for the larger numbers of shots, one can use :func:`~pennylane.counts` rather than
-:func:`~pennylane.sample`. This performs the same measurement as sampling, but returns a dictionary containing the
+To avoid dealing with long arrays for the larger numbers of shots, one can use :func:`~pennylane2.counts` rather than
+:func:`~pennylane2.sample`. This performs the same measurement as sampling, but returns a dictionary containing the
 possible measurement outcomes and the number of occurrences for each, rather than a list of all outcomes.
 
 The previous example will be modified as follows:
@@ -203,7 +203,7 @@ Note: For complicated Hamiltonians, this can add considerable overhead time (due
 eigenvalues to determine possible outcomes), and as the number of qubits increases, the length of the output
 dictionary showing possible computational basis states grows rapidly.
 
-If counts are obtained along with a measurement function other than :func:`~.pennylane.sample`,
+If counts are obtained along with a measurement function other than :func:`~.pennylane2.sample`,
 a tuple is returned to provide differentiability for the outputs of QNodes.
 
 .. code-block:: python
@@ -222,7 +222,7 @@ Probability
 -----------
 
 You can also train QNodes on computational basis probabilities, by using
-the :func:`~.pennylane.probs` measurement function. The function can
+the :func:`~.pennylane2.probs` measurement function. The function can
 accept either specified ``wires`` or an observable that rotates the
 computational basis.
 
@@ -259,7 +259,7 @@ number of shots.
 For simulators like ``default.qubit``, finite shots will be simulated if
 we set ``shots`` to a positive integer.
 
-The shot number can be changed using the :func:`~.pennylane.set_shots` decorator, which
+The shot number can be changed using the :func:`~.pennylane2.set_shots` decorator, which
 can also be directly applied to a QNode.
 
 .. code-block:: python

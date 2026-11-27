@@ -18,12 +18,12 @@ Unit tests for the ArbitraryStatePreparation template.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.templates.state_preparations.arbitrary_state_preparation import (
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.templates.state_preparations.arbitrary_state_preparation import (
     _state_preparation_pauli_words,
 )
-from pennylane.testing import assert_decomposable
+from pennylane2.testing import assert_decomposable
 
 
 class TestHelpers:  # pylint: disable=too-few-public-methods

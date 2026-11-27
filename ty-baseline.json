@@ -1,7 +1,7 @@
 {
   "version": 0,
   "files": {
-    "pennylane/_grad/grad.py": [
+    "pennylane2/_grad/grad.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 14,
@@ -27,7 +27,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/_grad/jvp.py": [
+    "pennylane2/_grad/jvp.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 15,
@@ -35,7 +35,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/_grad/value_and_grad.py": [
+    "pennylane2/_grad/value_and_grad.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 14,
@@ -43,7 +43,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/_grad/vjp.py": [
+    "pennylane2/_grad/vjp.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 15,
@@ -51,7 +51,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/about.py": [
+    "pennylane2/about.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 35,
@@ -65,7 +65,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/allocation.py": [
+    "pennylane2/allocation.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 15,
@@ -79,7 +79,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/backline/decoders/triton/algorithms.py": [
+    "pennylane2/backline/decoders/triton/algorithms.py": [
       {
         "rule": "import-not-found",
         "startColumn": 11,
@@ -93,7 +93,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/backline/decoders/triton/bp_iters.py": [
+    "pennylane2/backline/decoders/triton/bp_iters.py": [
       {
         "rule": "import-not-found",
         "startColumn": 11,
@@ -107,7 +107,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/backline/decoders/triton/decoder_frontend.py": [
+    "pennylane2/backline/decoders/triton/decoder_frontend.py": [
       {
         "rule": "import-not-found",
         "startColumn": 11,
@@ -151,7 +151,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/backline/decoders/triton/persistent_kernel.py": [
+    "pennylane2/backline/decoders/triton/persistent_kernel.py": [
       {
         "rule": "import-not-found",
         "startColumn": 11,
@@ -165,7 +165,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/backline/decoders/triton/triton_so_builder.py": [
+    "pennylane2/backline/decoders/triton/triton_so_builder.py": [
       {
         "rule": "import-not-found",
         "startColumn": 11,
@@ -203,7 +203,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/backline/device.py": [
+    "pennylane2/backline/device.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -211,7 +211,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/backline/placement.py": [
+    "pennylane2/backline/placement.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 11,
@@ -231,7 +231,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/backline/runtime/operands.py": [
+    "pennylane2/backline/runtime/operands.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 15,
@@ -257,7 +257,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/bose/bosonic.py": [
+    "pennylane2/bose/bosonic.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -265,7 +265,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/bose/bosonic_mapping.py": [
+    "pennylane2/bose/bosonic_mapping.py": [
       {
         "rule": "invalid-parameter-default",
         "startColumn": 4,
@@ -303,7 +303,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/capture/autograph/ag_primitives.py": [
+    "pennylane2/capture/autograph/ag_primitives.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 17,
@@ -347,7 +347,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/capture/base_interpreter.py": [
+    "pennylane2/capture/base_interpreter.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 51,
@@ -373,7 +373,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/capture/dynamic_shapes.py": [
+    "pennylane2/capture/dynamic_shapes.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 11,
@@ -483,7 +483,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/circuit_graph.py": [
+    "pennylane2/circuit_graph.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 35,
@@ -491,7 +491,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/concurrency/executors/base.py": [
+    "pennylane2/concurrency/executors/base.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 32,
@@ -517,7 +517,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/concurrency/executors/external/dask.py": [
+    "pennylane2/concurrency/executors/external/dask.py": [
       {
         "rule": "unresolved-reference",
         "startColumn": 32,
@@ -549,7 +549,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/concurrency/executors/external/mpi.py": [
+    "pennylane2/concurrency/executors/external/mpi.py": [
       {
         "rule": "import-not-found",
         "startColumn": 13,
@@ -599,7 +599,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/concurrency/executors/native/multiproc.py": [
+    "pennylane2/concurrency/executors/native/multiproc.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 40,
@@ -607,7 +607,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/concurrency/executors/native/serial.py": [
+    "pennylane2/concurrency/executors/native/serial.py": [
       {
         "rule": "unsupported-operator",
         "startColumn": 11,
@@ -615,7 +615,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/control_flow/_loop_abstract_axes.py": [
+    "pennylane2/control_flow/_loop_abstract_axes.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 61,
@@ -629,7 +629,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/control_flow/for_loop.py": [
+    "pennylane2/control_flow/for_loop.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 51,
@@ -649,7 +649,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/control_flow/while_loop.py": [
+    "pennylane2/control_flow/while_loop.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 44,
@@ -675,7 +675,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/core/_capture_measurements.py": [
+    "pennylane2/core/_capture_measurements.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 26,
@@ -719,7 +719,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/core/measurements.py": [
+    "pennylane2/core/measurements.py": [
       {
         "rule": "unresolved-reference",
         "startColumn": 36,
@@ -763,7 +763,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/core/operator/base.py": [
+    "pennylane2/core/operator/base.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 23,
@@ -849,7 +849,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/core/operator/operator2.py": [
+    "pennylane2/core/operator/operator2.py": [
       {
         "rule": "invalid-assignment",
         "startColumn": 40,
@@ -1091,7 +1091,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/core/operator/utils.py": [
+    "pennylane2/core/operator/utils.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 25,
@@ -1117,7 +1117,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/core/pauli.py": [
+    "pennylane2/core/pauli.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -1125,7 +1125,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/core/qscript.py": [
+    "pennylane2/core/qscript.py": [
       {
         "rule": "invalid-return-type",
         "startColumn": 15,
@@ -1229,7 +1229,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/core/queuing.py": [
+    "pennylane2/core/queuing.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 12,
@@ -1255,7 +1255,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/core/shots.py": [
+    "pennylane2/core/shots.py": [
       {
         "rule": "invalid-assignment",
         "startColumn": 23,
@@ -1287,7 +1287,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/core/transforms/__init__.py": [
+    "pennylane2/core/transforms/__init__.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 0,
@@ -1295,7 +1295,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/core/transforms/compile_pipeline.py": [
+    "pennylane2/core/transforms/compile_pipeline.py": [
       {
         "rule": "invalid-assignment",
         "startColumn": 25,
@@ -1411,7 +1411,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/core/transforms/cotransform_cache.py": [
+    "pennylane2/core/transforms/cotransform_cache.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 10,
@@ -1443,7 +1443,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/core/transforms/transform.py": [
+    "pennylane2/core/transforms/transform.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 43,
@@ -1517,7 +1517,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/data/attributes/array.py": [
+    "pennylane2/data/attributes/array.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 41,
@@ -1549,7 +1549,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/data/attributes/dictionary.py": [
+    "pennylane2/data/attributes/dictionary.py": [
       {
         "rule": "invalid-property-type-override",
         "startColumn": 6,
@@ -1569,7 +1569,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/data/attributes/json.py": [
+    "pennylane2/data/attributes/json.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 26,
@@ -1577,7 +1577,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/data/attributes/list.py": [
+    "pennylane2/data/attributes/list.py": [
       {
         "rule": "invalid-property-type-override",
         "startColumn": 6,
@@ -1603,7 +1603,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/data/attributes/molecule.py": [
+    "pennylane2/data/attributes/molecule.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 15,
@@ -1611,7 +1611,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/data/attributes/none.py": [
+    "pennylane2/data/attributes/none.py": [
       {
         "rule": "invalid-type-form",
         "startColumn": 46,
@@ -1631,7 +1631,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/data/attributes/operator/operator.py": [
+    "pennylane2/data/attributes/operator/operator.py": [
       {
         "rule": "invalid-return-type",
         "startColumn": 15,
@@ -1657,7 +1657,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/data/attributes/pytree.py": [
+    "pennylane2/data/attributes/pytree.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 15,
@@ -1665,7 +1665,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/data/attributes/scalar.py": [
+    "pennylane2/data/attributes/scalar.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 15,
@@ -1721,7 +1721,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/data/attributes/serialization.py": [
+    "pennylane2/data/attributes/serialization.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 51,
@@ -1795,7 +1795,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/data/attributes/sparse_array.py": [
+    "pennylane2/data/attributes/sparse_array.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -1815,7 +1815,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/data/attributes/string.py": [
+    "pennylane2/data/attributes/string.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 15,
@@ -1823,7 +1823,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/data/attributes/tuple.py": [
+    "pennylane2/data/attributes/tuple.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -1837,7 +1837,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/data/base/attribute.py": [
+    "pennylane2/data/base/attribute.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 29,
@@ -1875,7 +1875,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/data/base/dataset.py": [
+    "pennylane2/data/base/dataset.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 8,
@@ -1901,7 +1901,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/data/base/hdf5.py": [
+    "pennylane2/data/base/hdf5.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 63,
@@ -1933,7 +1933,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/data/base/mapper.py": [
+    "pennylane2/data/base/mapper.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 59,
@@ -1965,7 +1965,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/data/data_manager/__init__.py": [
+    "pennylane2/data/data_manager/__init__.py": [
       {
         "rule": "invalid-raise",
         "startColumn": 26,
@@ -2039,7 +2039,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/data/data_manager/foldermap.py": [
+    "pennylane2/data/data_manager/foldermap.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 30,
@@ -2113,7 +2113,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/data/data_manager/params.py": [
+    "pennylane2/data/data_manager/params.py": [
       {
         "rule": "invalid-type-form",
         "startColumn": 46,
@@ -2151,7 +2151,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/debugging/debugger.py": [
+    "pennylane2/debugging/debugger.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 4,
@@ -2183,7 +2183,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/decomposition/all_decomps.py": [
+    "pennylane2/decomposition/all_decomps.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 27,
@@ -2197,7 +2197,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/decomposition/decomposition_graph.py": [
+    "pennylane2/decomposition/decomposition_graph.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 36,
@@ -2247,7 +2247,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/decomposition/decomposition_rule.py": [
+    "pennylane2/decomposition/decomposition_rule.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 28,
@@ -2261,7 +2261,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/decomposition/resources.py": [
+    "pennylane2/decomposition/resources.py": [
       {
         "rule": "invalid-assignment",
         "startColumn": 27,
@@ -2287,7 +2287,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/decomposition/symbolic_decomposition.py": [
+    "pennylane2/decomposition/symbolic_decomposition.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 4,
@@ -2307,7 +2307,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/decomposition/utils.py": [
+    "pennylane2/decomposition/utils.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 11,
@@ -2327,7 +2327,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/_qubit_device.py": [
+    "pennylane2/devices/_qubit_device.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -2545,7 +2545,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/default_clifford.py": [
+    "pennylane2/devices/default_clifford.py": [
       {
         "rule": "import-not-found",
         "startColumn": 11,
@@ -2619,7 +2619,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/default_mixed.py": [
+    "pennylane2/devices/default_mixed.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 79,
@@ -2639,7 +2639,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/default_qubit.py": [
+    "pennylane2/devices/default_qubit.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 11,
@@ -2791,7 +2791,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/default_tensor.py": [
+    "pennylane2/devices/default_tensor.py": [
       {
         "rule": "import-not-found",
         "startColumn": 11,
@@ -2919,7 +2919,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/device_api.py": [
+    "pennylane2/devices/device_api.py": [
       {
         "rule": "invalid-return-type",
         "startColumn": 15,
@@ -2963,7 +2963,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/execution_config.py": [
+    "pennylane2/devices/execution_config.py": [
       {
         "rule": "invalid-assignment",
         "startColumn": 39,
@@ -2977,7 +2977,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/legacy_facade.py": [
+    "pennylane2/devices/legacy_facade.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -3051,7 +3051,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/modifiers/simulator_tracking.py": [
+    "pennylane2/devices/modifiers/simulator_tracking.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 8,
@@ -3065,7 +3065,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/modifiers/single_tape_support.py": [
+    "pennylane2/devices/modifiers/single_tape_support.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 8,
@@ -3079,7 +3079,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/null_qubit.py": [
+    "pennylane2/devices/null_qubit.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 11,
@@ -3117,7 +3117,7 @@
         "lineCount": 6
       }
     ],
-    "pennylane/devices/preprocess.py": [
+    "pennylane2/devices/preprocess.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 40,
@@ -3149,7 +3149,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/qubit/adjoint_jacobian.py": [
+    "pennylane2/devices/qubit/adjoint_jacobian.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 51,
@@ -3169,7 +3169,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/qubit/apply_operation.py": [
+    "pennylane2/devices/qubit/apply_operation.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 23,
@@ -3219,7 +3219,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/qubit/initialize_state.py": [
+    "pennylane2/devices/qubit/initialize_state.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 24,
@@ -3245,7 +3245,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/qubit/measure.py": [
+    "pennylane2/devices/qubit/measure.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 24,
@@ -3361,7 +3361,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/qubit/sampling.py": [
+    "pennylane2/devices/qubit/sampling.py": [
       {
         "rule": "invalid-parameter-default",
         "startColumn": 4,
@@ -3435,7 +3435,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/qubit/simulate.py": [
+    "pennylane2/devices/qubit/simulate.py": [
       {
         "rule": "not-iterable",
         "startColumn": 84,
@@ -3527,7 +3527,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/qubit_mixed/apply_operation.py": [
+    "pennylane2/devices/qubit_mixed/apply_operation.py": [
       {
         "rule": "unsupported-operator",
         "startColumn": 14,
@@ -3541,7 +3541,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/qubit_mixed/initialize_state.py": [
+    "pennylane2/devices/qubit_mixed/initialize_state.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 20,
@@ -3555,7 +3555,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/qubit_mixed/measure.py": [
+    "pennylane2/devices/qubit_mixed/measure.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 12,
@@ -3689,7 +3689,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/qubit_mixed/sampling.py": [
+    "pennylane2/devices/qubit_mixed/sampling.py": [
       {
         "rule": "invalid-assignment",
         "startColumn": 9,
@@ -3745,7 +3745,7 @@
         "lineCount": 9
       }
     ],
-    "pennylane/devices/qubit_mixed/simulate.py": [
+    "pennylane2/devices/qubit_mixed/simulate.py": [
       {
         "rule": "invalid-return-type",
         "startColumn": 19,
@@ -3771,7 +3771,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/reference_qubit.py": [
+    "pennylane2/devices/reference_qubit.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 22,
@@ -3791,7 +3791,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/drawer/_add_obj.py": [
+    "pennylane2/drawer/_add_obj.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 21,
@@ -3799,7 +3799,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/drawer/mpldrawer.py": [
+    "pennylane2/drawer/mpldrawer.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 12,
@@ -3813,7 +3813,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/drawer/tape_mpl.py": [
+    "pennylane2/drawer/tape_mpl.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 63,
@@ -3845,7 +3845,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/drawer/tape_text.py": [
+    "pennylane2/drawer/tape_text.py": [
       {
         "rule": "invalid-return-type",
         "startColumn": 11,
@@ -3853,7 +3853,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/drawer/utils.py": [
+    "pennylane2/drawer/utils.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 46,
@@ -3867,7 +3867,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/estimator/compact_hamiltonian.py": [
+    "pennylane2/estimator/compact_hamiltonian.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -3887,7 +3887,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/estimator/estimate.py": [
+    "pennylane2/estimator/estimate.py": [
       {
         "rule": "invalid-parameter-default",
         "startColumn": 4,
@@ -3949,7 +3949,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/estimator/ops/identity.py": [
+    "pennylane2/estimator/ops/identity.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 41,
@@ -3963,7 +3963,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/estimator/ops/op_math/controlled_ops.py": [
+    "pennylane2/estimator/ops/op_math/controlled_ops.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 41,
@@ -4235,7 +4235,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/estimator/ops/op_math/symbolic.py": [
+    "pennylane2/estimator/ops/op_math/symbolic.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -4297,7 +4297,7 @@
         "lineCount": 3
       }
     ],
-    "pennylane/estimator/ops/qubit/matrix_ops.py": [
+    "pennylane2/estimator/ops/qubit/matrix_ops.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 28,
@@ -4305,7 +4305,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/estimator/ops/qubit/non_parametric_ops.py": [
+    "pennylane2/estimator/ops/qubit/non_parametric_ops.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 41,
@@ -4349,7 +4349,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/estimator/ops/qubit/parametric_ops_multi_qubit.py": [
+    "pennylane2/estimator/ops/qubit/parametric_ops_multi_qubit.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 28,
@@ -4399,7 +4399,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/estimator/ops/qubit/parametric_ops_single_qubit.py": [
+    "pennylane2/estimator/ops/qubit/parametric_ops_single_qubit.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 41,
@@ -4527,7 +4527,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/estimator/ops/qubit/qchem_ops.py": [
+    "pennylane2/estimator/ops/qubit/qchem_ops.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 41,
@@ -4535,7 +4535,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/estimator/qpe_resources/first_quantization.py": [
+    "pennylane2/estimator/qpe_resources/first_quantization.py": [
       {
         "rule": "not-subscriptable",
         "startColumn": 48,
@@ -4585,7 +4585,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/estimator/qpe_resources/second_quantization.py": [
+    "pennylane2/estimator/qpe_resources/second_quantization.py": [
       {
         "rule": "invalid-assignment",
         "startColumn": 8,
@@ -4605,7 +4605,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/estimator/resource_mapping.py": [
+    "pennylane2/estimator/resource_mapping.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 25,
@@ -4643,7 +4643,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/estimator/resource_operator.py": [
+    "pennylane2/estimator/resource_operator.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -4687,7 +4687,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/estimator/resources_base.py": [
+    "pennylane2/estimator/resources_base.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -4695,7 +4695,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/estimator/templates/comparators.py": [
+    "pennylane2/estimator/templates/comparators.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 41,
@@ -4733,7 +4733,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/estimator/templates/qsp.py": [
+    "pennylane2/estimator/templates/qsp.py": [
       {
         "rule": "unsupported-operator",
         "startColumn": 25,
@@ -4897,7 +4897,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/estimator/templates/qubitize.py": [
+    "pennylane2/estimator/templates/qubitize.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 35,
@@ -4953,7 +4953,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/estimator/templates/select.py": [
+    "pennylane2/estimator/templates/select.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 53,
@@ -5027,7 +5027,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/estimator/templates/stateprep.py": [
+    "pennylane2/estimator/templates/stateprep.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 35,
@@ -5143,7 +5143,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/estimator/templates/subroutines.py": [
+    "pennylane2/estimator/templates/subroutines.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 28,
@@ -5451,7 +5451,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/estimator/templates/trotter.py": [
+    "pennylane2/estimator/templates/trotter.py": [
       {
         "rule": "not-subscriptable",
         "startColumn": 18,
@@ -5603,7 +5603,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/estimator/wires_manager.py": [
+    "pennylane2/estimator/wires_manager.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -5611,7 +5611,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/fermi/conversion.py": [
+    "pennylane2/fermi/conversion.py": [
       {
         "rule": "invalid-parameter-default",
         "startColumn": 4,
@@ -5685,7 +5685,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/fermi/fermionic.py": [
+    "pennylane2/fermi/fermionic.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -5705,7 +5705,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ftqc/decomposition.py": [
+    "pennylane2/ftqc/decomposition.py": [
       {
         "rule": "unsupported-operator",
         "startColumn": 41,
@@ -5845,7 +5845,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ftqc/graph_state_preparation.py": [
+    "pennylane2/ftqc/graph_state_preparation.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 59,
@@ -5913,7 +5913,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ftqc/lattice.py": [
+    "pennylane2/ftqc/lattice.py": [
       {
         "rule": "invalid-parameter-default",
         "startColumn": 34,
@@ -5933,7 +5933,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ftqc/operations.py": [
+    "pennylane2/ftqc/operations.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -5959,7 +5959,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ftqc/parametric_midmeasure.py": [
+    "pennylane2/ftqc/parametric_midmeasure.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 11,
@@ -6069,7 +6069,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ftqc/pauli_tracker.py": [
+    "pennylane2/ftqc/pauli_tracker.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 15,
@@ -6143,7 +6143,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ftqc/qubit_graph.py": [
+    "pennylane2/ftqc/qubit_graph.py": [
       {
         "rule": "invalid-return-type",
         "startColumn": 19,
@@ -6217,7 +6217,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/gradients/general_shift_rules.py": [
+    "pennylane2/gradients/general_shift_rules.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 30,
@@ -6225,7 +6225,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/gradients/hadamard_gradient.py": [
+    "pennylane2/gradients/hadamard_gradient.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 19,
@@ -6275,7 +6275,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/gradients/metric_tensor.py": [
+    "pennylane2/gradients/metric_tensor.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 37,
@@ -6289,7 +6289,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/gradients/parameter_shift.py": [
+    "pennylane2/gradients/parameter_shift.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 4,
@@ -6309,7 +6309,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/gradients/spsa_gradient.py": [
+    "pennylane2/gradients/spsa_gradient.py": [
       {
         "rule": "not-subscriptable",
         "startColumn": 41,
@@ -6335,7 +6335,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/io/qasm_interpreter.py": [
+    "pennylane2/io/qasm_interpreter.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 6,
@@ -6697,7 +6697,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/io/qualtran_io.py": [
+    "pennylane2/io/qualtran_io.py": [
       {
         "rule": "import-not-found",
         "startColumn": 11,
@@ -6855,7 +6855,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/io/to_openqasm.py": [
+    "pennylane2/io/to_openqasm.py": [
       {
         "rule": "invalid-overload",
         "startColumn": 4,
@@ -6881,7 +6881,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/liealg/cartan_decomp.py": [
+    "pennylane2/liealg/cartan_decomp.py": [
       {
         "rule": "invalid-type-form",
         "startColumn": 51,
@@ -6925,7 +6925,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/liealg/center.py": [
+    "pennylane2/liealg/center.py": [
       {
         "rule": "deprecated",
         "startColumn": 46,
@@ -7005,7 +7005,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/liealg/horizontal_cartan_subalgebra.py": [
+    "pennylane2/liealg/horizontal_cartan_subalgebra.py": [
       {
         "rule": "deprecated",
         "startColumn": 65,
@@ -7169,7 +7169,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/liealg/involutions.py": [
+    "pennylane2/liealg/involutions.py": [
       {
         "rule": "invalid-parameter-default",
         "startColumn": 4,
@@ -7279,7 +7279,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/liealg/lie_closure.py": [
+    "pennylane2/liealg/lie_closure.py": [
       {
         "rule": "invalid-parameter-default",
         "startColumn": 4,
@@ -7365,7 +7365,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/liealg/structure_constants.py": [
+    "pennylane2/liealg/structure_constants.py": [
       {
         "rule": "invalid-assignment",
         "startColumn": 12,
@@ -7547,7 +7547,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/logging/configuration.py": [
+    "pennylane2/logging/configuration.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 4,
@@ -7561,7 +7561,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/logging/decorators.py": [
+    "pennylane2/logging/decorators.py": [
       {
         "rule": "invalid-assignment",
         "startColumn": 16,
@@ -7587,7 +7587,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/logging/formatters/formatter.py": [
+    "pennylane2/logging/formatters/formatter.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 8,
@@ -7829,7 +7829,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/logging/utils.py": [
+    "pennylane2/logging/utils.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 22,
@@ -7837,7 +7837,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/math/binary_linalg.py": [
+    "pennylane2/math/binary_linalg.py": [
       {
         "rule": "invalid-return-type",
         "startColumn": 15,
@@ -7845,7 +7845,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/math/decomposition.py": [
+    "pennylane2/math/decomposition.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 55,
@@ -7865,7 +7865,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/math/fidelity.py": [
+    "pennylane2/math/fidelity.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 1,
@@ -7885,7 +7885,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/math/iqp.py": [
+    "pennylane2/math/iqp.py": [
       {
         "rule": "invalid-return-type",
         "startColumn": 15,
@@ -7971,7 +7971,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/math/is_independent.py": [
+    "pennylane2/math/is_independent.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 7,
@@ -7985,7 +7985,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/math/matrix_manipulation.py": [
+    "pennylane2/math/matrix_manipulation.py": [
       {
         "rule": "invalid-assignment",
         "startColumn": 12,
@@ -8011,7 +8011,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/math/multi_dispatch.py": [
+    "pennylane2/math/multi_dispatch.py": [
       {
         "rule": "deprecated",
         "startColumn": 11,
@@ -8025,7 +8025,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/math/utils.py": [
+    "pennylane2/math/utils.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 30,
@@ -8069,7 +8069,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/measurements/classical_shadow.py": [
+    "pennylane2/measurements/classical_shadow.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 25,
@@ -8095,7 +8095,7 @@
         "lineCount": 7
       }
     ],
-    "pennylane/measurements/counts.py": [
+    "pennylane2/measurements/counts.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 28,
@@ -8127,7 +8127,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/measurements/expval.py": [
+    "pennylane2/measurements/expval.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -8165,7 +8165,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/measurements/mutual_info.py": [
+    "pennylane2/measurements/mutual_info.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 25,
@@ -8215,7 +8215,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/measurements/probs.py": [
+    "pennylane2/measurements/probs.py": [
       {
         "rule": "unsupported-operator",
         "startColumn": 17,
@@ -8343,7 +8343,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/measurements/process_samples.py": [
+    "pennylane2/measurements/process_samples.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 43,
@@ -8405,7 +8405,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/measurements/purity.py": [
+    "pennylane2/measurements/purity.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 68,
@@ -8413,7 +8413,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/measurements/sample.py": [
+    "pennylane2/measurements/sample.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 86,
@@ -8451,7 +8451,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/measurements/state.py": [
+    "pennylane2/measurements/state.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -8489,7 +8489,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/measurements/var.py": [
+    "pennylane2/measurements/var.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -8503,7 +8503,7 @@
         "lineCount": 7
       }
     ],
-    "pennylane/measurements/vn_entropy.py": [
+    "pennylane2/measurements/vn_entropy.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 56,
@@ -8511,7 +8511,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/numeric_hamiltonians.py": [
+    "pennylane2/numeric_hamiltonians.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 15,
@@ -8531,7 +8531,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/numpy/random.py": [
+    "pennylane2/numpy/random.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 20,
@@ -8551,7 +8551,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/numpy/tensor.py": [
+    "pennylane2/numpy/tensor.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 38,
@@ -8571,7 +8571,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/numpy/wrapper.py": [
+    "pennylane2/numpy/wrapper.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 49,
@@ -8585,7 +8585,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/operation.py": [
+    "pennylane2/operation.py": [
       {
         "rule": "unsupported-operator",
         "startColumn": 11,
@@ -8593,7 +8593,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/_pauli_conversion.py": [
+    "pennylane2/ops/_pauli_conversion.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 52,
@@ -8601,7 +8601,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/channel.py": [
+    "pennylane2/ops/channel.py": [
       {
         "rule": "not-subscriptable",
         "startColumn": 36,
@@ -8621,7 +8621,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/functions/bind_new_parameters.py": [
+    "pennylane2/ops/functions/bind_new_parameters.py": [
       {
         "rule": "invalid-assignment",
         "startColumn": 8,
@@ -8659,7 +8659,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/functions/eigvals.py": [
+    "pennylane2/ops/functions/eigvals.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 39,
@@ -8667,7 +8667,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/functions/equal.py": [
+    "pennylane2/ops/functions/equal.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 28,
@@ -8705,7 +8705,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/functions/generator.py": [
+    "pennylane2/ops/functions/generator.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 14,
@@ -8719,7 +8719,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/functions/map_wires.py": [
+    "pennylane2/ops/functions/map_wires.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 1,
@@ -8727,7 +8727,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/functions/matrix.py": [
+    "pennylane2/ops/functions/matrix.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 13,
@@ -8747,7 +8747,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/functions/single_qubit_zyz_angles.py": [
+    "pennylane2/ops/functions/single_qubit_zyz_angles.py": [
       {
         "rule": "unsupported-operator",
         "startColumn": 12,
@@ -8773,7 +8773,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/functions/subcircuit.py": [
+    "pennylane2/ops/functions/subcircuit.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 4,
@@ -8781,7 +8781,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/identity.py": [
+    "pennylane2/ops/identity.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 8,
@@ -8795,7 +8795,7 @@
         "lineCount": 6
       }
     ],
-    "pennylane/ops/meta.py": [
+    "pennylane2/ops/meta.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 12,
@@ -8803,7 +8803,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/mid_measure/measurement_value.py": [
+    "pennylane2/ops/mid_measure/measurement_value.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 32,
@@ -8811,7 +8811,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/mid_measure/mid_measure.py": [
+    "pennylane2/ops/mid_measure/mid_measure.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 31,
@@ -8825,7 +8825,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/mid_measure/pauli_measure.py": [
+    "pennylane2/ops/mid_measure/pauli_measure.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 27,
@@ -8851,7 +8851,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/adjoint.py": [
+    "pennylane2/ops/op_math/adjoint.py": [
       {
         "rule": "not-subscriptable",
         "startColumn": 23,
@@ -8931,7 +8931,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/adjoint2.py": [
+    "pennylane2/ops/op_math/adjoint2.py": [
       {
         "rule": "invalid-property-type-override",
         "startColumn": 8,
@@ -9005,7 +9005,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/change_op_basis.py": [
+    "pennylane2/ops/op_math/change_op_basis.py": [
       {
         "rule": "invalid-parameter-default",
         "startColumn": 34,
@@ -9019,7 +9019,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/change_op_basis2.py": [
+    "pennylane2/ops/op_math/change_op_basis2.py": [
       {
         "rule": "invalid-assignment",
         "startColumn": 8,
@@ -9069,7 +9069,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/composite.py": [
+    "pennylane2/ops/op_math/composite.py": [
       {
         "rule": "invalid-property-type-override",
         "startColumn": 8,
@@ -9095,7 +9095,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/composite2.py": [
+    "pennylane2/ops/op_math/composite2.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 8,
@@ -9121,7 +9121,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/condition.py": [
+    "pennylane2/ops/op_math/condition.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 28,
@@ -9201,7 +9201,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/controlled.py": [
+    "pennylane2/ops/op_math/controlled.py": [
       {
         "rule": "not-subscriptable",
         "startColumn": 14,
@@ -9323,7 +9323,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/controlled2.py": [
+    "pennylane2/ops/op_math/controlled2.py": [
       {
         "rule": "invalid-assignment",
         "startColumn": 12,
@@ -9475,7 +9475,7 @@
         "lineCount": 7
       }
     ],
-    "pennylane/ops/op_math/controlled_ops.py": [
+    "pennylane2/ops/op_math/controlled_ops.py": [
       {
         "rule": "not-subscriptable",
         "startColumn": 23,
@@ -11391,7 +11391,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/decompositions/controlled_decompositions.py": [
+    "pennylane2/ops/op_math/decompositions/controlled_decompositions.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 8,
@@ -11519,7 +11519,7 @@
         "lineCount": 6
       }
     ],
-    "pennylane/ops/op_math/decompositions/grid_problems.py": [
+    "pennylane2/ops/op_math/decompositions/grid_problems.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 19,
@@ -11749,7 +11749,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/decompositions/norm_solver.py": [
+    "pennylane2/ops/op_math/decompositions/norm_solver.py": [
       {
         "rule": "invalid-return-type",
         "startColumn": 15,
@@ -11775,7 +11775,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/decompositions/normal_forms.py": [
+    "pennylane2/ops/op_math/decompositions/normal_forms.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 33,
@@ -11783,7 +11783,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/decompositions/rings.py": [
+    "pennylane2/ops/op_math/decompositions/rings.py": [
       {
         "rule": "unsupported-operator",
         "startColumn": 19,
@@ -11923,7 +11923,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/decompositions/solovay_kitaev.py": [
+    "pennylane2/ops/op_math/decompositions/solovay_kitaev.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 14,
@@ -11997,7 +11997,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/evolution.py": [
+    "pennylane2/ops/op_math/evolution.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 24,
@@ -12005,7 +12005,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/exp.py": [
+    "pennylane2/ops/op_math/exp.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 25,
@@ -12049,7 +12049,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/linear_combination.py": [
+    "pennylane2/ops/op_math/linear_combination.py": [
       {
         "rule": "invalid-property-type-override",
         "startColumn": 8,
@@ -12111,7 +12111,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/pow.py": [
+    "pennylane2/ops/op_math/pow.py": [
       {
         "rule": "invalid-return-type",
         "startColumn": 15,
@@ -12215,7 +12215,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/pow2.py": [
+    "pennylane2/ops/op_math/pow2.py": [
       {
         "rule": "invalid-explicit-override",
         "startColumn": 8,
@@ -12337,7 +12337,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/prod.py": [
+    "pennylane2/ops/op_math/prod.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 62,
@@ -12441,7 +12441,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/prod2.py": [
+    "pennylane2/ops/op_math/prod2.py": [
       {
         "rule": "invalid-parameter-default",
         "startColumn": 29,
@@ -12605,7 +12605,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/sprod.py": [
+    "pennylane2/ops/op_math/sprod.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -12655,7 +12655,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/sum.py": [
+    "pennylane2/ops/op_math/sum.py": [
       {
         "rule": "invalid-property-type-override",
         "startColumn": 8,
@@ -12705,7 +12705,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/symbolicop.py": [
+    "pennylane2/ops/op_math/symbolicop.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 15,
@@ -12749,7 +12749,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/op_math/symbolicop2.py": [
+    "pennylane2/ops/op_math/symbolicop2.py": [
       {
         "rule": "invalid-property-type-override",
         "startColumn": 8,
@@ -12763,7 +12763,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/qubit/arithmetic_ops.py": [
+    "pennylane2/ops/qubit/arithmetic_ops.py": [
       {
         "rule": "invalid-mutable-override",
         "startColumn": 4,
@@ -13125,7 +13125,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/qubit/matrix_ops.py": [
+    "pennylane2/ops/qubit/matrix_ops.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 16,
@@ -13193,7 +13193,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/qubit/non_parametric_ops.py": [
+    "pennylane2/ops/qubit/non_parametric_ops.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -13435,7 +13435,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/qubit/observables.py": [
+    "pennylane2/ops/qubit/observables.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 15,
@@ -13719,7 +13719,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/qubit/parametric_ops_multi_qubit.py": [
+    "pennylane2/ops/qubit/parametric_ops_multi_qubit.py": [
       {
         "rule": "unsupported-operator",
         "startColumn": 38,
@@ -15251,7 +15251,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/qubit/parametric_ops_single_qubit.py": [
+    "pennylane2/ops/qubit/parametric_ops_single_qubit.py": [
       {
         "rule": "invalid-explicit-override",
         "startColumn": 8,
@@ -15745,7 +15745,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/qubit/qchem_ops.py": [
+    "pennylane2/ops/qubit/qchem_ops.py": [
       {
         "rule": "unsupported-operator",
         "startColumn": 20,
@@ -17787,7 +17787,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/qubit/special_unitary.py": [
+    "pennylane2/ops/qubit/special_unitary.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 18,
@@ -17897,7 +17897,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/ops/qubit/state_preparation.py": [
+    "pennylane2/ops/qubit/state_preparation.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 28,
@@ -17959,7 +17959,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/optimize/adagrad.py": [
+    "pennylane2/optimize/adagrad.py": [
       {
         "rule": "invalid-assignment",
         "startColumn": 8,
@@ -17973,7 +17973,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/optimize/adam.py": [
+    "pennylane2/optimize/adam.py": [
       {
         "rule": "unsupported-operator",
         "startColumn": 8,
@@ -18053,7 +18053,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/optimize/adaptive.py": [
+    "pennylane2/optimize/adaptive.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 40,
@@ -18067,7 +18067,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/optimize/momentum.py": [
+    "pennylane2/optimize/momentum.py": [
       {
         "rule": "invalid-assignment",
         "startColumn": 8,
@@ -18081,7 +18081,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/optimize/momentum_qng.py": [
+    "pennylane2/optimize/momentum_qng.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 33,
@@ -18095,7 +18095,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/optimize/qng.py": [
+    "pennylane2/optimize/qng.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 25,
@@ -18115,7 +18115,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/optimize/qnspsa.py": [
+    "pennylane2/optimize/qnspsa.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 28,
@@ -18201,7 +18201,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/optimize/reconstruct.py": [
+    "pennylane2/optimize/reconstruct.py": [
       {
         "rule": "unsupported-operator",
         "startColumn": 31,
@@ -18215,7 +18215,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/optimize/rms_prop.py": [
+    "pennylane2/optimize/rms_prop.py": [
       {
         "rule": "invalid-assignment",
         "startColumn": 8,
@@ -18229,7 +18229,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/optimize/rotosolve.py": [
+    "pennylane2/optimize/rotosolve.py": [
       {
         "rule": "not-subscriptable",
         "startColumn": 12,
@@ -18255,7 +18255,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/optimize/shot_adaptive.py": [
+    "pennylane2/optimize/shot_adaptive.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 29,
@@ -18311,7 +18311,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/optimize/spsa.py": [
+    "pennylane2/optimize/spsa.py": [
       {
         "rule": "unsupported-operator",
         "startColumn": 21,
@@ -18337,7 +18337,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/pauli/conversion.py": [
+    "pennylane2/pauli/conversion.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 45,
@@ -18351,7 +18351,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/pauli/grouping/group_observables.py": [
+    "pennylane2/pauli/grouping/group_observables.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 39,
@@ -18419,7 +18419,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/pauli/grouping/optimize_measurements.py": [
+    "pennylane2/pauli/grouping/optimize_measurements.py": [
       {
         "rule": "invalid-parameter-default",
         "startColumn": 4,
@@ -18433,7 +18433,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/pauli/trace_inner_product.py": [
+    "pennylane2/pauli/trace_inner_product.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 16,
@@ -18453,7 +18453,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/pytrees/pytrees.py": [
+    "pennylane2/pytrees/pytrees.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 34,
@@ -18473,7 +18473,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/qchem/basis_data.py": [
+    "pennylane2/qchem/basis_data.py": [
       {
         "rule": "import-not-found",
         "startColumn": 15,
@@ -18481,7 +18481,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/qchem/convert.py": [
+    "pennylane2/qchem/convert.py": [
       {
         "rule": "import-not-found",
         "startColumn": 15,
@@ -18489,7 +18489,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/qchem/convert_openfermion.py": [
+    "pennylane2/qchem/convert_openfermion.py": [
       {
         "rule": "import-not-found",
         "startColumn": 15,
@@ -18503,7 +18503,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/qchem/dipole.py": [
+    "pennylane2/qchem/dipole.py": [
       {
         "rule": "not-iterable",
         "startColumn": 17,
@@ -18511,7 +18511,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/qchem/factorization.py": [
+    "pennylane2/qchem/factorization.py": [
       {
         "rule": "import-not-found",
         "startColumn": 11,
@@ -18579,7 +18579,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/qchem/hamiltonian.py": [
+    "pennylane2/qchem/hamiltonian.py": [
       {
         "rule": "not-iterable",
         "startColumn": 17,
@@ -18683,7 +18683,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/qchem/molecule.py": [
+    "pennylane2/qchem/molecule.py": [
       {
         "rule": "not-subscriptable",
         "startColumn": 12,
@@ -18691,7 +18691,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/qchem/observable_hf.py": [
+    "pennylane2/qchem/observable_hf.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 19,
@@ -18705,7 +18705,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/qchem/openfermion_pyscf.py": [
+    "pennylane2/qchem/openfermion_pyscf.py": [
       {
         "rule": "import-not-found",
         "startColumn": 15,
@@ -18737,7 +18737,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/qchem/structure.py": [
+    "pennylane2/qchem/structure.py": [
       {
         "rule": "import-not-found",
         "startColumn": 15,
@@ -18745,7 +18745,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/qchem/tapering.py": [
+    "pennylane2/qchem/tapering.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 27,
@@ -18783,7 +18783,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/qchem/vibrational/christiansen_ham.py": [
+    "pennylane2/qchem/vibrational/christiansen_ham.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 68,
@@ -18791,7 +18791,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/qchem/vibrational/christiansen_utils.py": [
+    "pennylane2/qchem/vibrational/christiansen_utils.py": [
       {
         "rule": "import-not-found",
         "startColumn": 11,
@@ -18799,7 +18799,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/qchem/vibrational/localize_modes.py": [
+    "pennylane2/qchem/vibrational/localize_modes.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 20,
@@ -18807,7 +18807,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/qchem/vibrational/pes_generator.py": [
+    "pennylane2/qchem/vibrational/pes_generator.py": [
       {
         "rule": "invalid-assignment",
         "startColumn": 24,
@@ -18821,7 +18821,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/qchem/vibrational/taylor_ham.py": [
+    "pennylane2/qchem/vibrational/taylor_ham.py": [
       {
         "rule": "import-not-found",
         "startColumn": 15,
@@ -18871,7 +18871,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/qchem/vibrational/vibrational_class.py": [
+    "pennylane2/qchem/vibrational/vibrational_class.py": [
       {
         "rule": "not-subscriptable",
         "startColumn": 30,
@@ -18903,7 +18903,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/resource/analyze.py": [
+    "pennylane2/resource/analyze.py": [
       {
         "rule": "invalid-assignment",
         "startColumn": 24,
@@ -18911,7 +18911,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/resource/expression.py": [
+    "pennylane2/resource/expression.py": [
       {
         "rule": "invalid-return-type",
         "startColumn": 15,
@@ -19021,7 +19021,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/resource/parsing.py": [
+    "pennylane2/resource/parsing.py": [
       {
         "rule": "invalid-return-type",
         "startColumn": 11,
@@ -19035,7 +19035,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/resource/resource.py": [
+    "pennylane2/resource/resource.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 21,
@@ -19085,7 +19085,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/shadows/classical_shadow.py": [
+    "pennylane2/shadows/classical_shadow.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 12,
@@ -19105,7 +19105,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/shadows/transforms.py": [
+    "pennylane2/shadows/transforms.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 53,
@@ -19113,7 +19113,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/spin/spin_hamiltonian.py": [
+    "pennylane2/spin/spin_hamiltonian.py": [
       {
         "rule": "unsupported-operator",
         "startColumn": 47,
@@ -19157,7 +19157,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/tape/operation_recorder.py": [
+    "pennylane2/tape/operation_recorder.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 6,
@@ -19195,7 +19195,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/tape/plxpr_conversion.py": [
+    "pennylane2/tape/plxpr_conversion.py": [
       {
         "rule": "not-subscriptable",
         "startColumn": 8,
@@ -19251,7 +19251,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/tape/tape.py": [
+    "pennylane2/tape/tape.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 33,
@@ -19277,7 +19277,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/core.py": [
+    "pennylane2/templates/core.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 35,
@@ -19351,7 +19351,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/embeddings/angle.py": [
+    "pennylane2/templates/embeddings/angle.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -19389,7 +19389,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/embeddings/iqp.py": [
+    "pennylane2/templates/embeddings/iqp.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 16,
@@ -19451,7 +19451,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/embeddings/qaoaembedding.py": [
+    "pennylane2/templates/embeddings/qaoaembedding.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -19489,7 +19489,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/layers/basic_entangler.py": [
+    "pennylane2/templates/layers/basic_entangler.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 28,
@@ -19509,7 +19509,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/layers/gate_fabric.py": [
+    "pennylane2/templates/layers/gate_fabric.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -19517,7 +19517,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/layers/particle_conserving_u1.py": [
+    "pennylane2/templates/layers/particle_conserving_u1.py": [
       {
         "rule": "not-iterable",
         "startColumn": 11,
@@ -19597,7 +19597,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/layers/particle_conserving_u2.py": [
+    "pennylane2/templates/layers/particle_conserving_u2.py": [
       {
         "rule": "not-subscriptable",
         "startColumn": 50,
@@ -19683,7 +19683,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/layers/random.py": [
+    "pennylane2/templates/layers/random.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -19691,7 +19691,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/layers/simplified_two_design.py": [
+    "pennylane2/templates/layers/simplified_two_design.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -19699,7 +19699,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/layers/strongly_entangling.py": [
+    "pennylane2/templates/layers/strongly_entangling.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -19707,7 +19707,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/state_preparations/arbitrary_state_preparation.py": [
+    "pennylane2/templates/state_preparations/arbitrary_state_preparation.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -19721,7 +19721,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/state_preparations/cosine_window.py": [
+    "pennylane2/templates/state_preparations/cosine_window.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -19729,7 +19729,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/state_preparations/mottonen.py": [
+    "pennylane2/templates/state_preparations/mottonen.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -19737,7 +19737,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/state_preparations/partial_unary.py": [
+    "pennylane2/templates/state_preparations/partial_unary.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 45,
@@ -19817,7 +19817,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/state_preparations/phase_gradient.py": [
+    "pennylane2/templates/state_preparations/phase_gradient.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 20,
@@ -19849,7 +19849,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/state_preparations/qrom_state_prep.py": [
+    "pennylane2/templates/state_preparations/qrom_state_prep.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -19863,7 +19863,7 @@
         "lineCount": 4
       }
     ],
-    "pennylane/templates/state_preparations/state_prep_mps.py": [
+    "pennylane2/templates/state_preparations/state_prep_mps.py": [
       {
         "rule": "not-subscriptable",
         "startColumn": 21,
@@ -19889,7 +19889,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/state_preparations/sum_of_slaters.py": [
+    "pennylane2/templates/state_preparations/sum_of_slaters.py": [
       {
         "rule": "mismatched-type-name",
         "startColumn": 21,
@@ -20161,7 +20161,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/state_preparations/superposition.py": [
+    "pennylane2/templates/state_preparations/superposition.py": [
       {
         "rule": "invalid-assignment",
         "startColumn": 19,
@@ -20199,7 +20199,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/alias_sampling.py": [
+    "pennylane2/templates/subroutines/alias_sampling.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 25,
@@ -20237,7 +20237,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/alias_sampling_thc.py": [
+    "pennylane2/templates/subroutines/alias_sampling_thc.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 18,
@@ -20293,7 +20293,7 @@
         "lineCount": 5
       }
     ],
-    "pennylane/templates/subroutines/arbitrary_unitary.py": [
+    "pennylane2/templates/subroutines/arbitrary_unitary.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -20319,7 +20319,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/arithmetic/adder.py": [
+    "pennylane2/templates/subroutines/arithmetic/adder.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 22,
@@ -20405,7 +20405,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/arithmetic/incrementer.py": [
+    "pennylane2/templates/subroutines/arithmetic/incrementer.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 36,
@@ -20431,7 +20431,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/arithmetic/mod_exp.py": [
+    "pennylane2/templates/subroutines/arithmetic/mod_exp.py": [
       {
         "rule": "not-iterable",
         "startColumn": 50,
@@ -20451,7 +20451,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/arithmetic/multiplier.py": [
+    "pennylane2/templates/subroutines/arithmetic/multiplier.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -20627,7 +20627,7 @@
         "lineCount": 3
       }
     ],
-    "pennylane/templates/subroutines/arithmetic/out_adder.py": [
+    "pennylane2/templates/subroutines/arithmetic/out_adder.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -20659,7 +20659,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/arithmetic/out_multiplier.py": [
+    "pennylane2/templates/subroutines/arithmetic/out_multiplier.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 20,
@@ -20907,7 +20907,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/arithmetic/out_poly.py": [
+    "pennylane2/templates/subroutines/arithmetic/out_poly.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 27,
@@ -21101,7 +21101,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/arithmetic/out_square.py": [
+    "pennylane2/templates/subroutines/arithmetic/out_square.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 12,
@@ -21271,7 +21271,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/arithmetic/phase_adder.py": [
+    "pennylane2/templates/subroutines/arithmetic/phase_adder.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 29,
@@ -21363,7 +21363,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/arithmetic/semi_adder.py": [
+    "pennylane2/templates/subroutines/arithmetic/semi_adder.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 4,
@@ -21509,7 +21509,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/arithmetic/signed_out_multiplier.py": [
+    "pennylane2/templates/subroutines/arithmetic/signed_out_multiplier.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 8,
@@ -21841,7 +21841,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/arithmetic/signed_out_square.py": [
+    "pennylane2/templates/subroutines/arithmetic/signed_out_square.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 12,
@@ -21927,7 +21927,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/arithmetic/temporary_and.py": [
+    "pennylane2/templates/subroutines/arithmetic/temporary_and.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 8,
@@ -22259,7 +22259,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/controlled_sequence.py": [
+    "pennylane2/templates/subroutines/controlled_sequence.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 37,
@@ -22285,7 +22285,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/fable.py": [
+    "pennylane2/templates/subroutines/fable.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 47,
@@ -22359,7 +22359,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/ffft.py": [
+    "pennylane2/templates/subroutines/ffft.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 15,
@@ -22451,7 +22451,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/flip_sign.py": [
+    "pennylane2/templates/subroutines/flip_sign.py": [
       {
         "rule": "invalid-return-type",
         "startColumn": 19,
@@ -22567,7 +22567,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/gqsp.py": [
+    "pennylane2/templates/subroutines/gqsp.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 33,
@@ -22593,7 +22593,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/grover.py": [
+    "pennylane2/templates/subroutines/grover.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -22661,7 +22661,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/hilbert_schmidt.py": [
+    "pennylane2/templates/subroutines/hilbert_schmidt.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -22969,7 +22969,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/iqp.py": [
+    "pennylane2/templates/subroutines/iqp.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 15,
@@ -22995,7 +22995,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/multix.py": [
+    "pennylane2/templates/subroutines/multix.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 15,
@@ -23177,7 +23177,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/one_body_block_encoding.py": [
+    "pennylane2/templates/subroutines/one_body_block_encoding.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 29,
@@ -23203,7 +23203,7 @@
         "lineCount": 9
       }
     ],
-    "pennylane/templates/subroutines/permute.py": [
+    "pennylane2/templates/subroutines/permute.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -23217,7 +23217,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/prepselprep.py": [
+    "pennylane2/templates/subroutines/prepselprep.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -23237,7 +23237,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/qchem/all_singles_doubles.py": [
+    "pennylane2/templates/subroutines/qchem/all_singles_doubles.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 24,
@@ -23257,7 +23257,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/qchem/fermionic_double_excitation.py": [
+    "pennylane2/templates/subroutines/qchem/fermionic_double_excitation.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -23265,7 +23265,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/qchem/fermionic_single_excitation.py": [
+    "pennylane2/templates/subroutines/qchem/fermionic_single_excitation.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -23273,7 +23273,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/qchem/kupccgsd.py": [
+    "pennylane2/templates/subroutines/qchem/kupccgsd.py": [
       {
         "rule": "not-iterable",
         "startColumn": 61,
@@ -23299,7 +23299,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/qchem/uccsd.py": [
+    "pennylane2/templates/subroutines/qchem/uccsd.py": [
       {
         "rule": "not-iterable",
         "startColumn": 66,
@@ -23343,7 +23343,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/qft.py": [
+    "pennylane2/templates/subroutines/qft.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 43,
@@ -23417,7 +23417,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/qmc.py": [
+    "pennylane2/templates/subroutines/qmc.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -23425,7 +23425,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/qpe.py": [
+    "pennylane2/templates/subroutines/qpe.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 8,
@@ -23439,7 +23439,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/qram.py": [
+    "pennylane2/templates/subroutines/qram.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 11,
@@ -23801,7 +23801,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/qrom.py": [
+    "pennylane2/templates/subroutines/qrom.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 16,
@@ -24091,7 +24091,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/qsvt.py": [
+    "pennylane2/templates/subroutines/qsvt.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 36,
@@ -24141,7 +24141,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/qubitization.py": [
+    "pennylane2/templates/subroutines/qubitization.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 49,
@@ -24149,7 +24149,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/reflection.py": [
+    "pennylane2/templates/subroutines/reflection.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 42,
@@ -24253,7 +24253,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/select.py": [
+    "pennylane2/templates/subroutines/select.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 70,
@@ -24321,7 +24321,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/select_pauli_rot.py": [
+    "pennylane2/templates/subroutines/select_pauli_rot.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 62,
@@ -24347,7 +24347,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/select_thc.py": [
+    "pennylane2/templates/subroutines/select_thc.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 12,
@@ -24403,7 +24403,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/superposition_thc.py": [
+    "pennylane2/templates/subroutines/superposition_thc.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 51,
@@ -24471,7 +24471,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/time_evolution/approx_time_evolution.py": [
+    "pennylane2/templates/subroutines/time_evolution/approx_time_evolution.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -24497,7 +24497,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/time_evolution/commuting_evolution.py": [
+    "pennylane2/templates/subroutines/time_evolution/commuting_evolution.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 49,
@@ -24517,7 +24517,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/time_evolution/qdrift.py": [
+    "pennylane2/templates/subroutines/time_evolution/qdrift.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 42,
@@ -24525,7 +24525,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/time_evolution/trotter.py": [
+    "pennylane2/templates/subroutines/time_evolution/trotter.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 26,
@@ -24539,7 +24539,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/time_evolution/trotter_cdf.py": [
+    "pennylane2/templates/subroutines/time_evolution/trotter_cdf.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 20,
@@ -24565,7 +24565,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/time_evolution/trotter_cgf.py": [
+    "pennylane2/templates/subroutines/time_evolution/trotter_cgf.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 28,
@@ -24585,7 +24585,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/subroutines/time_evolution/trotter_vibronic.py": [
+    "pennylane2/templates/subroutines/time_evolution/trotter_vibronic.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 23,
@@ -24641,7 +24641,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/swapnetworks/ccl2.py": [
+    "pennylane2/templates/swapnetworks/ccl2.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -24649,7 +24649,7 @@
         "lineCount": 3
       }
     ],
-    "pennylane/templates/tensornetworks/mera.py": [
+    "pennylane2/templates/tensornetworks/mera.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 25,
@@ -24663,7 +24663,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/tensornetworks/mps.py": [
+    "pennylane2/templates/tensornetworks/mps.py": [
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
@@ -24683,7 +24683,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/templates/tensornetworks/ttn.py": [
+    "pennylane2/templates/tensornetworks/ttn.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 25,
@@ -24697,7 +24697,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/testing/capture.py": [
+    "pennylane2/testing/capture.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 32,
@@ -24705,7 +24705,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/testing/decompositions.py": [
+    "pennylane2/testing/decompositions.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 29,
@@ -24731,7 +24731,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/testing/operators.py": [
+    "pennylane2/testing/operators.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 37,
@@ -24787,7 +24787,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/batch_input.py": [
+    "pennylane2/transforms/batch_input.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 74,
@@ -24795,7 +24795,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/batch_params.py": [
+    "pennylane2/transforms/batch_params.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 25,
@@ -24803,7 +24803,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/broadcast_expand.py": [
+    "pennylane2/transforms/broadcast_expand.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 25,
@@ -24847,7 +24847,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/combine_global_phases.py": [
+    "pennylane2/transforms/combine_global_phases.py": [
       {
         "rule": "unsupported-operator",
         "startColumn": 12,
@@ -24855,7 +24855,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/commutation_dag.py": [
+    "pennylane2/transforms/commutation_dag.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 8,
@@ -24863,7 +24863,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/convert_to_numpy_parameters.py": [
+    "pennylane2/transforms/convert_to_numpy_parameters.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 11,
@@ -24877,7 +24877,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/decomp_inspector.py": [
+    "pennylane2/transforms/decomp_inspector.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 19,
@@ -24897,7 +24897,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/decompose.py": [
+    "pennylane2/transforms/decompose.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 45,
@@ -24905,7 +24905,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/decompositions/clifford_t_transform.py": [
+    "pennylane2/transforms/decompositions/clifford_t_transform.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 50,
@@ -24937,7 +24937,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/decompositions/crz_phase_gradient.py": [
+    "pennylane2/transforms/decompositions/crz_phase_gradient.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 8,
@@ -24969,7 +24969,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/decompositions/phase_gradient_state_prep_decomp.py": [
+    "pennylane2/transforms/decompositions/phase_gradient_state_prep_decomp.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 8,
@@ -24989,7 +24989,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/decompositions/rz_phase_gradient.py": [
+    "pennylane2/transforms/decompositions/rz_phase_gradient.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 21,
@@ -25003,7 +25003,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/decompositions/select_pauli_rot_phase_gradient.py": [
+    "pennylane2/transforms/decompositions/select_pauli_rot_phase_gradient.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 16,
@@ -25017,7 +25017,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/defer_measurements.py": [
+    "pennylane2/transforms/defer_measurements.py": [
       {
         "rule": "unsupported-operator",
         "startColumn": 16,
@@ -25043,7 +25043,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/dynamic_one_shot.py": [
+    "pennylane2/transforms/dynamic_one_shot.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 29,
@@ -25111,7 +25111,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/intermediate_reps/phase_polynomial.py": [
+    "pennylane2/transforms/intermediate_reps/phase_polynomial.py": [
       {
         "rule": "invalid-return-type",
         "startColumn": 11,
@@ -25119,7 +25119,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/intermediate_reps/rowcol.py": [
+    "pennylane2/transforms/intermediate_reps/rowcol.py": [
       {
         "rule": "invalid-parameter-default",
         "startColumn": 41,
@@ -25361,7 +25361,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/optimization/cancel_inverses.py": [
+    "pennylane2/transforms/optimization/cancel_inverses.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 22,
@@ -25375,7 +25375,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/optimization/pattern_matching.py": [
+    "pennylane2/transforms/optimization/pattern_matching.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 12,
@@ -25395,7 +25395,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/optimization/relative_phases.py": [
+    "pennylane2/transforms/optimization/relative_phases.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 8,
@@ -25481,7 +25481,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/optimization/single_qubit_fusion.py": [
+    "pennylane2/transforms/optimization/single_qubit_fusion.py": [
       {
         "rule": "unsupported-operator",
         "startColumn": 12,
@@ -25489,7 +25489,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/qmc.py": [
+    "pennylane2/transforms/qmc.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 34,
@@ -25497,7 +25497,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/rz_phase_gradient.py": [
+    "pennylane2/transforms/rz_phase_gradient.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 8,
@@ -25517,7 +25517,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/sign_expand/sign_expand.py": [
+    "pennylane2/transforms/sign_expand/sign_expand.py": [
       {
         "rule": "no-matching-overload",
         "startColumn": 15,
@@ -25537,7 +25537,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/split_non_commuting.py": [
+    "pennylane2/transforms/split_non_commuting.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 46,
@@ -25587,7 +25587,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/unitary_to_rot.py": [
+    "pennylane2/transforms/unitary_to_rot.py": [
       {
         "rule": "invalid-return-type",
         "startColumn": 11,
@@ -25595,7 +25595,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/zx/converter.py": [
+    "pennylane2/transforms/zx/converter.py": [
       {
         "rule": "import-not-found",
         "startColumn": 11,
@@ -25639,7 +25639,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/zx/helper.py": [
+    "pennylane2/transforms/zx/helper.py": [
       {
         "rule": "import-not-found",
         "startColumn": 19,
@@ -25647,7 +25647,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/zx/optimize_t_count.py": [
+    "pennylane2/transforms/zx/optimize_t_count.py": [
       {
         "rule": "import-not-found",
         "startColumn": 11,
@@ -25655,7 +25655,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/zx/push_hadamards.py": [
+    "pennylane2/transforms/zx/push_hadamards.py": [
       {
         "rule": "import-not-found",
         "startColumn": 11,
@@ -25663,7 +25663,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/zx/reduce_non_clifford.py": [
+    "pennylane2/transforms/zx/reduce_non_clifford.py": [
       {
         "rule": "import-not-found",
         "startColumn": 11,
@@ -25671,7 +25671,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/transforms/zx/todd.py": [
+    "pennylane2/transforms/zx/todd.py": [
       {
         "rule": "import-not-found",
         "startColumn": 11,
@@ -25679,7 +25679,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/typing.py": [
+    "pennylane2/typing.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 29,
@@ -25711,7 +25711,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/wires.py": [
+    "pennylane2/wires.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 8,
@@ -25761,7 +25761,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/workflow/_capture_qnode.py": [
+    "pennylane2/workflow/_capture_qnode.py": [
       {
         "rule": "unresolved-attribute",
         "startColumn": 7,
@@ -25805,7 +25805,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/workflow/_levels.py": [
+    "pennylane2/workflow/_levels.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 32,
@@ -25831,7 +25831,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/workflow/construct_batch.py": [
+    "pennylane2/workflow/construct_batch.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 57,
@@ -25863,7 +25863,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/workflow/construct_execution_config.py": [
+    "pennylane2/workflow/construct_execution_config.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 12,
@@ -25895,7 +25895,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/workflow/execution.py": [
+    "pennylane2/workflow/execution.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 8,
@@ -25909,7 +25909,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/workflow/get_best_diff_method.py": [
+    "pennylane2/workflow/get_best_diff_method.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 12,
@@ -25929,7 +25929,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/workflow/interfaces/autograd.py": [
+    "pennylane2/workflow/interfaces/autograd.py": [
       {
         "rule": "possibly-missing-submodule",
         "startColumn": 9,
@@ -25955,7 +25955,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/workflow/interfaces/jax.py": [
+    "pennylane2/workflow/interfaces/jax.py": [
       {
         "rule": "invalid-assignment",
         "startColumn": 31,
@@ -25969,7 +25969,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/workflow/interfaces/jax_jit.py": [
+    "pennylane2/workflow/interfaces/jax_jit.py": [
       {
         "rule": "invalid-return-type",
         "startColumn": 15,
@@ -26007,7 +26007,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/workflow/jacobian_products.py": [
+    "pennylane2/workflow/jacobian_products.py": [
       {
         "rule": "unsupported-operator",
         "startColumn": 21,
@@ -26027,7 +26027,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/workflow/qnode.py": [
+    "pennylane2/workflow/qnode.py": [
       {
         "rule": "invalid-return-type",
         "startColumn": 15,
@@ -26125,7 +26125,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/workflow/resolution.py": [
+    "pennylane2/workflow/resolution.py": [
       {
         "rule": "invalid-argument-type",
         "startColumn": 34,
@@ -26139,7 +26139,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/workflow/set_shots.py": [
+    "pennylane2/workflow/set_shots.py": [
       {
         "rule": "invalid-overload",
         "startColumn": 4,

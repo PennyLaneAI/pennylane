@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Pytest configuration file for the pennylane.testing tests.
+Pytest configuration file for the pennylane2.testing tests.
 
 Generates parametrizations of operators to test in test_assert_valid.py.
 """
@@ -23,8 +23,8 @@ import jax
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.operator import (
+import pennylane2 as qp
+from pennylane2.core.operator import (
     Channel,
     Operation,
     Operator,
@@ -32,42 +32,42 @@ from pennylane.core.operator import (
     StatePrepBase,
     StatePrepBase2,
 )
-from pennylane.drawer.label import LabelledOp
-from pennylane.exceptions import DeviceError
-from pennylane.ops.op_math import ChangeOpBasis
-from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
-from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
-from pennylane.ops.op_math.pow import PowOperation
-from pennylane.ops.op_math.pow2 import Pow2
-from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
-from pennylane.ops.qubit.non_parametric_ops import _PPRBasis
-from pennylane.ops.qubit.parametric_ops_multi_qubit import (
+from pennylane2.drawer.label import LabelledOp
+from pennylane2.exceptions import DeviceError
+from pennylane2.ops.op_math import ChangeOpBasis
+from pennylane2.ops.op_math.adjoint import Adjoint, AdjointOperation
+from pennylane2.ops.op_math.adjoint2 import Adjoint2
+from pennylane2.ops.op_math.controlled2 import Controlled2, ControlledOp2
+from pennylane2.ops.op_math.pow import PowOperation
+from pennylane2.ops.op_math.pow2 import Pow2
+from pennylane2.ops.op_math.symbolicop2 import SymbolicOp2
+from pennylane2.ops.qubit.non_parametric_ops import _PPRBasis
+from pennylane2.ops.qubit.parametric_ops_multi_qubit import (
     _IsingXYBasis,
     _IsingXYRotations,
     _MultiRZLadder,
     _PauliRotBasis,
 )
-from pennylane.ops.qubit.parametric_ops_single_qubit import _YToZBasis, _ZToYBasis
-from pennylane.ops.qubit.qchem_ops import (
+from pennylane2.ops.qubit.parametric_ops_single_qubit import _YToZBasis, _ZToYBasis
+from pennylane2.ops.qubit.qchem_ops import (
     _SingleExcitationBasis,
     _SingleExcitationCRZBasis,
     _SingleExcitationRotations,
     _SingleExcitationRZRotations,
 )
-from pennylane.templates.subroutines.arithmetic.out_adder import _OutAdderTarget
-from pennylane.templates.subroutines.arithmetic.out_multiplier import _OutMultiplierHadamards
-from pennylane.templates.subroutines.arithmetic.phase_adder import _PhaseAdderBasis
-from pennylane.templates.subroutines.arithmetic.temporary_and import _TemporaryANDBasis
-from pennylane.templates.subroutines.qubitization_thc import _THCPrepare
-from pennylane.templates.subroutines.select_pauli_rot import (
+from pennylane2.templates.subroutines.arithmetic.out_adder import _OutAdderTarget
+from pennylane2.templates.subroutines.arithmetic.out_multiplier import _OutMultiplierHadamards
+from pennylane2.templates.subroutines.arithmetic.phase_adder import _PhaseAdderBasis
+from pennylane2.templates.subroutines.arithmetic.temporary_and import _TemporaryANDBasis
+from pennylane2.templates.subroutines.qubitization_thc import _THCPrepare
+from pennylane2.templates.subroutines.select_pauli_rot import (
     _SelectPauliRotYBasis,
     _UniformRZ,
 )
-from pennylane.templates.subroutines.select_thc import _SelectTHCBasis, _THCIndexSwaps
-from pennylane.templates.subroutines.time_evolution.trotter import TrotterizedQfunc
-from pennylane.transforms.decompositions.crz_phase_gradient import _CRZPhaseGradientCompute
-from pennylane.transforms.decompositions.select_pauli_rot_phase_gradient import (
+from pennylane2.templates.subroutines.select_thc import _SelectTHCBasis, _THCIndexSwaps
+from pennylane2.templates.subroutines.time_evolution.trotter import TrotterizedQfunc
+from pennylane2.transforms.decompositions.crz_phase_gradient import _CRZPhaseGradientCompute
+from pennylane2.transforms.decompositions.select_pauli_rot_phase_gradient import (
     _SelectPauliRotPhaseGradientCompute,
 )
 
@@ -321,7 +321,7 @@ _ABSTRACT_OR_META_TYPES = {
 def get_all_classes(c):
     """Recursive function to generate a flat list of all child classes of ``c``.
     (first called with ``Operator``)."""
-    if c.__module__[:10] != "pennylane.":
+    if c.__module__[:10] != "pennylane2.":
         return []
     subs = c.__subclasses__()
     classes = [] if c in _ABSTRACT_OR_META_TYPES else [c]

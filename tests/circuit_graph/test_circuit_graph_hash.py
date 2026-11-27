@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit and integration tests for creating the :mod:`pennylane` :attr:`tape.graph.hash` attribute.
+Unit and integration tests for creating the :mod:`pennylane2` :attr:`tape.graph.hash` attribute.
 """
 
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.circuit_graph import CircuitGraph
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2.circuit_graph import CircuitGraph
+from pennylane2.wires import Wires
 
 
 class TestCircuitGraphHash:

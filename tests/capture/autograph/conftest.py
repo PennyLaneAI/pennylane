@@ -19,7 +19,7 @@ import warnings
 
 import pytest
 
-from pennylane.exceptions import AutoGraphWarning
+from pennylane2.exceptions import AutoGraphWarning
 
 
 # This is intended to suppress the *expected* warnings that arise when

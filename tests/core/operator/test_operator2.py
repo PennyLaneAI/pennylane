@@ -34,12 +34,12 @@ from operator2_utils import (
 )
 from scipy.sparse import csr_matrix
 
-import pennylane as qp
-from pennylane.core.apply import apply
-from pennylane.core.operator import Operator2, StatePrepBase2, abstractify
-from pennylane.core.operator.operator2 import OperatorRegistry, get_op_class_by_name
-from pennylane.core.queuing import AnnotatedQueue
-from pennylane.exceptions import (
+import pennylane2 as qp
+from pennylane2.core.apply import apply
+from pennylane2.core.operator import Operator2, StatePrepBase2, abstractify
+from pennylane2.core.operator.operator2 import OperatorRegistry, get_op_class_by_name
+from pennylane2.core.queuing import AnnotatedQueue
+from pennylane2.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
     DiagGatesUndefinedError,
@@ -50,11 +50,11 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
-from pennylane.operation import _UNSET_BATCH_SIZE
-from pennylane.pauli import PauliSentence, PauliWord
-from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
-from pennylane.typing import AbstractArray, AbstractWires, Complex, Float, Int, Wire
-from pennylane.wires import Wires
+from pennylane2.operation import _UNSET_BATCH_SIZE
+from pennylane2.pauli import PauliSentence, PauliWord
+from pennylane2.pytrees.pytrees import flatten_registrations, unflatten_registrations
+from pennylane2.typing import AbstractArray, AbstractWires, Complex, Float, Int, Wire
+from pennylane2.wires import Wires
 
 
 class TestOperatorRegistry:

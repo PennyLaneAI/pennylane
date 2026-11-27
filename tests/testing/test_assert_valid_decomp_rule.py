@@ -22,10 +22,10 @@ Tests for ``qp.testing.assert_valid_decomp_rule``, ``qp.testing.assert_decomposa
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.operator import Operator
-from pennylane.testing import assert_decomposable, assert_valid_decomp_rule, decomp_rule_to_tape
-from pennylane.typing import Wire
+import pennylane2 as qp
+from pennylane2.core.operator import Operator
+from pennylane2.testing import assert_decomposable, assert_valid_decomp_rule, decomp_rule_to_tape
+from pennylane2.typing import Wire
 from tests.core.operator.operator2_utils import OneWireDynOp
 
 

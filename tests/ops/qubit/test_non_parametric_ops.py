@@ -46,13 +46,13 @@ from helpers.decomposition_helpers import assert_basis_change_decomposition
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
-import pennylane as qp
-from pennylane.core.operator import abstractify
-from pennylane.decomposition.utils import _get_decomp_args
-from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
-from pennylane.transforms import _tape_decompose as decompose
-from pennylane.typing import Bool, Wire
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2.core.operator import abstractify
+from pennylane2.decomposition.utils import _get_decomp_args
+from pennylane2.testing import assert_decomposable, assert_valid_decomp_rule
+from pennylane2.transforms import _tape_decompose as decompose
+from pennylane2.typing import Bool, Wire
+from pennylane2.wires import Wires
 
 # Non-parametrized operations and their matrix representation
 NON_PARAMETRIZED_OPERATIONS = [

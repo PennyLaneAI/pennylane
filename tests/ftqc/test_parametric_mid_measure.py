@@ -18,10 +18,10 @@ from functools import partial
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.devices.qubit import measure as apply_qubit_measurement
-from pennylane.exceptions import QuantumFunctionError
-from pennylane.ftqc import (
+import pennylane2 as qp
+from pennylane2.devices.qubit import measure as apply_qubit_measurement
+from pennylane2.exceptions import QuantumFunctionError
+from pennylane2.ftqc import (
     ParametricMidMeasure,
     XMidMeasure,
     YMidMeasure,
@@ -31,8 +31,8 @@ from pennylane.ftqc import (
     measure_x,
     measure_y,
 )
-from pennylane.ops import MeasurementValue, MidMeasure
-from pennylane.wires import Wires
+from pennylane2.ops import MeasurementValue, MidMeasure
+from pennylane2.wires import Wires
 
 pytestmark = pytest.mark.pl2do(
     reason="Parametric mid-circuit measurements have not yet been migrated to Operator2 [sc-130033]."

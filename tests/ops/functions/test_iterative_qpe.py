@@ -21,7 +21,7 @@ import jax
 import numpy as np
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 
 class TestIQPE:

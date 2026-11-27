@@ -11,12 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for the :func:`pennylane.apply` utility."""
+"""Unit tests for the :func:`pennylane2.apply` utility."""
 
 import pytest
 
-import pennylane as qp
-from pennylane.core.apply import apply
+import pennylane2 as qp
+from pennylane2.core.apply import apply
 
 test_observables = [
     qp.PauliZ(0) @ qp.PauliZ(1),

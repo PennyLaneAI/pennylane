@@ -1,6 +1,6 @@
 qp.labs
 ================
 
-.. currentmodule:: pennylane.labs
+.. currentmodule:: pennylane2.labs
 
-.. automodule:: pennylane.labs
+.. automodule:: pennylane2.labs

@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for :func:`pennylane.capture.tracing_device`."""
+"""Tests for :func:`pennylane2.capture.tracing_device`."""
 
 import contextvars
 
 import pytest
 
-import pennylane as qp
-from pennylane.capture import get_tracing_device, tracing_device
+import pennylane2 as qp
+from pennylane2.capture import get_tracing_device, tracing_device
 
 
 @pytest.fixture(name="dev")

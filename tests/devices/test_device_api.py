@@ -19,18 +19,18 @@ Tests for the basic default behavior of the Device API.
 
 import pytest
 
-import pennylane as qp
-from pennylane.core.qscript import QuantumScript, QuantumScriptOrBatch
-from pennylane.core.transforms import CompilePipeline
-from pennylane.devices import Device, ExecutionConfig, MCMConfig
-from pennylane.devices.capabilities import (
+import pennylane2 as qp
+from pennylane2.core.qscript import QuantumScript, QuantumScriptOrBatch
+from pennylane2.core.transforms import CompilePipeline
+from pennylane2.devices import Device, ExecutionConfig, MCMConfig
+from pennylane2.devices.capabilities import (
     DeviceCapabilities,
     ExecutionCondition,
     OperatorProperties,
 )
-from pennylane.exceptions import DeviceError, QuantumFunctionError
-from pennylane.typing import Result, ResultBatch
-from pennylane.wires import Wires
+from pennylane2.exceptions import DeviceError, QuantumFunctionError
+from pennylane2.typing import Result, ResultBatch
+from pennylane2.wires import Wires
 
 
 def test_execute_method_abstract():

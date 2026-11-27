@@ -20,10 +20,10 @@ import warnings
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.operator import Operation
-from pennylane.core.qscript import QuantumScript
-from pennylane.devices.preprocess import (
+import pennylane2 as qp
+from pennylane2.core.operator import Operation
+from pennylane2.core.qscript import QuantumScript
+from pennylane2.devices.preprocess import (
     _operator_decomposition_gen,
     decompose,
     device_resolve_dynamic_wires,
@@ -38,8 +38,8 @@ from pennylane.devices.preprocess import (
     validate_multiprocessing_workers,
     validate_observables,
 )
-from pennylane.exceptions import DeviceError, QuantumFunctionError
-from pennylane.measurements import CountsMP, SampleMP
+from pennylane2.exceptions import DeviceError, QuantumFunctionError
+from pennylane2.measurements import CountsMP, SampleMP
 
 
 class NoMatOp(Operation):

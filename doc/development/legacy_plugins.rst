@@ -28,7 +28,7 @@ Here's a quick primer on PennyLane plugins:
 
 .. important::
 
-    In your plugin module, **standard NumPy** (*not* the wrapped Autograd version of NumPy, ``pennylane.numpy``)
+    In your plugin module, **standard NumPy** (*not* the wrapped Autograd version of NumPy, ``pennylane2.numpy``)
     should be imported in all places (i.e., ``import numpy as np``).
 
 
@@ -36,12 +36,12 @@ Creating your device
 --------------------
 
 The first step in creating your PennyLane plugin is to create your device class.
-This is as simple as importing the abstract base class :class:`pennylane.devices.LegacyDevice` from PennyLane,
+This is as simple as importing the abstract base class :class:`pennylane2.devices.LegacyDevice` from PennyLane,
 and subclassing it:
 
 .. code-block:: python
 
-    from pennylane.devices import LegacyDevice
+    from pennylane2.devices import LegacyDevice
 
     class MyDevice(LegacyDevice):
         """MyDevice docstring"""
@@ -53,16 +53,16 @@ and subclassing it:
 
 .. note::
 
-    Most devices inherit from a subclass of :class:`pennylane.devices.LegacyDevice` called :class:`~pennylane.devices.QubitDevice`,
+    Most devices inherit from a subclass of :class:`pennylane2.devices.LegacyDevice` called :class:`~pennylane2.devices.QubitDevice`,
     which contains a lot of functionality specific to computations based on qubits. We will
     take a deeper look at this important case below.
 
 .. warning::
 
     The API of PennyLane devices is currently being updated to follow a new interface defined by
-    the :class:`pennylane.devices.Device` class. This guide describes
-    how to create a device with the :class:`pennylane.devices.LegacyDevice` and
-    :class:`pennylane.devices.QubitDevice` base classes, and will be updated as we continue switching
+    the :class:`pennylane2.devices.Device` class. This guide describes
+    how to create a device with the :class:`pennylane2.devices.LegacyDevice` and
+    :class:`pennylane2.devices.QubitDevice` base classes, and will be updated as we continue switching
     to the new API. In the meantime, please reach out to the PennyLane team if you would like help with
     building a plugin, either by creating an `issue <https://github.com/PennyLaneAI/pennylane/issues>`_
     or by posting in our `discussion forum <https://discuss.pennylane.ai/>`_.
@@ -70,20 +70,20 @@ and subclassing it:
 Here, we have begun defining some important class attributes that allow PennyLane to identify
 and use the device. These include:
 
-* :attr:`pennylane.devices.LegacyDevice.name`: a string containing the official name of the device
+* :attr:`pennylane2.devices.LegacyDevice.name`: a string containing the official name of the device
 
-* :attr:`pennylane.devices.LegacyDevice.short_name`: the string used to identify and load the device by users of PennyLane
+* :attr:`pennylane2.devices.LegacyDevice.short_name`: the string used to identify and load the device by users of PennyLane
 
-* :attr:`pennylane.devices.LegacyDevice.pennylane_requires`: the PennyLane version this device supports.
+* :attr:`pennylane2.devices.LegacyDevice.pennylane_requires`: the PennyLane version this device supports.
   Note that this class attribute supports pip *requirements.txt* style version ranges,
   for example:
 
   - ``pennylane_requires = "2"`` to support PennyLane version 2.x.x
   - ``pennylane_requires = ">=0.1.5,<0.6"`` to support a range of PennyLane versions
 
-* :attr:`pennylane.devices.LegacyDevice.version`: the version number of the device
+* :attr:`pennylane2.devices.LegacyDevice.version`: the version number of the device
 
-* :attr:`pennylane.devices.LegacyDevice.author`: the author of the device
+* :attr:`pennylane2.devices.LegacyDevice.author`: the author of the device
 
 **Defining all of the attributes above is mandatory.**
 
@@ -94,7 +94,7 @@ Device capabilities
 Furthermore, you must tell PennyLane about the operations that your device supports, 
 as well as potential further capabilities, by providing the following class attributes/properties:
 
-* :attr:`pennylane.devices.LegacyDevice.stopping_condition`: This callable should return ``True`` for supported
+* :attr:`pennylane2.devices.LegacyDevice.stopping_condition`: This callable should return ``True`` for supported
   operations and measurement processes, and ``False`` otherwise. Note that this function is called on
   **both** ``Operator`` and ``MeasurementProcess`` classes. Though this function must accept both ``Operator``
   and ``MeasurementProcess`` classes, it does not affect whether a ``MeasurementProcess`` is supported or not.
@@ -107,7 +107,7 @@ as well as potential further capabilities, by providing the following class attr
               return obj.name in {'CNOT', 'PauliX', 'PauliY', 'PauliZ'}
           return accepts_obj
 
-  Supported operations can also be determined by the :attr:`pennylane.devices.LegacyDevice.operations` property.
+  Supported operations can also be determined by the :attr:`pennylane2.devices.LegacyDevice.operations` property.
   This property is a list of string names for supported operations.
 
   .. code-block:: python
@@ -120,7 +120,7 @@ as well as potential further capabilities, by providing the following class attr
   If your device does not natively support an operation that has the
   :meth:`~.Operation.decomposition` static method defined, PennyLane will
   attempt to decompose the operation before calling the device. For example,
-  the :class:`~.Rot` `decomposition method <../_modules/pennylane/ops/qubit.html#Rot.decomposition>`_ will
+  the :class:`~.Rot` `decomposition method <../_modules/pennylane2/ops/qubit.html#Rot.decomposition>`_ will
   decompose the single-qubit rotation gate to :class:`~.RZ` and :class:`~.RY` gates.
 
   .. note::
@@ -130,7 +130,7 @@ as well as potential further capabilities, by providing the following class attr
       conversion between the two conventions takes place automatically
       by the plugin device.
 
-* :func:`pennylane.devices.LegacyDevice.capabilities`: A class method which returns the dictionary of capabilities of a device. A
+* :func:`pennylane2.devices.LegacyDevice.capabilities`: A class method which returns the dictionary of capabilities of a device. A
   new device should override this method to retrieve the parent classes' capabilities dictionary, make a copy,
   and update and/or add capabilities before returning the copy.
 
@@ -162,10 +162,10 @@ Adding arguments to your device
 .. important::
 
     From here onwards, we will demonstrate plugin development focusing on qubit-based devices
-    inheriting from the :class:`~pennylane.devices.QubitDevice` class.
+    inheriting from the :class:`~pennylane2.devices.QubitDevice` class.
 
 Defining the ``__init__`` method of a custom device is not necessary; by default,
-the :class:`~pennylane.devices.QubitDevice` initialization will be called, where the user can pass the
+the :class:`~pennylane2.devices.QubitDevice` initialization will be called, where the user can pass the
 following arguments:
 
 * ``wires`` (*int* or *Iterable[Number, str]*): The number of subsystems represented by the device,
@@ -218,7 +218,7 @@ methods to allow PennyLane to apply operations and measure observables on your d
 
 To execute operations on the device, the following methods **must** be defined:
 
-.. currentmodule:: pennylane.devices
+.. currentmodule:: pennylane2.devices
 
 .. autosummary::
 
@@ -231,7 +231,7 @@ then it **must** also overwrite:
 
     ~QubitDevice.analytic_probability
 
-The :class:`~pennylane.devices.QubitDevice` class
+The :class:`~pennylane2.devices.QubitDevice` class
 provides the following convenience methods that may be used by the plugin:
 
 .. autosummary::
@@ -246,12 +246,12 @@ after execution, you need to overwrite the following method:
 
     ~QubitDevice.generate_samples
 
-:meth:`~pennylane.devices.QubitDevice.generate_samples` should return samples with shape ``(dev.shots, dev.num_wires)``.
+:meth:`~pennylane2.devices.QubitDevice.generate_samples` should return samples with shape ``(dev.shots, dev.num_wires)``.
 Furthermore, PennyLane uses the convention :math:`|q_0,q_1,\dots,q_{N-1}\rangle` where
 :math:`q_0` is the most significant bit.
 
-And thats it! The device has inherited :meth:`~pennylane.devices.QubitDevice.expval`, :meth:`~pennylane.devices.QubitDevice.var`,
-and :meth:`~pennylane.devices.QubitDevice.sample` methods, each of which accepts an observable (or tensor product of
+And thats it! The device has inherited :meth:`~pennylane2.devices.QubitDevice.expval`, :meth:`~pennylane2.devices.QubitDevice.var`,
+and :meth:`~pennylane2.devices.QubitDevice.sample` methods, each of which accepts an observable (or tensor product of
 observables) and returns the corresponding measurement statistic.
 
 
@@ -261,7 +261,7 @@ observables) and returns the corresponding measurement statistic.
 Additional flexibility is sometimes required for interfacing with more
 complicated frameworks.
 
-When PennyLane needs to evaluate a QNode, it accesses the :meth:`~pennylane.devices.QubitDevice.execute` method of
+When PennyLane needs to evaluate a QNode, it accesses the :meth:`~pennylane2.devices.QubitDevice.execute` method of
 your plugin which, by default, performs the following process:
 
 .. code-block:: python
@@ -284,22 +284,22 @@ Here,
 
 * ``circuit`` is a :class:`~.CircuitGraph` object
 
-* :attr:`circuit.operations <pennylane.CircuitGraph.operations>` are the user-provided
+* :attr:`circuit.operations <pennylane2.CircuitGraph.operations>` are the user-provided
   operations to be executed
 
-* :attr:`circuit.observables <pennylane.CircuitGraph.observables>` are the user-provided
+* :attr:`circuit.observables <pennylane2.CircuitGraph.observables>` are the user-provided
   observables to be measured
 
-* :attr:`circuit.diagonalizing_gates <pennylane.CircuitGraph.diagonalizing_gates>` are the
+* :attr:`circuit.diagonalizing_gates <pennylane2.CircuitGraph.diagonalizing_gates>` are the
   gates that rotate the circuit prior to measurement so that computational basis
   measurements are performed in the eigenbasis of the requested observables
 
-* :meth:`~pennylane.devices.QubitDevice.statistics` returns the results of :meth:`~pennylane.devices.QubitDevice.expval`,
-  :meth:`~pennylane.devices.QubitDevice.var`, or :meth:`~pennylane.devices.QubitDevice.sample` depending on the type
+* :meth:`~pennylane2.devices.QubitDevice.statistics` returns the results of :meth:`~pennylane2.devices.QubitDevice.expval`,
+  :meth:`~pennylane2.devices.QubitDevice.var`, or :meth:`~pennylane2.devices.QubitDevice.sample` depending on the type
   of observable.
 
-In advanced cases, the :meth:`~pennylane.devices.QubitDevice.execute` method, as well as
-:meth:`~pennylane.devices.QubitDevice.statistics`, may be overwritten directly.
+In advanced cases, the :meth:`~pennylane2.devices.QubitDevice.execute` method, as well as
+:meth:`~pennylane2.devices.QubitDevice.statistics`, may be overwritten directly.
 This provides full flexibility for handling the device execution yourself. However,
 this may have unintended side-effects and is not recommended.
 
@@ -320,7 +320,7 @@ For example:
 
 .. code-block:: python
 
-    from pennylane.wires import Wires
+    from pennylane2.wires import Wires
 
     wires = Wires(['auxiliary', 0, 1])
     print(wires.labels) # ('auxiliary', 0, 1)
@@ -331,7 +331,7 @@ As shown in the section on :doc:`/introduction/circuits`, a device can be create
 
 .. code-block:: python
 
-    from pennylane import *
+    from pennylane2 import *
 
     dev = device('my.device', wires=['q11', 'q12', 'q21', 'q22'])
 
@@ -356,7 +356,7 @@ object and store it in their ``wires`` attribute.
 
 When the device applies operations, it needs to translate
 ``op.wires`` into wire labels that the backend "understands". This can be done with the
-:meth:`pennylane.devices.LegacyDevice.map_wires` method, which maps ``Wires`` objects to other ``Wires`` objects and changes the labels according to the ``wire_map`` attribute of the device which defines the translation.
+:meth:`pennylane2.devices.LegacyDevice.map_wires` method, which maps ``Wires`` objects to other ``Wires`` objects and changes the labels according to the ``wire_map`` attribute of the device which defines the translation.
 
 .. code-block:: python
 
@@ -366,7 +366,7 @@ When the device applies operations, it needs to translate
 
 By default, the map translates the custom labels ``'q11'``, ``'q12'``, ``'q21'``, ``'q22'`` to
 consecutive integers ``0``, ``1``, ``2``, ``3``. If a device uses a different wire labeling,
-such as non-consecutive wires ``0``, ``4``, ``7``, ``12``, the :meth:`pennylane.devices.LegacyDevice.define_wire_map` method
+such as non-consecutive wires ``0``, ``4``, ``7``, ``12``, the :meth:`pennylane2.devices.LegacyDevice.define_wire_map` method
 has to be overwritten accordingly.
 
 The ``device_wires`` can then be further processed, for example, by extracting the actual labels as a tuple,
@@ -421,7 +421,7 @@ and similar code in the ``batch_execute`` method:
     self.tracker.update(batches=1, batch_len=len(circuits))
     self.tracker.record()
 
-These functions are called in base :class:`pennylane.devices.LegacyDevice` and :class:`~.QubitDevice` devices. Unless you are
+These functions are called in base :class:`pennylane2.devices.LegacyDevice` and :class:`~.QubitDevice` devices. Unless you are
 overriding the ``execute`` and ``batch_execute`` methods or want to customize the stored
 information, you do not need to add any new code.
 
@@ -447,7 +447,7 @@ which allows the device to be initialized in the following way:
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
     dev1 = qp.device(short_name, wires=2)
 
 where ``short_name`` is a string that uniquely identifies the device. The ``short_name``
@@ -463,7 +463,7 @@ following keyword argument to the ``setup()`` function in your ``setup.py`` file
             'example.mydevice1 = MyModule.MySubModule:MyDevice1'
             'example.mydevice2 = MyModule.MySubModule:MyDevice2'
         ],
-    setup(entry_points={'pennylane.plugins': devices_list})
+    setup(entry_points={'pennylane2.plugins': devices_list})
 
 where
 
@@ -490,11 +490,11 @@ test utility:
 
 .. code-block:: console
 
-    pl-device-test --device device_shortname --shots 10000
+    pl2-device-test --device device_shortname --shots 10000
 
 In general, as all supported operations have their gradient formula defined and tested by
 PennyLane, testing that your device calculates the correct gradients is not required.
-For more details on the PennyLane device test utility, see :mod:`pennylane.devices.tests`.
+For more details on the PennyLane device test utility, see :mod:`pennylane2.devices.tests`.
 
 Supporting custom operators
 ---------------------------
@@ -507,7 +507,7 @@ Users can then import this operator directly from your plugin, and use it when d
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
     from MyModule.MySubModule import CustomGate
 
     @qnode(dev1)
@@ -523,5 +523,5 @@ Users can then import this operator directly from your plugin, and use it when d
     gradient for the custom operations.
 
 If the custom operator is diagonal in the computational basis, it can be added to the
-``diagonal_in_z_basis`` attribute in ``pennylane.ops.qubit.attributes``. Devices can use this
+``diagonal_in_z_basis`` attribute in ``pennylane2.ops.qubit.attributes``. Devices can use this
 information to implement faster simulations.

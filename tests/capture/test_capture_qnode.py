@@ -20,26 +20,26 @@ Tests for capturing a qnode into jaxpr.
 
 import pytest
 
-import pennylane as qp
-from pennylane.exceptions import CaptureError, QuantumFunctionError
+import pennylane2 as qp
+from pennylane2.exceptions import CaptureError, QuantumFunctionError
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
-from pennylane.capture.autograph import run_autograph
+from pennylane2.capture.autograph import run_autograph
 
 # must be below jax importorskip
-from pennylane.capture.primitives import (
+from pennylane2.capture.primitives import (
     cond_prim,
     for_loop_prim,
     qnode_prim,
     transform_prim,
     while_loop_prim,
 )
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-from pennylane.testing import assert_eqn_matches_op, extract_all_primitives, find_eqns
+from pennylane2.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane2.testing import assert_eqn_matches_op, extract_all_primitives, find_eqns
 
 
 @pytest.mark.capture

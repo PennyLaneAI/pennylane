@@ -19,8 +19,8 @@ Tests the `single_tape_support` device modifier.
 # pylint: disable=unused-argument
 
 
-import pennylane as qp
-from pennylane.devices.modifiers import single_tape_support
+import pennylane2 as qp
+from pennylane2.devices.modifiers import single_tape_support
 
 
 def test_wraps_execute():

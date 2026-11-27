@@ -18,8 +18,8 @@ Tests for the MERA template.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.templates.tensornetworks.mera import MERA, compute_indices
+import pennylane2 as qp
+from pennylane2.templates.tensornetworks.mera import MERA, compute_indices
 
 
 def circuit0_block(wires):

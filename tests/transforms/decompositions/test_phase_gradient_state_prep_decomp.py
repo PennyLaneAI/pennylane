@@ -19,11 +19,11 @@ from collections import Counter
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.operator import abstractify
-from pennylane.decomposition.decomposition_rule import _fix_decomp
-from pennylane.exceptions import WireError
-from pennylane.transforms.decompositions.phase_gradient_state_prep_decomp import (
+import pennylane2 as qp
+from pennylane2.core.operator import abstractify
+from pennylane2.decomposition.decomposition_rule import _fix_decomp
+from pennylane2.exceptions import WireError
+from pennylane2.transforms.decompositions.phase_gradient_state_prep_decomp import (
     _jones_num_rounds,
     _jones_register_sizes,
     _jones_seed,

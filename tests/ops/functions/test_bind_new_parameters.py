@@ -19,12 +19,12 @@ import numpy as np
 import pytest
 from gate_data import I, X, Y, Z
 
-import pennylane as qp
-from pennylane.core import Operator2
-from pennylane.ops.functions import bind_new_parameters
-from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.typing import TensorLike
-from pennylane.wires import WiresLike
+import pennylane2 as qp
+from pennylane2.core import Operator2
+from pennylane2.ops.functions import bind_new_parameters
+from pennylane2.ops.op_math.adjoint2 import Adjoint2
+from pennylane2.typing import TensorLike
+from pennylane2.wires import WiresLike
 
 
 @pytest.mark.parametrize(

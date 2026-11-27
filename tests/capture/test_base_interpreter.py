@@ -20,14 +20,14 @@ This submodule tests strategy structure for defining custom plxpr interpreters
 
 import pytest
 
-import pennylane as qp
-from pennylane.core.operator.operator2 import Operator2
+import pennylane2 as qp
+from pennylane2.core.operator.operator2 import Operator2
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-from pennylane.capture import PlxprInterpreter
-from pennylane.capture.primitives import (
+from pennylane2.capture import PlxprInterpreter
+from pennylane2.capture.primitives import (
     adjoint_transform_prim,
     cond_prim,
     ctrl_transform_prim,
@@ -36,8 +36,8 @@ from pennylane.capture.primitives import (
     qnode_prim,
     while_loop_prim,
 )
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-from pennylane.testing import assert_eqn_matches_op
+from pennylane2.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane2.testing import assert_eqn_matches_op
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]

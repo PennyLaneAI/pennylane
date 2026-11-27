@@ -20,9 +20,9 @@ import itertools as it
 import numpy as onp
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.optimize import RotoselectOptimizer
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.optimize import RotoselectOptimizer
 
 
 class TestRotoselectOptimizer:

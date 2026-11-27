@@ -17,9 +17,9 @@ Unit tests for the dot function
 
 import pytest
 
-import pennylane as qp
-from pennylane.core.pauli import PauliSentence, PauliWord
-from pennylane.ops import Prod, SProd, Sum
+import pennylane2 as qp
+from pennylane2.core.pauli import PauliSentence, PauliWord
+from pennylane2.ops import Prod, SProd, Sum
 
 pw1 = PauliWord({0: "I", 1: "X", 2: "Y"})
 pw2 = PauliWord({0: "Z", 2: "Z", 4: "Z"})

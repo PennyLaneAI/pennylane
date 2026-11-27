@@ -20,7 +20,7 @@ repos:
           "--settings-path",
           "./pyproject.toml",
         ]
-      files: ^(pennylane/|tests/)
+      files: ^(pennylane2/|tests/)
 -   repo: https://github.com/psf/black
     rev: 26.3.1
     hooks:
@@ -56,8 +56,8 @@ repos:
           "--fail-on=", 
           "--disable=useless-suppression",
         ]
-      files: ^pennylane/
-      exclude: ^pennylane/labs/tests/
+      files: ^pennylane2/
+      exclude: ^pennylane2/labs/tests/
     - id: pylint-test
       name: "🐍 pylint · Lint test suite"
       entry: pylint
@@ -69,4 +69,4 @@ repos:
           "-sn", # Don't display the score
           "--rcfile=tests/.pylintrc", # Link to your config file
         ]
-      files: ^(tests/|pennylane/labs/tests/)
+      files: ^(tests/|pennylane2/labs/tests/)

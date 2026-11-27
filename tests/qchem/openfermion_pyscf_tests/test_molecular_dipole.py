@@ -20,10 +20,10 @@ Unit tests for molecular dipole.
 
 import pytest
 
-import pennylane as qp
-from pennylane import I, X, Y, Z
-from pennylane import numpy as np
-from pennylane import qchem
+import pennylane2 as qp
+from pennylane2 import I, X, Y, Z
+from pennylane2 import numpy as np
+from pennylane2 import qchem
 
 h2 = ["H", "H"]
 x_h2 = np.array([0.0, 0.0, -0.661, 0.0, 0.0, 0.661])

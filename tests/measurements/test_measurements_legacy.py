@@ -18,19 +18,19 @@
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qp
-from pennylane.core.measurements import (
+import pennylane2 as qp
+from pennylane2.core.measurements import (
     MeasurementProcess,
     MeasurementTransform,
     SampleMeasurement,
     StateMeasurement,
 )
-from pennylane.measurements import (
+from pennylane2.measurements import (
     ClassicalShadowMP,
     SampleMP,
     StateMP,
 )
-from pennylane.wires import Wires
+from pennylane2.wires import Wires
 
 
 class NotValidMeasurement(MeasurementProcess):

@@ -19,13 +19,13 @@ from tempfile import TemporaryDirectory
 import numpy as np
 import pytest
 
-from pennylane.bose.bosonic import BoseWord
-from pennylane.qchem.vibrational.christiansen_ham import (
+from pennylane2.bose.bosonic import BoseWord
+from pennylane2.qchem.vibrational.christiansen_ham import (
     christiansen_bosonic,
     christiansen_dipole,
     christiansen_hamiltonian,
 )
-from pennylane.qchem.vibrational.christiansen_utils import (
+from pennylane2.qchem.vibrational.christiansen_utils import (
     _cform_onemode,
     _cform_onemode_dipole,
     _cform_threemode,
@@ -37,7 +37,7 @@ from pennylane.qchem.vibrational.christiansen_utils import (
     christiansen_integrals,
     christiansen_integrals_dipole,
 )
-from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
+from pennylane2.qchem.vibrational.vibrational_class import VibrationalPES
 
 from .test_ref_files.cform_ops_data import (
     cform_coeffs_ref,

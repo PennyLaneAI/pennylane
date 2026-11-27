@@ -16,11 +16,11 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.operator.utils import abstractify
-from pennylane.ops.identity import GlobalPhase, Identity
-from pennylane.testing import assert_valid
-from pennylane.typing import Float, Wire
+import pennylane2 as qp
+from pennylane2.core.operator.utils import abstractify
+from pennylane2.ops.identity import GlobalPhase, Identity
+from pennylane2.testing import assert_valid
+from pennylane2.typing import Float, Wire
 
 op_wires = [[], [0], [7], [0, 1], [7, 8, 9], [100, 10, 12]]
 op_repr = ["I()", "I(0)", "I(7)", "I([0, 1])", "I([7, 8, 9])", "I([100, 10, 12])"]

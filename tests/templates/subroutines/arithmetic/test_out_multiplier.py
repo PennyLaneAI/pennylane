@@ -17,11 +17,11 @@ Tests for the OutMultiplier template.
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.core.operator import abstractify
-from pennylane.ops import adjoint
-from pennylane.templates.subroutines.arithmetic.out_multiplier import (
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.core.operator import abstractify
+from pennylane2.ops import adjoint
+from pennylane2.templates.subroutines.arithmetic.out_multiplier import (
     OutMultiplier,
     _add_plus_one,
     _caddsub_multiplication,
@@ -29,9 +29,9 @@ from pennylane.templates.subroutines.arithmetic.out_multiplier import (
     _out_multiplier_with_caddsub,
     _out_multiplier_with_qft,
 )
-from pennylane.templates.subroutines.arithmetic.semi_adder import SemiAdder
-from pennylane.testing import assert_valid_decomp_rule
-from pennylane.typing import Wire
+from pennylane2.templates.subroutines.arithmetic.semi_adder import SemiAdder
+from pennylane2.testing import assert_valid_decomp_rule
+from pennylane2.typing import Wire
 
 
 class TestBuildingBlocks:

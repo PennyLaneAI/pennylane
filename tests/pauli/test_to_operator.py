@@ -15,8 +15,8 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane.pauli import PauliSentence, PauliWord, to_operator
+import pennylane2 as qp
+from pennylane2.pauli import PauliSentence, PauliWord, to_operator
 
 
 @pytest.mark.parametrize("value", [1, {}, qp.X(0)])

@@ -20,10 +20,10 @@ Unit tests for molecular Hamiltonians.
 
 import pytest
 
-import pennylane as qp
-from pennylane import I, X, Y, Z
-from pennylane import numpy as np
-from pennylane import qchem
+import pennylane2 as qp
+from pennylane2 import I, X, Y, Z
+from pennylane2 import numpy as np
+from pennylane2 import qchem
 
 test_symbols = ["C", "C", "N", "H", "H", "H", "H", "H"]
 test_coordinates = np.array(

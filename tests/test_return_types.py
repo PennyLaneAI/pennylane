@@ -18,9 +18,9 @@ Unit tests for the new return types.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.measurements import MeasurementProcess
-from pennylane.exceptions import DeviceError
+import pennylane2 as qp
+from pennylane2.core.measurements import MeasurementProcess
+from pennylane2.exceptions import DeviceError
 
 
 def _get_all_shots(shot_vector):

@@ -19,9 +19,9 @@ import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qp
-from pennylane.core.measurements import MeasurementProcess
-from pennylane.exceptions import QuantumFunctionError
+import pennylane2 as qp
+from pennylane2.core.measurements import MeasurementProcess
+from pennylane2.exceptions import QuantumFunctionError
 
 
 def _get_num_shot_copies(shot_vector):

@@ -1997,7 +1997,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#8444)](https://github.com/PennyLaneAI/pennylane/pull/8444)
 
 * A syntax rendering issue in the
-  :doc:`DefaultQubit documentation </code/api/pennylane.devices.default_qubit.DefaultQubit>` has 
+  :doc:`DefaultQubit documentation </code/api/pennylane2.devices.default_qubit.DefaultQubit>` has
   been fixed to correctly display the ``max_workers`` parameter.
   [(#8289)](https://github.com/PennyLaneAI/pennylane/pull/8289)
 

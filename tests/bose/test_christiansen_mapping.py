@@ -15,12 +15,12 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane import I, X, Y, Z
-from pennylane.bose import BoseSentence, BoseWord, christiansen_mapping
-from pennylane.ops import SProd
-from pennylane.pauli import PauliSentence, PauliWord
-from pennylane.pauli.conversion import pauli_sentence
+import pennylane2 as qp
+from pennylane2 import I, X, Y, Z
+from pennylane2.bose import BoseSentence, BoseWord, christiansen_mapping
+from pennylane2.ops import SProd
+from pennylane2.pauli import PauliSentence, PauliWord
+from pennylane2.pauli.conversion import pauli_sentence
 
 BOSE_WORDS_AND_OPS = [
     (

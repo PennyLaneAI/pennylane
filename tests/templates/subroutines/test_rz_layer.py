@@ -16,11 +16,11 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.operator import abstractify
-from pennylane.templates.subroutines.rz_layer import _rzlayer_individual
-from pennylane.typing import Float, Wire
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2.core.operator import abstractify
+from pennylane2.templates.subroutines.rz_layer import _rzlayer_individual
+from pennylane2.typing import Float, Wire
+from pennylane2.wires import Wires
 
 # (angle, wires, work_wires)
 SMALL_CASES = [

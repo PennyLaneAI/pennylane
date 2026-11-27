@@ -4,9 +4,9 @@ qp.core.apply
 Overview
 --------
 
-.. currentmodule:: pennylane.core.apply
+.. currentmodule:: pennylane2.core.apply
 
-.. automodule:: pennylane.core.apply
+.. automodule:: pennylane2.core.apply
 
 .. autosummary::
     :toctree: api

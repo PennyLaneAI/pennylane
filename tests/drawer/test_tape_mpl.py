@@ -25,11 +25,11 @@ import warnings
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.qscript import QuantumScript
-from pennylane.drawer import tape_mpl
-from pennylane.drawer.tape_mpl import _ppm_controlled
-from pennylane.ops.op_math import ControlledOp2
+import pennylane2 as qp
+from pennylane2.core.qscript import QuantumScript
+from pennylane2.drawer import tape_mpl
+from pennylane2.drawer.tape_mpl import _ppm_controlled
+from pennylane2.ops.op_math import ControlledOp2
 
 mpl = pytest.importorskip("matplotlib")
 plt = pytest.importorskip("matplotlib.pyplot")

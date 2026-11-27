@@ -16,12 +16,12 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
-from pennylane.templates.subroutines.alias_sampling import _build_alias_tables
-from pennylane.templates.subroutines.alias_sampling_thc import _build_thc_pairs, _lcu_signs
-from pennylane.templates.subroutines.qubitization_thc import _THCPrepare
-from pennylane.testing import assert_valid
+import pennylane2 as qp
+from pennylane2.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
+from pennylane2.templates.subroutines.alias_sampling import _build_alias_tables
+from pennylane2.templates.subroutines.alias_sampling_thc import _build_thc_pairs, _lcu_signs
+from pennylane2.templates.subroutines.qubitization_thc import _THCPrepare
+from pennylane2.testing import assert_valid
 
 
 @pytest.mark.parametrize(

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the wire serialization functions in :mod:`pennylane.data.attributes.operator._wires`
+Tests for the wire serialization functions in :mod:`pennylane2.data.attributes.operator._wires`
 """
 
 import json
@@ -20,9 +20,9 @@ import json
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.data.attributes.operator._wires import UnserializableWireError, wires_to_json
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2.data.attributes.operator._wires import UnserializableWireError, wires_to_json
+from pennylane2.wires import Wires
 
 pytestmark = pytest.mark.data
 

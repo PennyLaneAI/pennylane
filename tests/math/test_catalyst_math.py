@@ -17,7 +17,7 @@ Tests for compatibility between the math module and catalyst.
 
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 
 @pytest.mark.catalyst

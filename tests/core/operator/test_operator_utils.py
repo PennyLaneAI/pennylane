@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for ``pennylane.core.operator.utils``."""
+"""Tests for ``pennylane2.core.operator.utils``."""
 
 # pylint: disable=too-few-public-methods
 
@@ -18,13 +18,13 @@ import numpy as np
 import pytest
 from operator2_utils import CompilableOp, DynOp, FullOp, MixedHybridOp, MultiWireOp, TwoDynOp
 
-import pennylane as qp
-from pennylane.core import Operator1
-from pennylane.core.operator import Operator2
-from pennylane.core.operator.utils import abstractify
-from pennylane.decomposition.resources import CompressedResourceOp
-from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, Wire
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2.core import Operator1
+from pennylane2.core.operator import Operator2
+from pennylane2.core.operator.utils import abstractify
+from pennylane2.decomposition.resources import CompressedResourceOp
+from pennylane2.typing import AbstractArray, Bool, Complex, Float, Int, Wire
+from pennylane2.wires import Wires
 
 
 class TestAbstractifyBasics:

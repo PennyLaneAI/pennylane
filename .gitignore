@@ -15,7 +15,7 @@ config.toml
 # Tests and coverage
 .coverage*
 !.coveragerc
-!pennylane/labs/.coveragerc
+!pennylane2/labs/.coveragerc
 .pytest_cache/*
 coverage_html_report/*
 

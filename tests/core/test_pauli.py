@@ -22,10 +22,10 @@ from copy import copy, deepcopy
 import pytest
 from scipy import sparse
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.core.pauli import PauliSentence, PauliWord
-from pennylane.exceptions import PennyLaneDeprecationWarning
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.core.pauli import PauliSentence, PauliWord
+from pennylane2.exceptions import PennyLaneDeprecationWarning
 
 matI = np.eye(2)
 matX = np.array([[0, 1], [1, 0]])
@@ -1560,21 +1560,21 @@ class TestPauliArithmeticWithADInterfaces:
     "serialized, expected",
     [
         (
-            b"cpennylane.pauli.pauli_arithmetic\nPauliWord\np0\n((dp1\nI0\nVX\np2\nsVa\np3\nVY\n"
+            b"cpennylane2.pauli.pauli_arithmetic\nPauliWord\np0\n((dp1\nI0\nVX\np2\nsVa\np3\nVY\n"
             b"p4\nstp5\nRp6\n.",
             PauliWord({0: "X", "a": "Y"}),
         ),
         (
-            b"ccopy_reg\n_reconstructor\np0\n(cpennylane.pauli.pauli_arithmetic\nPauliSentence\n"
-            b"p1\nc__builtin__\ndict\np2\n(dp3\ncpennylane.pauli.pauli_arithmetic\nPauliWord\n"
+            b"ccopy_reg\n_reconstructor\np0\n(cpennylane2.pauli.pauli_arithmetic\nPauliSentence\n"
+            b"p1\nc__builtin__\ndict\np2\n(dp3\ncpennylane2.pauli.pauli_arithmetic\nPauliWord\n"
             b"p4\n((dp5\nI0\nVZ\np6\nstp7\nRp8\nc__builtin__\ncomplex\np9\n(F0.0\nF2.0\ntp10\n"
             b"Rp11\nsg4\n((dp12\ntp13\nRp14\nF-0.5\nstp15\nRp16\n.",
             PauliSentence({PauliWord({0: "Z"}): 2j, PauliWord({}): -0.5}),
         ),
     ],
 )
-def test_load_legacy_pickle(serialized, expected):
-    """Pauli objects serialized before the core move still load as the core classes."""
+def test_load_public_namespace_pickle(serialized, expected):
+    """Serialized public-module paths resolve to the corresponding core classes."""
     restored = pickle.loads(serialized)
     assert type(restored) is type(expected)
     assert restored == expected

@@ -19,8 +19,8 @@ import numpy as np
 import pytest
 from scipy.sparse.linalg import expm
 
-import pennylane as qp
-from pennylane.optimize import RiemannianGradientOptimizer
+import pennylane2 as qp
+from pennylane2.optimize import RiemannianGradientOptimizer
 
 
 def circuit_1():

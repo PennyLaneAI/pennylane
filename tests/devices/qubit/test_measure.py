@@ -17,9 +17,9 @@ import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
 
-import pennylane as qp
-from pennylane.devices.qubit import simulate
-from pennylane.devices.qubit.measure import (
+import pennylane2 as qp
+from pennylane2.devices.qubit import simulate
+from pennylane2.devices.qubit.measure import (
     csr_dot_products,
     full_dot_products,
     get_measurement_function,

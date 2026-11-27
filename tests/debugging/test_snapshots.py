@@ -21,9 +21,9 @@ import numpy as np
 import pytest
 from scipy.stats import ttest_ind
 
-import pennylane as qp
-from pennylane.exceptions import DeviceError, QuantumFunctionError
-from pennylane.ops.functions.equal import assert_equal
+import pennylane2 as qp
+from pennylane2.exceptions import DeviceError, QuantumFunctionError
+from pennylane2.ops.functions.equal import assert_equal
 
 
 def _compare_numpy_dicts(dict1, dict2):
@@ -353,7 +353,7 @@ class TestSnapshotSupportedQNode:
     def test_different_measurements(self, m, expected_result, force_qnode_transform, mocker):
         """Test that snapshots are returned correctly with different QNode measurements."""
         mocker.patch(
-            "pennylane.debugging.snapshot._is_snapshot_compatible",
+            "pennylane2.debugging.snapshot._is_snapshot_compatible",
             return_value=not force_qnode_transform,
         )
 
@@ -495,7 +495,7 @@ class TestSnapshotSupportedQNode:
             with pytest.raises(
                 ValueError,
                 match="The measurement PauliZ is not supported as it is not an instance "
-                "of <class 'pennylane.core.measurements.MeasurementProcess'>",
+                "of <class 'pennylane2.core.measurements.MeasurementProcess'>",
             ):
                 qp.Snapshot(measurement=qp.PauliZ(0))
             return qp.expval(qp.PauliZ(0))

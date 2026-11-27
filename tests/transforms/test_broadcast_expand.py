@@ -18,8 +18,8 @@ Unit tests for the ``broadcast_expand`` transform.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
 
 
 def get_device(name="default.qubit", wires=2, seed=None):

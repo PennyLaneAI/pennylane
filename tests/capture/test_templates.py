@@ -23,18 +23,18 @@ from typing import Any
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import math
-from pennylane.core import Operator1
-from pennylane.core.operator import Operator2
+import pennylane2 as qp
+from pennylane2 import math
+from pennylane2.core import Operator1
+from pennylane2.core.operator import Operator2
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
-from pennylane.capture.primitives import operator_p  # pylint: disable=wrong-import-position
+from pennylane2.capture.primitives import operator_p  # pylint: disable=wrong-import-position
 
 # pylint: disable-next=wrong-import-position
-from pennylane.testing import assert_eqn_matches_op, find_eqns, plxpr_to_tape
+from pennylane2.testing import assert_eqn_matches_op, find_eqns, plxpr_to_tape
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 original_op_bind_code = qp.operation.Operator._primitive_bind_call.__code__
@@ -1870,7 +1870,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
     def test_trotter_cdf(self, work_wires):
         """Test TrotterCDF with program capture."""
 
-        from pennylane.numeric_hamiltonians import CDFHamiltonian
+        from pennylane2.numeric_hamiltonians import CDFHamiltonian
 
         hamiltonian = CDFHamiltonian(
             core_tensors=np.random.rand(2, 2, 2),
@@ -1900,7 +1900,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
     def test_trotter_cgf(self):
         """Test TrotterCGF with program capture."""
 
-        from pennylane.numeric_hamiltonians import CGFHamiltonian
+        from pennylane2.numeric_hamiltonians import CGFHamiltonian
 
         hamiltonian = CGFHamiltonian(
             core_tensors=np.random.rand(2, 2, 2, 2, 2),
@@ -2141,7 +2141,7 @@ def filter_fn(member: Any) -> bool:
     if member is getattr(qp.templates, "BasisEmbedding", None):
         return True
 
-    return member.__module__.startswith("pennylane.templates") and issubclass(
+    return member.__module__.startswith("pennylane2.templates") and issubclass(
         member, qp.operation.Operator
     )
 

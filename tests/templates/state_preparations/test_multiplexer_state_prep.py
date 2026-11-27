@@ -18,8 +18,8 @@ Unit tests for the MultiplexerStatePreparation template.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.testing import assert_valid_decomp_rule
+import pennylane2 as qp
+from pennylane2.testing import assert_valid_decomp_rule
 
 _REAL_STATE = np.array([-0.84223628, -0.40036496, 0.08974619, -0.34970212])
 _COMPLEX_STATE = np.array(

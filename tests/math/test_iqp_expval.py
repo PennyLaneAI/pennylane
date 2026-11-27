@@ -19,10 +19,10 @@ import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
 
-from pennylane import IQP, device, qnode
-from pennylane.math import arange, iqp_expval
-from pennylane.measurements import expval
-from pennylane.ops import PauliZ
+from pennylane2 import IQP, device, qnode
+from pennylane2.math import arange, iqp_expval
+from pennylane2.measurements import expval
+from pennylane2.ops import PauliZ
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")

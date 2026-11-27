@@ -15,9 +15,9 @@
 
 import pytest
 
-import pennylane.estimator as qre
-from pennylane.estimator.ops import RY, RZ, Hadamard, Identity, S, T, X
-from pennylane.estimator.ops.op_math.controlled_ops import (
+import pennylane2.estimator as qre
+from pennylane2.estimator.ops import RY, RZ, Hadamard, Identity, S, T, X
+from pennylane2.estimator.ops.op_math.controlled_ops import (
     CCZ,
     CH,
     CNOT,
@@ -33,9 +33,9 @@ from pennylane.estimator.ops.op_math.controlled_ops import (
     TemporaryAND,
     Toffoli,
 )
-from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount
-from pennylane.estimator.wires_manager import Allocate, Deallocate
-from pennylane.exceptions import ResourcesUndefinedError
+from pennylane2.estimator.resource_operator import CompressedResourceOp, GateCount
+from pennylane2.estimator.wires_manager import Allocate, Deallocate
+from pennylane2.exceptions import ResourcesUndefinedError
 
 
 class TestCH:

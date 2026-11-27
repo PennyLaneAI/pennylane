@@ -20,8 +20,8 @@ from functools import reduce
 
 import pytest
 
-import pennylane as qp
-from pennylane.transforms.decompositions.clifford_t_transform import (
+import pennylane2 as qp
+from pennylane2.transforms.decompositions.clifford_t_transform import (
     _CLIFFORD_T_GATES,
     _CachedCallable,
     _map_wires,
@@ -32,7 +32,7 @@ from pennylane.transforms.decompositions.clifford_t_transform import (
     check_clifford_t,
     clifford_t_decomposition,
 )
-from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases
+from pennylane2.transforms.optimization.optimization_utils import _fuse_global_phases
 
 _SKIP_GATES = (qp.Barrier, qp.Snapshot)
 _CLIFFORD_PHASE_GATES = _CLIFFORD_T_GATES + _SKIP_GATES
@@ -634,7 +634,7 @@ class TestCliffordCached:
         """Test that the cached version of the circuit is equivalent to the original one."""
         # pylint: disable=protected-access
 
-        import pennylane.transforms.decompositions.clifford_t_transform as clt2
+        import pennylane2.transforms.decompositions.clifford_t_transform as clt2
 
         clt2._CLIFFORD_T_CACHE = None
 
@@ -688,7 +688,7 @@ class TestCliffordCached:
         """Test that caches are correctly identified as compatible or
         incompatible with a relative threshold for epsilon."""
 
-        import pennylane.transforms.decompositions.clifford_t_transform as clt2
+        import pennylane2.transforms.decompositions.clifford_t_transform as clt2
 
         clt2._CLIFFORD_T_CACHE = None  # pylint: disable=protected-access
 

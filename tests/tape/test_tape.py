@@ -21,15 +21,15 @@ import copy
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import CircuitGraph
-from pennylane.core.measurements import MeasurementProcess
-from pennylane.core.qscript import QuantumScript
-from pennylane.decomposition import gate_sets
-from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.measurements import ExpectationMP, ProbabilityMP
-from pennylane.tape import QuantumTape
-from pennylane.transforms import _tape_decompose as decompose
+import pennylane2 as qp
+from pennylane2 import CircuitGraph
+from pennylane2.core.measurements import MeasurementProcess
+from pennylane2.core.qscript import QuantumScript
+from pennylane2.decomposition import gate_sets
+from pennylane2.exceptions import PennyLaneDeprecationWarning
+from pennylane2.measurements import ExpectationMP, ProbabilityMP
+from pennylane2.tape import QuantumTape
+from pennylane2.transforms import _tape_decompose as decompose
 
 
 def test_adjoint_deprecated():
@@ -992,7 +992,7 @@ class TestExecution:
     def test_decomposition(self, tol):
         """Test decomposition onto a device's supported gate set"""
         dev = qp.device("default.qubit", wires=1)
-        from pennylane.devices.default_qubit import stopping_condition
+        from pennylane2.devices.default_qubit import stopping_condition
 
         with QuantumTape() as tape:
             qp.U3(0.1, 0.2, 0.3, wires=[0])

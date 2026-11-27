@@ -17,10 +17,10 @@ Unit tests for the optimization transform ``merge_amplitude_embedding``.
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.exceptions import DeviceError
-from pennylane.transforms.optimization import merge_amplitude_embedding
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.exceptions import DeviceError
+from pennylane2.transforms.optimization import merge_amplitude_embedding
 
 
 class TestMergeAmplitudeEmbedding:

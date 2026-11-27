@@ -24,18 +24,18 @@ from gate_data import I, X, Y, Z
 from scipy.sparse import csr_matrix, kron
 from scipy.stats import unitary_group
 
-import pennylane as qp
-from pennylane.core.operator import Operation
-from pennylane.devices.qubit.apply_operation import (
+import pennylane2 as qp
+from pennylane2.core.operator import Operation
+from pennylane2.devices.qubit.apply_operation import (
     apply_operation,
     apply_operation_csr_matrix,
     apply_operation_einsum,
     apply_operation_tensordot,
 )
-from pennylane.operation import _UNSET_BATCH_SIZE
-from pennylane.ops.op_math.controlled2 import ControlledOp2
+from pennylane2.operation import _UNSET_BATCH_SIZE
+from pennylane2.ops.op_math.controlled2 import ControlledOp2
 
-apply_operation_module = importlib.import_module("pennylane.devices.qubit.apply_operation")
+apply_operation_module = importlib.import_module("pennylane2.devices.qubit.apply_operation")
 
 ml_frameworks_list = [
     "numpy",
@@ -1334,7 +1334,7 @@ class TestNumpyFastPathAutograd:
     def test_default_fastpath_skips_autograd_params(self):
         """Test that _apply_operation_default does not use numpy fast path
         when op parameters are autograd-traced, even if state is numpy."""
-        from pennylane.devices.qubit.apply_operation import _apply_operation_default
+        from pennylane2.devices.qubit.apply_operation import _apply_operation_default
 
         state = np.array([1.0 + 0j, 0.0], dtype=complex)
         phi = qp.numpy.array(0.5, requires_grad=True)
@@ -1365,7 +1365,7 @@ class TestNumpyFastPathAutograd:
         on a numpy state via the einsum path."""
         import jax
 
-        from pennylane.devices.qubit.apply_operation import _apply_operation_default
+        from pennylane2.devices.qubit.apply_operation import _apply_operation_default
 
         state = np.array([1.0 + 0j, 0.0], dtype=complex)
         phi = jax.numpy.array(0.5)

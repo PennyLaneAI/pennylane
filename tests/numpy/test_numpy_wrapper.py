@@ -21,10 +21,10 @@ import numpy as onp
 import pytest
 from autograd.numpy.numpy_boxes import ArrayBox
 
-import pennylane as qp
-import pennylane.exceptions
-from pennylane import numpy as np
-from pennylane.numpy.tensor import tensor_to_arraybox
+import pennylane2 as qp
+import pennylane2.exceptions
+from pennylane2 import numpy as np
+from pennylane2.numpy.tensor import tensor_to_arraybox
 
 
 @pytest.mark.unit
@@ -459,7 +459,9 @@ class TestAutogradIntegration:
         grad_fn = qp.grad(cost, argnums=[0])
         arr1 = np.array([0.0, 1.0, 2.0], requires_grad=False)
 
-        with pytest.raises(pennylane.exceptions.NonDifferentiableError, match="non-differentiable"):
+        with pytest.raises(
+            pennylane2.exceptions.NonDifferentiableError, match="non-differentiable"
+        ):
             grad_fn(arr1)
 
 

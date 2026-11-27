@@ -21,9 +21,9 @@ import networkx as nx
 import pytest
 import rustworkx as rx
 
-import pennylane as qp
-from pennylane.ftqc import QubitGraph
-from pennylane.ftqc.qubit_graph import MAX_TRAVERSAL_DEPTH
+import pennylane2 as qp
+from pennylane2.ftqc import QubitGraph
+from pennylane2.ftqc.qubit_graph import MAX_TRAVERSAL_DEPTH
 
 
 class TestQubitGraphsInitialization:

@@ -17,10 +17,10 @@ Unit tests for functions needed for computing the spin observables.
 
 import pytest
 
-import pennylane as qp
-from pennylane import Identity, PauliX, PauliY, PauliZ
-from pennylane import numpy as np
-from pennylane import qchem, simplify
+import pennylane2 as qp
+from pennylane2 import Identity, PauliX, PauliY, PauliZ
+from pennylane2 import numpy as np
+from pennylane2 import qchem, simplify
 
 
 @pytest.mark.parametrize(

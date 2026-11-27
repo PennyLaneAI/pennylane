@@ -1,7 +1,7 @@
 qp.numpy
 =========
 
-.. currentmodule:: pennylane.numpy
+.. currentmodule:: pennylane2.numpy
 
-.. automodule:: pennylane.numpy
+.. automodule:: pennylane2.numpy
 

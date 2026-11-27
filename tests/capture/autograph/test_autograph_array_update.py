@@ -25,7 +25,7 @@ import jax.numpy as jnp
 from jax import make_jaxpr
 from jax.core import eval_jaxpr
 
-from pennylane.capture.autograph import run_autograph
+from pennylane2.capture.autograph import run_autograph
 
 
 @pytest.mark.capture

@@ -21,9 +21,9 @@ from functools import partial
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.shots import Shots
-from pennylane.resource import CircuitSpecs, SpecsResources
+import pennylane2 as qp
+from pennylane2.core.shots import Shots
+from pennylane2.resource import CircuitSpecs, SpecsResources
 
 catalyst = pytest.importorskip("catalyst")
 
@@ -419,7 +419,7 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         def fail(*_, **__):
             raise catalyst.utils.exceptions.CompileError("some other compile error")
 
-        estimate_module = importlib.import_module("pennylane.resource.estimate")
+        estimate_module = importlib.import_module("pennylane2.resource.estimate")
         monkeypatch.setattr(estimate_module, "resources_from_analysis_pass", fail)
 
         with pytest.raises(catalyst.utils.exceptions.CompileError, match="some other"):
@@ -945,7 +945,7 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         def fail(*_, **__):
             raise next(errors)
 
-        estimate_module = importlib.import_module("pennylane.resource.estimate")
+        estimate_module = importlib.import_module("pennylane2.resource.estimate")
         monkeypatch.setattr(estimate_module, "resources_from_analysis_pass", fail)
 
         with pytest.raises(compile_error, match="some other"):

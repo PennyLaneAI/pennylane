@@ -19,10 +19,10 @@ from dataclasses import dataclass
 
 import pytest
 
-import pennylane as qp
-from pennylane.data import Dataset, DatasetPyTree
-from pennylane.data.attributes.pytree import _storable_as_array
-from pennylane.pytrees.pytrees import (
+import pennylane2 as qp
+from pennylane2.data import Dataset, DatasetPyTree
+from pennylane2.data.attributes.pytree import _storable_as_array
+from pennylane2.pytrees.pytrees import (
     _register_pytree_with_pennylane,
     flatten_registrations,
     type_to_typename,

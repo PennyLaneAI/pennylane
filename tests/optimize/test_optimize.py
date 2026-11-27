@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane` optimizers.
+Unit tests for the :mod:`pennylane2` optimizers.
 """
 
 # pylint: disable=redefined-outer-name,too-few-public-methods
@@ -20,9 +20,9 @@ Unit tests for the :mod:`pennylane` optimizers.
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.optimize import (
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.optimize import (
     AdagradOptimizer,
     AdamOptimizer,
     GradientDescentOptimizer,

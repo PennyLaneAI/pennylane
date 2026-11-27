@@ -15,9 +15,9 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.shadows.transforms import _replace_obs
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.shadows.transforms import _replace_obs
 
 
 def hadamard_circuit(wires, shots=10000, interface="autograd"):

@@ -24,14 +24,14 @@ import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qp
-from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
-from pennylane.devices.legacy_facade import (
+import pennylane2 as qp
+from pennylane2.devices.execution_config import ExecutionConfig, MCMConfig
+from pennylane2.devices.legacy_facade import (
     LegacyDeviceFacade,
     legacy_device_batch_transform,
     legacy_device_expand_fn,
 )
-from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
+from pennylane2.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
 
 
 class DummyDevice(qp.devices.LegacyDevice):

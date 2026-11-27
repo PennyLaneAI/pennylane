@@ -15,8 +15,8 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane.workflow import get_best_diff_method
+import pennylane2 as qp
+from pennylane2.workflow import get_best_diff_method
 
 
 def dummyfunc():

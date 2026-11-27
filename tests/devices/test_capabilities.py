@@ -19,8 +19,8 @@ import re
 
 import pytest
 
-import pennylane as qp
-from pennylane.devices.capabilities import (
+import pennylane2 as qp
+from pennylane2.devices.capabilities import (
     DeviceCapabilities,
     ExecutionCondition,
     OperatorProperties,
@@ -34,7 +34,7 @@ from pennylane.devices.capabilities import (
     parse_toml_document,
     update_device_capabilities,
 )
-from pennylane.exceptions import InvalidCapabilitiesError
+from pennylane2.exceptions import InvalidCapabilitiesError
 
 
 @pytest.mark.unit

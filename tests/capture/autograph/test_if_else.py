@@ -20,8 +20,8 @@ converting if/else statements to qp.cond."""
 
 import pytest
 
-import pennylane as qp
-from pennylane import cond, measure
+import pennylane2 as qp
+from pennylane2 import cond, measure
 
 pytestmark = pytest.mark.capture
 
@@ -31,10 +31,10 @@ jax = pytest.importorskip("jax")
 from jax.core import eval_jaxpr
 
 # pylint: disable-next=ungrouped-imports
-from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
-from pennylane.capture.primitives import cond_prim
-from pennylane.exceptions import AutoGraphError
-from pennylane.testing import extract_all_primitives
+from pennylane2.capture.autograph.transformer import TRANSFORMER, run_autograph
+from pennylane2.capture.primitives import cond_prim
+from pennylane2.exceptions import AutoGraphError
+from pennylane2.testing import extract_all_primitives
 
 check_cache = TRANSFORMER.has_cache
 

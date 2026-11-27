@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane` :class:`QubitDevice` class.
+Unit tests for the :mod:`pennylane2` :class:`QubitDevice` class.
 """
 
 # pylint: disable=protected-access,redefined-outer-name,too-few-public-methods
@@ -24,21 +24,21 @@ import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.core.measurements import MeasurementProcess
-from pennylane.core.qscript import QuantumScript
-from pennylane.devices import QubitDevice
-from pennylane.exceptions import DeviceError, QuantumFunctionError
-from pennylane.measurements import (
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.core.measurements import MeasurementProcess
+from pennylane2.core.qscript import QuantumScript
+from pennylane2.devices import QubitDevice
+from pennylane2.exceptions import DeviceError, QuantumFunctionError
+from pennylane2.measurements import (
     ExpectationMP,
     ProbabilityMP,
     SampleMP,
     StateMP,
     VarianceMP,
 )
-from pennylane.resource import SpecsResources
-from pennylane.wires import Wires
+from pennylane2.resource import SpecsResources
+from pennylane2.wires import Wires
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_qubit_device_rotations = ["RX", "RY", "RZ"]

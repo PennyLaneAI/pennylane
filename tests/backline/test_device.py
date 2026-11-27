@@ -16,11 +16,11 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane.backline import Placement
-from pennylane.backline.device import Backline
-from pennylane.core.transforms.compile_pipeline import CompilePipeline
-from pennylane.devices import ExecutionConfig
+import pennylane2 as qp
+from pennylane2.backline import Placement
+from pennylane2.backline.device import Backline
+from pennylane2.core.transforms.compile_pipeline import CompilePipeline
+from pennylane2.devices import ExecutionConfig
 
 
 def _nodes(n_coprocessors=1):
@@ -78,7 +78,7 @@ class TestPublicUsagePattern:
     """The documented user-facing entry points keep working."""
 
     def test_top_level_qp_backline(self):
-        """import pennylane as qp; qp.Backline(...) builds a device."""
+        """import pennylane2 as qp; qp.Backline(...) builds a device."""
         con = qp.Controller(device=qp.device("default.qubit", wires=2))
         cop = qp.Coprocessor(
             coprocessor_fn="decoder",
@@ -89,8 +89,8 @@ class TestPublicUsagePattern:
         assert isinstance(dev, Backline)
 
     def test_classes_imported_from_submodule(self):
-        """from pennylane.backline import Controller, Coprocessor -> qp.Backline(...)."""
-        from pennylane.backline import Controller, Coprocessor
+        """from pennylane2.backline import Controller, Coprocessor -> qp.Backline(...)."""
+        from pennylane2.backline import Controller, Coprocessor
 
         con = Controller(device=qp.device("default.qubit", wires=2))
         cop = Coprocessor(
@@ -106,7 +106,7 @@ class TestPublicUsagePattern:
         """qp.backline is the submodule, not a shadowing function.
 
         The lowercase ``backline()`` constructor used to shadow the module as an attribute of
-        ``pennylane``, so ``qp.backline.Placement`` raised ``AttributeError``.
+        ``pennylane2``, so ``qp.backline.Placement`` raised ``AttributeError``.
         """
         assert qp.backline.Placement is Placement
         assert "Backline" in qp.backline.__all__

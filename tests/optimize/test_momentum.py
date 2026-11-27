@@ -17,8 +17,8 @@ Unit tests for the ``MomentumOptimizer``.
 
 import pytest
 
-from pennylane import numpy as np
-from pennylane.optimize import MomentumOptimizer
+from pennylane2 import numpy as np
+from pennylane2.optimize import MomentumOptimizer
 
 
 class TestMomentumOptimizer:

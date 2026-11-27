@@ -18,11 +18,11 @@ Unit tests for utility functions in the ``decomposition`` module.
 
 import pytest
 
-import pennylane as qp
-from pennylane.core.operator import abstractify
-from pennylane.decomposition import register_signature, signature_registry
-from pennylane.decomposition.utils import _init_signature_registration, translate_op_alias
-from pennylane.typing import Float, Wire
+import pennylane2 as qp
+from pennylane2.core.operator import abstractify
+from pennylane2.decomposition import register_signature, signature_registry
+from pennylane2.decomposition.utils import _init_signature_registration, translate_op_alias
+from pennylane2.typing import Float, Wire
 from tests.core.operator.operator2_utils import CompilableDynOp, OneWireDynOp
 
 

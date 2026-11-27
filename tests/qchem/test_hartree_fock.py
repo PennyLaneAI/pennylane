@@ -20,9 +20,9 @@ Unit tests for Hartree-Fock functions.
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane import qchem
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2 import qchem
 
 
 def test_scf_leaves_random_seed_unchanged():

@@ -17,7 +17,7 @@ Tests for symbolic_array
 import numpy as np
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 pytestmark = pytest.mark.capture
 
@@ -25,7 +25,7 @@ jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
 # pylint: disable-next=wrong-import-position
-from pennylane.capture.primitives import symbolic_array_prim
+from pennylane2.capture.primitives import symbolic_array_prim
 
 
 def test_error_without_capture():

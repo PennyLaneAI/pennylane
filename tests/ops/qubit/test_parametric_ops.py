@@ -24,16 +24,16 @@ from gate_data import CPhaseShift00, CPhaseShift01, CPhaseShift10, Z
 from helpers.decomposition_helpers import assert_basis_change_decomposition
 from scipy import sparse
 
-import pennylane as qp
-from pennylane import numpy as npp
-from pennylane.core.operator import Operator1, Operator2
-from pennylane.gradients import parameter_frequencies
-from pennylane.ops.qubit import RX as old_loc_RX
-from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
-from pennylane.testing import assert_decomposable
-from pennylane.testing.decompositions import assert_valid_decomp_rule, decomp_rule_to_tape
-from pennylane.typing import Float, Wire
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2 import numpy as npp
+from pennylane2.core.operator import Operator1, Operator2
+from pennylane2.gradients import parameter_frequencies
+from pennylane2.ops.qubit import RX as old_loc_RX
+from pennylane2.ops.qubit import MultiRZ as old_loc_MultiRZ
+from pennylane2.testing import assert_decomposable
+from pennylane2.testing.decompositions import assert_valid_decomp_rule, decomp_rule_to_tape
+from pennylane2.typing import Float, Wire
+from pennylane2.wires import Wires
 
 PARAMETRIZED_OPERATIONS = [
     qp.RX(0.123, wires=0),
@@ -736,7 +736,7 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         self, angle, control_values, work_wires, work_wire_type
     ):
         """Test the controlled IsingZZ rule's gates, matrix, and resource counts."""
-        from pennylane.ops.qubit.parametric_ops_multi_qubit import controlled_ising_zz
+        from pennylane2.ops.qubit.parametric_ops_multi_qubit import controlled_ising_zz
 
         control_wires = list(range(len(control_values)))
         op = qp.ctrl(

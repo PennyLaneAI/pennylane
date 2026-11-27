@@ -18,9 +18,9 @@ Tests for the AmplitudeEmbedding template.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.testing import assert_decomposable
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.testing import assert_decomposable
 
 FEATURES = [
     np.array([0, 1, 0, 0]),

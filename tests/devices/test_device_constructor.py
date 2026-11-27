@@ -17,8 +17,8 @@ from importlib import metadata, reload
 
 import pytest
 
-import pennylane as qp
-from pennylane.exceptions import DeviceError
+import pennylane2 as qp
+from pennylane2.exceptions import DeviceError
 
 
 class TestDeviceInit:

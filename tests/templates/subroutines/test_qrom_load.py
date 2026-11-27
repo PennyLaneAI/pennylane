@@ -26,16 +26,16 @@ import jax
 import numpy
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.core.operator import abstractify
-from pennylane.decomposition import DecompositionGraph
-from pennylane.templates.subroutines import qrom_load
-from pennylane.templates.subroutines.qrom import (
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.core.operator import abstractify
+from pennylane2.decomposition import DecompositionGraph
+from pennylane2.templates.subroutines import qrom_load
+from pennylane2.templates.subroutines.qrom import (
     _qrom_measurement,
     _qrom_unary_iteration,
 )
-from pennylane.templates.subroutines.qrom_load import (
+from pennylane2.templates.subroutines.qrom_load import (
     _adjoint_qrom_load_measurement,
     _adjoint_qrom_load_one_hot_size,
     _calculate_select_swap_sizes,
@@ -46,9 +46,9 @@ from pennylane.templates.subroutines.qrom_load import (
     _select_swap_table,
     _swap_ops,
 )
-from pennylane.testing import assert_decomposable
-from pennylane.testing.decompositions import _assert_counts_match
-from pennylane.typing import Bool, Wire
+from pennylane2.testing import assert_decomposable
+from pennylane2.testing.decompositions import _assert_counts_match
+from pennylane2.typing import Bool, Wire
 
 BITSTRINGS = (
     (0, 0, 0),

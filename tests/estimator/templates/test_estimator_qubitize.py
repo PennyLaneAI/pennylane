@@ -17,8 +17,8 @@ Test the Resource classes for Qubitization
 
 import pytest
 
-import pennylane.estimator as qre
-from pennylane.estimator import resource_rep
+import pennylane2.estimator as qre
+from pennylane2.estimator import resource_rep
 
 
 class TestQubitizeTHC:

@@ -8,14 +8,14 @@ To enable logging support in your PennyLane work-flow simply run the following l
 
 .. code:: python
 
-   import pennylane as qp
+   import pennylane2 as qp
    qp.logging.enable_logging()
 
 
 This will ensure all levels of the execution pipeline log function entries and
-outputs. These are logged to handlers pointing to the standard output. Note, since Python's logging framework configuration functions overwrite previous logger configurations, it is expected that :func:`~pennylane.logging.enable_logging()` is called only when not using external logging configurations.
+outputs. These are logged to handlers pointing to the standard output. Note, since Python's logging framework configuration functions overwrite previous logger configurations, it is expected that :func:`~pennylane2.logging.enable_logging()` is called only when not using external logging configurations.
 
-If you are defining custom logging configurations, you can extend the logging configuration options as defined in the section :ref:`Customizing the logging configuration <logging-config>`, or avoid calling :func:`~pennylane.logging.enable_logging()` in favour of your custom configuration options.
+If you are defining custom logging configurations, you can extend the logging configuration options as defined in the section :ref:`Customizing the logging configuration <logging-config>`, or avoid calling :func:`~pennylane2.logging.enable_logging()` in favour of your custom configuration options.
 
 Adding logging supports during development
 ------------------------------------------
@@ -29,7 +29,7 @@ To add logging support to components of PennyLane, we must define a module logge
 
 which will be used within the given module, and track directories,
 filenames and function names, as we have defined the appropriate types
-within the formatter configuration (see :class:`pennylane.logging.DefaultFormatter`). With the logger defined, we can selectively add to the logger via two methods: 
+within the formatter configuration (see :class:`pennylane2.logging.DefaultFormatter`). With the logger defined, we can selectively add to the logger via two methods:
 
 #. Using decorators on the required functions and methods in a given module:
 
@@ -37,7 +37,7 @@ within the formatter configuration (see :class:`pennylane.logging.DefaultFormatt
 
       # debug_logger can be used to decorate any method or free function
       # debug_logger_init can be used to decorate class __init__ methods.
-      from pennylane.logging import debug_logger, debug_logger_init
+      from pennylane2.logging import debug_logger, debug_logger_init
 
       @debug_logger
       def my_func(arg1, arg2):
@@ -94,7 +94,7 @@ messages based on some criteria, we can add these to the respective
 handlers. As an example, we can go through the configuration file and
 explore the options.
 
-For ease-of-development, the function :func:`pennylane.logging.edit_system_config` opens an editor (if the ``EDITOR`` environment variable is set), or a viewer of the existing file configuration, which can be used to modify the existing options.
+For ease-of-development, the function :func:`pennylane2.logging.edit_system_config` opens an editor (if the ``EDITOR`` environment variable is set), or a viewer of the existing file configuration, which can be used to modify the existing options.
 
 Modifying the configuration options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -117,15 +117,15 @@ sections to discuss how these can be adjusted to suit needs:
    version = 1
 
    ###############################################################################
-   # Bind formatters defined locally and those defined in pennylane.logging
+   # Bind formatters defined locally and those defined in pennylane2.logging
    ###############################################################################
 
    [formatters]
    [formatters.qp_default_formatter]
-   "()" = "pennylane.logging.formatters.formatter.DefaultFormatter"
+   "()" = "pennylane2.logging.formatters.formatter.DefaultFormatter"
 
    [formatters.qp_alt_formatter]
-   "()" = "pennylane.logging.formatters.formatter.AnotherLogFormatter"
+   "()" = "pennylane2.logging.formatters.formatter.AnotherLogFormatter"
 
    [formatters.local_detailed]
    format = "\u001B[38;2;45;145;210m[%(asctime)s][%(levelname)s][<PID %(process)d:%(processName)s>] - %(name)s.%(funcName)s()::\"%(message)s\"\u001B[0m"
@@ -143,17 +143,17 @@ as ``false`` unless required otherwise.
 
 
    ###############################################################################
-   # Bind LogRecord filters defined in pennylane.logging module
+   # Bind LogRecord filters defined in pennylane2.logging module
    ###############################################################################
 
    [filters]
    # Filter to show messages from the same local process as the Python script
    [filters.qp_LocalProcessFilter]
-   "()" = "pennylane.logging.filter.LocalProcessFilter"
+   "()" = "pennylane2.logging.filter.LocalProcessFilter"
 
    # Filter to show debug level messages only
    [filters.qp_DebugOnlyFilter]
-   "()" = "pennylane.logging.filter.DebugOnlyFilter"
+   "()" = "pennylane2.logging.filter.DebugOnlyFilter"
 
 The above section defines how to filter log messages (known as
 ``LogRecords``), given some predicate. In this case, we have defined
@@ -164,7 +164,7 @@ can be used in the next section.
 .. code:: toml
 
    ###############################################################################
-   # Bind handlers defined in the logging and in pennylane.logging modules
+   # Bind handlers defined in the logging and in pennylane2.logging modules
    ###############################################################################
 
    [handlers]
@@ -218,15 +218,15 @@ formatters so that the consumed message fits the needs of the user.
    level = "WARN"
    propagate = false
 
-   # Control logging across pennylane
-   [loggers.pennylane]
+   # Control logging across pennylane2
+   [loggers.pennylane2]
    handlers = ["qp_debug_stream",]
    level = "DEBUG" # Set to TRACE for highest verbosity
    propagate = false
 
-   # Control logging specifically in the pennylane.qnode module
+   # Control logging specifically in the pennylane2.qnode module
    # Note the required quotes to overcome TOML nesting issues
-   [loggers."pennylane.qnode"]
+   [loggers."pennylane2.qnode"]
    handlers = ["qp_debug_stream_alt",]
    level = "DEBUG" # Set to TRACE for highest verbosity
    propagate = false
@@ -239,7 +239,7 @@ parent-child hierarchy, where a logging configuration set at a parent
 level will set all child levels with the same features. In this
 instance, we have configured JAX, PennyLane and our script to all log
 into the ``qp_debug_stream`` handler we defined earlier, and modified
-the child logger ``"pennylane.qnode"`` (quotes needed due to TOML
+the child logger ``"pennylane2.qnode"`` (quotes needed due to TOML
 parsing limitations) to use a different logger, in this case
 ``qp_debug_stream_alt``. We are free to define the module/package
 log-level here (we opt for ``DEBUG`` for all), and to also use multiple
@@ -278,7 +278,7 @@ warnings and more severe, by making the following change:
 
 .. code:: toml
 
-   [loggers.pennylane]
+   [loggers.pennylane2]
    handlers = ["qp_debug_stream"]
    level = "WARN"
    propagate = false
@@ -288,7 +288,7 @@ process, and surrounding operations:
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
     import jax, jax.numpy as jnp
     from jax import jacfwd, jacrev
     import logging
@@ -354,7 +354,7 @@ tie-into the execution pipeline for devices without backprop supports:
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
     import logging
 
     qp.logging.enable_logging()
@@ -423,5 +423,5 @@ range per color, we can use the following bash command:
 The strings in the log messages are prepended with the appropriate ANSI
 codes to ensure different log-levels are highlighted in different ways
 when outputing to the standard output stream (stdout/stderr). These are
-defined in the ``pennylane.logging.formatter`` module, and can be
+defined in the ``pennylane2.logging.formatter`` module, and can be
 customized to suit any colors, or messaging structure.

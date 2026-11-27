@@ -23,15 +23,15 @@ from gate_data import H, I, S, T, X, Z
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.core.operator import abstractify
-from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.ops.op_math.decompositions.unitary_decompositions import _compute_udv
-from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power
-from pennylane.testing import assert_decomposable
-from pennylane.typing import AbstractArray, AbstractWires, Complex, Wire
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.core.operator import abstractify
+from pennylane2.exceptions import DecompositionUndefinedError
+from pennylane2.ops.op_math.decompositions.unitary_decompositions import _compute_udv
+from pennylane2.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power
+from pennylane2.testing import assert_decomposable
+from pennylane2.typing import AbstractArray, AbstractWires, Complex, Wire
+from pennylane2.wires import Wires
 
 
 class TestQubitUnitaryCSR:

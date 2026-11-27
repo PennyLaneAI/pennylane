@@ -19,8 +19,8 @@ from functools import partial
 
 import pytest
 
-import pennylane as qp
-from pennylane.capture.hint import HintedCallable, apply_hint, get_hints, process_hints
+import pennylane2 as qp
+from pennylane2.capture.hint import HintedCallable, apply_hint, get_hints, process_hints
 
 _SUPPORTED = frozenset({"num-iters"})
 
@@ -30,7 +30,7 @@ def _f(x, y=0):
 
 
 class TestProcessHints:
-    """Unit tests for :func:`~pennylane.capture.hint.process_hints`."""
+    """Unit tests for :func:`~pennylane2.capture.hint.process_hints`."""
 
     def test_keeps_canonical(self):
         """Exact supported keys should be returned unchanged."""
@@ -67,7 +67,7 @@ class TestProcessHints:
 
 
 class TestApplyHint:
-    """Unit tests for :func:`~pennylane.capture.hint.apply_hint`."""
+    """Unit tests for :func:`~pennylane2.capture.hint.apply_hint`."""
 
     def test_wraps_callable(self):
         """A plain callable should become a ``HintedCallable``."""

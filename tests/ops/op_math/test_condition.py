@@ -26,10 +26,10 @@ files.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.operator import Operator
-from pennylane.exceptions import ConditionalTransformError
-from pennylane.ops.op_math.condition import Conditional
+import pennylane2 as qp
+from pennylane2.core.operator import Operator
+from pennylane2.exceptions import ConditionalTransformError
+from pennylane2.ops.op_math.condition import Conditional
 
 terminal_meas = [
     qp.probs(wires=[1, 0]),

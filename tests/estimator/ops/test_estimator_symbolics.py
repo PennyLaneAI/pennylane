@@ -19,12 +19,12 @@ from collections import defaultdict
 
 import pytest
 
-import pennylane.estimator as qre
-from pennylane.core.queuing import AnnotatedQueue
-from pennylane.estimator.ops.op_math.symbolic import apply_adj
-from pennylane.estimator.resource_operator import GateCount, resource_rep
-from pennylane.estimator.wires_manager import Allocate, Deallocate
-from pennylane.wires import Wires
+import pennylane2.estimator as qre
+from pennylane2.core.queuing import AnnotatedQueue
+from pennylane2.estimator.ops.op_math.symbolic import apply_adj
+from pennylane2.estimator.resource_operator import GateCount, resource_rep
+from pennylane2.estimator.wires_manager import Allocate, Deallocate
+from pennylane2.wires import Wires
 
 
 class DummyOp(qre.ResourceOperator):

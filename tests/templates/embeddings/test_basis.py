@@ -18,7 +18,7 @@ Tests for the BasisEmbedding template which is a direct alias of BasisState.
 import numpy as np
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")

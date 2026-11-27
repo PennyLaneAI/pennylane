@@ -17,13 +17,13 @@ import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.exceptions import QuantumFunctionError, WireError
-from pennylane.math.matrix_manipulation import _permute_dense_matrix
-from pennylane.math.quantum import reduce_dm, reduce_statevector
-from pennylane.measurements import DensityMatrixMP, StateMP, density_matrix, expval, state
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.exceptions import QuantumFunctionError, WireError
+from pennylane2.math.matrix_manipulation import _permute_dense_matrix
+from pennylane2.math.quantum import reduce_dm, reduce_statevector
+from pennylane2.measurements import DensityMatrixMP, StateMP, density_matrix, expval, state
+from pennylane2.wires import Wires
 
 
 class TestStateMP:

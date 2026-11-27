@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Edge-case tests for :mod:`pennylane.backline.runtime.operands`.
+"""Edge-case tests for :mod:`pennylane2.backline.runtime.operands`.
 
 The happy paths are covered by ``test_runtime_call.py``; this file targets the branches that
 only fire on odd inputs and would otherwise stay uncovered.
@@ -24,7 +24,7 @@ only fire on odd inputs and would otherwise stay uncovered.
 import numpy as np
 import pytest
 
-from pennylane.backline.runtime import CSignature, CType, operands
+from pennylane2.backline.runtime import CSignature, CType, operands
 
 
 @pytest.fixture(name="x64")

@@ -19,8 +19,8 @@ Unit tests for the circuit implementations required in measurement optimization 
 import numpy as np
 import pytest
 
-from pennylane import RX, RY, U3, Hadamard, Hermitian, Identity, PauliX, PauliY, PauliZ
-from pennylane.pauli import (
+from pennylane2 import RX, RY, U3, Hadamard, Hermitian, Identity, PauliX, PauliY, PauliZ
+from pennylane2.pauli import (
     are_identical_pauli_words,
     diagonalize_pauli_word,
     diagonalize_qwc_pauli_words,

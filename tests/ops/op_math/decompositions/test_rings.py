@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 
-from pennylane.ops.op_math.decompositions.rings import DyadicMatrix, SO3Matrix, ZOmega, ZSqrtTwo
+from pennylane2.ops.op_math.decompositions.rings import DyadicMatrix, SO3Matrix, ZOmega, ZSqrtTwo
 
 
 class TestZSqrtTwo:

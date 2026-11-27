@@ -11,12 +11,12 @@ This module contains functionality for debugging quantum programs on simulator d
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.breakpoint
-    ~pennylane.debug_expval
-    ~pennylane.debug_probs
-    ~pennylane.debug_state
-    ~pennylane.debug_tape
-    ~pennylane.snapshots
+    ~pennylane2.breakpoint
+    ~pennylane2.debug_expval
+    ~pennylane2.debug_probs
+    ~pennylane2.debug_state
+    ~pennylane2.debug_tape
+    ~pennylane2.snapshots
 
 :html:`</div>`
 
@@ -24,7 +24,7 @@ This module contains functionality for debugging quantum programs on simulator d
 Entering the Debugging Context
 ------------------------------
 
-The :func:`~pennylane.breakpoint` function provides an interface for interacting with and
+The :func:`~pennylane2.breakpoint` function provides an interface for interacting with and
 stepping through a quantum circuit during execution. It allows for faster debugging
 by providing access to the internal state of the circuit and the ``QuantumTape`` as 
 the circuit operations are applied. The functionality is highlighted by the example 
@@ -33,7 +33,7 @@ circuit below.
 .. code-block:: python
     :linenos:
 
-    import pennylane as qp
+    import pennylane2 as qp
     
     @qp.qnode(qp.device('default.qubit', wires=(0,1,2)))
     def circuit(x):
@@ -145,9 +145,9 @@ Extracting Circuit Information
 ------------------------------
 
 While in the debugging prompt, we can extract information about the current contents
-of the quantum tape using :func:`~pennylane.debug_tape`. We can also perform measurements dynamically
-on the quantum circuit using :func:`~pennylane.debug_expval`, :func:`~pennylane.debug_state`, 
-and :func:`~pennylane.debug_probs`. 
+of the quantum tape using :func:`~pennylane2.debug_tape`. We can also perform measurements dynamically
+on the quantum circuit using :func:`~pennylane2.debug_expval`, :func:`~pennylane2.debug_state`,
+and :func:`~pennylane2.debug_probs`.
 
 Consider the circuit from above, 
 
@@ -178,7 +178,7 @@ Consider the circuit from above,
     [pldb]
 
 All of the operations applied so far are tracked in the circuit's ``QuantumTape`` 
-which is accessible using :func:`~pennylane.debug_tape`. This can be used to
+which is accessible using :func:`~pennylane2.debug_tape`. This can be used to
 *visually* debug the circuit.
 
 .. code-block:: console
@@ -191,8 +191,8 @@ which is accessible using :func:`~pennylane.debug_tape`. This can be used to
     2: ────╰X─┤
 
 The quantum state of the circuit at this point can be extracted using 
-:func:`~pennylane.debug_state`. The associated probability distribution 
-for the wires of interest can be probed using :func:`~pennylane.debug_probs`.
+:func:`~pennylane2.debug_state`. The associated probability distribution
+for the wires of interest can be probed using :func:`~pennylane2.debug_probs`.
 
 .. code-block:: console
 
@@ -203,7 +203,7 @@ for the wires of interest can be probed using :func:`~pennylane.debug_probs`.
     array([0.5, 0. , 0. , 0.5])
 
 Another method for probing the system is by measuring observables via 
-:func:`~pennylane.debug_expval`.
+:func:`~pennylane2.debug_expval`.
 
 .. code-block:: console
 

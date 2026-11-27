@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the `pennylane.draw_text` function.
+Unit tests for the `pennylane2.draw_text` function.
 """
 
 from copy import copy
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.core.qscript import QuantumScript
-from pennylane.drawer import tape_text
-from pennylane.drawer._add_obj import (
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.core.qscript import QuantumScript
+from pennylane2.drawer import tape_text
+from pennylane2.drawer._add_obj import (
     _add_cond_grouping_symbols,
     _add_cwire_measurement,
     _add_cwire_measurement_grouping_symbols,
@@ -33,8 +33,8 @@ from pennylane.drawer._add_obj import (
     _add_obj,
     _add_subroutine_mcm_grouping_symbols,
 )
-from pennylane.drawer.tape_text import _Config
-from pennylane.ops.op_math import ControlledOp2
+from pennylane2.drawer.tape_text import _Config
+from pennylane2.ops.op_math import ControlledOp2
 
 default_wire_map = {0: 0, 1: 1, 2: 2, 3: 3}
 default_wire_layers = {i: [[-1, 10]] for i in range(4)}

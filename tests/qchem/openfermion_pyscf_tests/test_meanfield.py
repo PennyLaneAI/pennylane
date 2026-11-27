@@ -20,7 +20,7 @@ import os
 import numpy as np
 import pytest
 
-from pennylane import qchem
+from pennylane2 import qchem
 
 name = "h2"
 symbols, coordinates = (["H", "H"], np.array([0.0, 0.0, -0.66140414, 0.0, 0.0, 0.66140414]))

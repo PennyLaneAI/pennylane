@@ -18,10 +18,10 @@ import copy
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.exceptions import DeviceError, QuantumFunctionError
-from pennylane.measurements.mutual_info import MutualInfoMP
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2.exceptions import DeviceError, QuantumFunctionError
+from pennylane2.measurements.mutual_info import MutualInfoMP
+from pennylane2.wires import Wires
 
 
 class TestMutualInfoUnitTests:

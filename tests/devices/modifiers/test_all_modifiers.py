@@ -21,9 +21,9 @@ Tests that apply to all device modifiers or act on a combination of them togethe
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qp
-from pennylane.devices import Device
-from pennylane.devices.modifiers import simulator_tracking, single_tape_support
+import pennylane2 as qp
+from pennylane2.devices import Device
+from pennylane2.devices.modifiers import simulator_tracking, single_tape_support
 
 
 def test_chained_modifiers():

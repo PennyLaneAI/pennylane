@@ -18,12 +18,12 @@ import numpy as np
 import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
 
-import pennylane as qp
-from pennylane import execute
-from pennylane import numpy as pnp
-from pennylane.core.shots import Shots
-from pennylane.devices import DefaultQubit
-from pennylane.gradients import param_shift
+import pennylane2 as qp
+from pennylane2 import execute
+from pennylane2 import numpy as pnp
+from pennylane2.core.shots import Shots
+from pennylane2.devices import DefaultQubit
+from pennylane2.gradients import param_shift
 
 pytestmark = pytest.mark.autograd
 

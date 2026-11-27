@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the ``adjoint_jacobian`` method of the :mod:`pennylane` :class:`QubitDevice` class.
+Tests for the ``adjoint_jacobian`` method of the :mod:`pennylane2` :class:`QubitDevice` class.
 """
 
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.exceptions import QuantumFunctionError
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.exceptions import QuantumFunctionError
 
 
 class TestAdjointJacobian:

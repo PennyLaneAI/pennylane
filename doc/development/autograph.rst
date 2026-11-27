@@ -30,7 +30,7 @@ restrictions and constraints you may discover.
 
     .. code-block:: python
 
-        from pennylane.capture import make_plxpr
+        from pennylane2.capture import make_plxpr
 
         def f(x):
             if x > 5:
@@ -54,7 +54,7 @@ Using AutoGraph
 The AutoGraph feature in PennyLane is supported by the ``diastatic-malt`` `package <https://github.com/PennyLaneAI/diastatic-malt>`_, a standalone
 fork of the AutoGraph module in TensorFlow (`official documentation <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/autograph/g3doc/reference/index.md>`_).
 
-The :func:`~pennylane.capture.make_plxpr` function uses AutoGraph by default. Consider a function using
+The :func:`~pennylane2.capture.make_plxpr` function uses AutoGraph by default. Consider a function using
 Python control flow:
 
 .. code-block:: python
@@ -151,7 +151,7 @@ itself calls nested functions. All functions called within the
 top-level function will also have Python control flow captured
 and converted by AutoGraph.
 
-In addition, built-in functions from ``jax``, ``pennylane``, and ``catalyst``
+In addition, built-in functions from ``jax``, ``pennylane2``, and ``catalyst``
 are automatically *excluded* from the AutoGraph conversion.
 
 .. code-block:: python

@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :func:`pennylane.math.is_independent` function.
+Unit tests for the :func:`pennylane2.math.is_independent` function.
 """
 
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.math import is_independent
-from pennylane.math.is_independent import _get_random_args
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.math import is_independent
+from pennylane2.math.is_independent import _get_random_args
 
 pytestmark = pytest.mark.all_interfaces
 

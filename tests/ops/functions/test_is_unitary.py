@@ -17,7 +17,7 @@ Unit tests for the qp.is_unitary function
 
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 unitary_ops = (
     qp.Identity(0),

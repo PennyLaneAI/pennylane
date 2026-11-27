@@ -18,9 +18,9 @@ Tests for the SuperpositionTHC template.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.templates.subroutines.superposition_thc import SuperpositionTHC
-from pennylane.testing import assert_valid
+import pennylane2 as qp
+from pennylane2.templates.subroutines.superposition_thc import SuperpositionTHC
+from pennylane2.testing import assert_valid
 
 
 def _wire_layout(n):

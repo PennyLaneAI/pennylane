@@ -11,13 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for pennylane/labs/phase_polynomials/phase_polynomial.py"""
+"""Tests for pennylane2/labs/phase_polynomials/phase_polynomial.py"""
 
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.transforms import phase_polynomial
+import pennylane2 as qp
+from pennylane2.transforms import phase_polynomial
 
 # trivial example
 circ0 = qp.tape.QuantumScript([])

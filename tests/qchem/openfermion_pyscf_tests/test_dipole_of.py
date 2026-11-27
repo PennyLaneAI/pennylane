@@ -21,7 +21,7 @@ Unit tests for the ``dipole_of`` function.
 import numpy as np
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 h2 = ["H", "H"]
 x_h2 = np.array([0.0, 0.0, -0.661, 0.0, 0.0, 0.661])

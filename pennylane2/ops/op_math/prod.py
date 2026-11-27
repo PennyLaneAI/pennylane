@@ -1,0 +1,595 @@
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This file contains the implementation of the Prod class which contains logic for
+computing the product between operations.
+"""
+
+import itertools
+from collections import Counter
+from functools import reduce
+from itertools import combinations
+from typing import Union
+
+from scipy.sparse import kron as sparse_kron
+
+import pennylane2 as qp
+from pennylane2 import math
+from pennylane2.capture.autograph import wraps
+from pennylane2.core.apply import apply
+from pennylane2.core.operator import Operator, Operator2, abstractify
+from pennylane2.core.queuing import QueuingManager, remove_from_program
+from pennylane2.decomposition.symbolic_decomposition import flip_zero_control
+from pennylane2.ops._pauli_conversion import to_operator
+from pennylane2.typing import TensorLike, Wire
+from pennylane2.wires import Wires
+
+from .adjoint2 import _adjoint_abstract
+from .composite import CompositeOp, handle_recursion_error
+from .controlled2 import _ctrl_abstract
+from .prod2 import Prod2, _multi_temporary_and_all_ones, _ProductFactorsGrouping, _swappable_ops
+from .sprod import SProd
+from .sum import Sum
+
+MAX_NUM_WIRES_KRON_PRODUCT = 9
+"""The maximum number of wires up to which using ``math.kron`` is faster than ``math.dot`` for
+computing the sparse matrix representation."""
+
+
+def prod(*ops, lazy=True):
+    """Construct an operator which represents the generalized product of the
+    operators provided.
+
+    The generalized product operation represents both the tensor product as
+    well as matrix composition. This can be resolved naturally from the wires
+    that the given operators act on.
+
+    Args:
+        *ops (Union[tuple[~.operation.Operator], Callable]): The operators we would like to multiply.
+            Alternatively, a single qfunc that queues operators can be passed to this function.
+
+    Keyword Args:
+        id (str or None): id for the product operator. Default is None.
+        lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any
+            of the operators is already a product operator, its operands will be used instead.
+
+    Returns:
+        ~ops.op_math.Prod: the operator representing the product.
+
+    .. note::
+
+        This operator supports batched operands:
+
+        >>> op = qp.prod(qp.RX(np.array([1, 2, 3]), wires=0), qp.X(1))
+        >>> op.matrix().shape
+        (3, 4, 4)
+
+        But it doesn't support batching of operators:
+
+        >>> qp.prod(np.array([qp.RX(0.5, 0), qp.RZ(0.3, 0)]), qp.Z(0))
+        Traceback (most recent call last):
+            ...
+        AttributeError: 'numpy.ndarray' object has no attribute 'wires'
+
+    .. seealso:: :class:`~.ops.op_math.Prod`
+
+    **Example**
+
+    >>> prod_op = prod(qp.X(0), qp.Z(0))
+    >>> prod_op
+    X(0) @ Z(0)
+    >>> prod_op.matrix()
+    array([[ 0.+0.j, -1.+0.j],
+           [ 1.+0.j,  0.+0.j]])
+    >>> prod_op.simplify()
+    -1j * Y(0)
+    >>> prod_op.terms()
+    ([-1j], [Y(0)])
+
+
+    You can also create a prod operator by passing a qfunc to prod, like the following:
+
+    >>> def qfunc(x):
+    ...     qp.RX(x, 0)
+    ...     qp.CNOT([0, 1])
+    >>> prod_op = prod(qfunc)(1.1)
+    >>> prod_op
+    (CNOT(wires=[0, 1])) @ RX(1.1, wires=[0])
+
+
+    Notice how the order in the output appears reversed. However, this is correct because the operators are applied from right to left.
+    """
+    if len(ops) == 1:
+        if isinstance(ops[0], qp.operation.Operator):
+            return ops[0]
+
+        fn = ops[0]
+
+        if not callable(fn):
+            raise TypeError(f"Unexpected argument of type {type(fn).__name__} passed to qp.prod")
+
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+
+            # dequeue operators passed as arguments to the quantum function
+            leaves, _ = qp.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+            for l in leaves:
+                if isinstance(l, Operator):
+                    qp.QueuingManager.remove(l)
+
+            qs = qp.tape.make_qscript(fn)(*args, **kwargs)
+            if len(qs.operations) == 1:
+                op = qs[0]
+                if qp.QueuingManager.recording():
+                    op = qp.apply(op)
+                return op
+            return prod(*qs.operations[::-1], lazy=lazy)
+
+        return wrapper
+
+    if ops and all(isinstance(op, Operator2) for op in ops):
+        if lazy:
+            return Prod2(ops)
+
+        # The outer 'Prod2's in 'ops' are discarded here and so we need to remove them from
+        # the program as nothing else will. The lazy route above does not need
+        # this as it forwards 'ops' directly to the constructor which already dequeues
+        # every operand in the '__init__' of 'CompositeOp2'.
+        operands = tuple(
+            itertools.chain.from_iterable(
+                op.operands if isinstance(op, Prod2) else (op,) for op in ops
+            )
+        )
+        remove_from_program(*ops)
+
+        return Prod2(operands)
+
+    if lazy:
+        return Prod(*ops)
+
+    ops_simp = Prod(
+        *itertools.chain.from_iterable([op if isinstance(op, Prod) else [op] for op in ops]),
+    )
+
+    for op in ops:
+        QueuingManager.remove(op)
+
+    return ops_simp
+
+
+class Prod(CompositeOp):
+    r"""Symbolic operator representing the product of operators.
+
+    Args:
+        *factors (tuple[~.operation.Operator]): a tuple of operators which will be multiplied
+            together.
+
+    Keyword Args:
+        id (str or None): id for the product operator. Default is None.
+
+    .. seealso:: :func:`~.ops.op_math.prod`
+
+    **Example**
+
+    >>> prod_op = Prod(qp.X(0), qp.PauliZ(1))
+    >>> prod_op
+    X(0) @ Z(1)
+    >>> qp.matrix(prod_op, wire_order=prod_op.wires)
+    array([[ 0.+0.j,  0.+0.j,  1.+0.j,  0.+0.j],
+           [ 0.+0.j,  0.+0.j,  0.+0.j, -1.+0.j],
+           [ 1.+0.j,  0.+0.j,  0.+0.j,  0.+0.j],
+           [ 0.+0.j, -1.+0.j,  0.+0.j,  0.+0.j]])
+    >>> prod_op.terms()
+    ([1.0], [X(0) @ Z(1)])
+
+    .. note::
+        When a Prod operator is applied in a circuit, its factors are applied in the reverse order.
+        (i.e ``Prod(op1, op2)`` corresponds to :math:`\hat{op}_{1}\cdot\hat{op}_{2}` which indicates
+        first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit). We can see this
+        in the decomposition of the operator.
+
+    >>> op = Prod(qp.X(0), qp.Z(1))
+    >>> op.decomposition()
+    [Z(1), X(0)]
+
+    .. details::
+        :title: Usage Details
+
+        The Prod operator represents both matrix composition and tensor products
+        between operators.
+
+        >>> prod_op = Prod(qp.RZ(1.23, wires=0), qp.X(0), qp.Z(1))
+        >>> prod_op.matrix()
+        array([[ 0.        +0.j        ,  0.        +0.j        ,
+                 0.816...-0.57...j,  0.        +0.j        ],
+               [ 0.        +0.j        , -0.        +0.j        ,
+                 0.        +0.j        , -0.816...+0.57...j],
+               [ 0.816...+0.57...j,  0.        +0.j        ,
+                 0.        +0.j        ,  0.        +0.j        ],
+               [ 0.        +0.j        , -0.816...-0.57...j,
+                 0.        +0.j        , -0.        +0.j        ]])
+
+        The Prod operation can be used inside a `qnode` as an operation which,
+        if parametrized, can be differentiated.
+
+        .. code-block:: python
+
+            dev = qp.device("default.qubit", wires=3)
+
+            @qp.qnode(dev)
+            def circuit(theta):
+                qp.prod(qp.Z(0), qp.RX(theta, 1))
+                return qp.expval(qp.Z(1))
+
+        >>> par = qp.numpy.array(1.23, requires_grad=True)
+        >>> circuit(par)
+        tensor(0.334..., requires_grad=True)
+        >>> qp.grad(circuit)(par)
+        tensor(-0.942..., requires_grad=True)
+
+        The Prod operation can also be measured as an observable.
+        If the circuit is parametrized, then we can also differentiate through the
+        product observable.
+
+        .. code-block:: python
+
+            prod_op = Prod(qp.Z(0), qp.Hadamard(wires=1))
+            dev = qp.device("default.qubit", wires=2)
+
+            @qp.qnode(dev)
+            def circuit(weights):
+                qp.RX(weights[0], wires=0)
+                return qp.expval(prod_op)
+
+        >>> weights = qp.numpy.array([0.1], requires_grad=True)
+        >>> qp.grad(circuit)(weights)
+        array([-0.070...])
+
+        Note that the :meth:`~Prod.terms` method always simplifies and flattens the operands.
+
+        >>> op = qp.ops.Prod(qp.X(0), qp.sum(qp.Y(0), qp.Z(1)))
+        >>> op.terms()
+        ([1j, 1.0], [Z(0), X(0) @ Z(1)])
+
+    """
+
+    resource_keys = frozenset({"resources"})
+
+    @property
+    @handle_recursion_error
+    def resource_params(self):
+        resources = dict(Counter(abstractify(op) for op in self))
+        return {"resources": resources}
+
+    _op_symbol = "@"
+    _math_op = staticmethod(math.prod)
+    grad_method = None
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if subclass == qp.ops.op_math.Prod2:
+            return True
+        return NotImplemented
+
+    @property
+    def is_verified_hermitian(self):
+        """Check if the product operator is hermitian.
+
+        Note, this check is not exhaustive. There can be hermitian operators for which this check
+        yields false, which ARE hermitian. So a false result only implies a more explicit check
+        must be performed.
+        """
+        for o1, o2 in combinations(self.operands, r=2):
+            if qp.wires.Wires.shared_wires([o1.wires, o2.wires]):
+                return False
+        return all(op.is_verified_hermitian for op in self)
+
+    @property
+    def has_decomposition(self):
+        return True
+
+    def decomposition(self):
+        r"""Decomposition of the product operator is given by each factor applied in succession.
+
+        Note that the decomposition is the list of factors returned in reversed order. This is
+        to support the intuition that when we write :math:`\hat{O} = \hat{A} \cdot \hat{B}` it is implied
+        that :math:`\hat{B}` is applied to the state before :math:`\hat{A}` in the quantum circuit.
+        """
+        if QueuingManager.recording():
+            return [apply(op) for op in self[::-1]]
+        return list(self[::-1])
+
+    @handle_recursion_error
+    def matrix(self, wire_order=None):
+        """Representation of the operator as a matrix in the computational basis."""
+        if self.pauli_rep:
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires)
+
+        mats: list[TensorLike] = []
+        mats_wires: list[Wires] = []  # mats_wires[i] stores the wires mats[i] acts on
+        batched: list[bool] = []  # batched[i] tells if mats[i] is batched or not
+        for ops in self.overlapping_ops:
+            gen = ((op.matrix(), op.wires) for op in ops)
+
+            reduced_mat, reduced_wires = math.reduce_matrices(gen, reduce_func=math.matmul)
+            # Record the wires the reduced matrix of this batch of overlapping ops acts on
+            mats_wires.append(reduced_wires)
+
+            if self.batch_size is not None:
+                batched.append(any(op.batch_size is not None for op in ops))
+            else:
+                batched.append(False)
+
+            mats.append(reduced_mat)
+
+        if self.batch_size is None:
+            full_mat = reduce(math.kron, mats)
+        else:
+            full_mat = qp.math.stack(
+                [
+                    reduce(
+                        math.kron, [m[i] if b else m for m, b in zip(mats, batched, strict=True)]
+                    )
+                    for i in range(self.batch_size)
+                ]
+            )
+        # Combine the wires of all matrices to the wires that full_mat acts on (order is preserved)
+        full_wires = Wires.all_wires(mats_wires)
+        # Even if no wire_order is given, we need to map from full_wires to self.wires
+        wire_order = wire_order or self.wires
+        return math.expand_matrix(full_mat, full_wires, wire_order=wire_order)
+
+    @handle_recursion_error
+    def sparse_matrix(self, wire_order=None, format="csr"):
+        if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format=format)
+
+        if self.has_overlapping_wires or self.num_wires > MAX_NUM_WIRES_KRON_PRODUCT:
+            gen = ((op.sparse_matrix(), op.wires) for op in self)
+
+            reduced_mat, prod_wires = math.reduce_matrices(gen, reduce_func=math.dot)
+
+            wire_order = wire_order or self.wires
+
+            return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order).asformat(
+                format
+            )
+        mats = (op.sparse_matrix() for op in self)
+        full_mat = reduce(sparse_kron, mats)
+        return math.expand_matrix(full_mat, self.wires, wire_order=wire_order).asformat(format)
+
+    @property
+    @handle_recursion_error
+    def has_sparse_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
+        return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
+
+    @property
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
+        return True
+
+    def adjoint(self):
+        return Prod(*(qp.adjoint(factor) for factor in self[::-1]))
+
+    def _build_pauli_rep(self):
+        """PauliSentence representation of the Product of operations."""
+        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
+            return reduce(lambda a, b: a @ b, operand_pauli_reps) if operand_pauli_reps else None
+        return None
+
+    def _simplify_factors(self, factors: tuple[Operator]) -> tuple[complex, Operator]:
+        """Reduces the depth of nested factors and groups identical factors.
+
+        Returns:
+            Tuple[complex, List[~.operation.Operator]: tuple containing the global phase and a list
+            of the simplified factors
+        """
+        new_factors = _ProductFactorsGrouping()
+
+        for factor in factors:
+            simplified_factor = factor.simplify()
+            new_factors.add(factor=simplified_factor)
+        new_factors.remove_factors(wires=self.wires)
+        return new_factors.global_phase, new_factors.factors
+
+    @handle_recursion_error
+    def simplify(self) -> Union["Prod", Sum]:
+        r"""
+        Transforms any nested Prod instance into the form :math:`\sum c_i O_i` where
+        :math:`c_i` is a scalar coefficient and :math:`O_i` is a single PL operator
+        or pure product of single PL operators.
+        """
+        # try using pauli_rep:
+        if pr := self.pauli_rep:
+            pr.prune()
+            return to_operator(pr, identity_wires=self.wires)
+
+        global_phase, factors = self._simplify_factors(factors=self.operands)
+
+        factors = list(itertools.product(*factors))
+        if len(factors) == 1:
+            factor = factors[0]
+            if len(factor) == 0:
+                op = qp.Identity(self.wires)
+            else:
+                op = factor[0] if len(factor) == 1 else Prod(*factor)
+            return op if global_phase == 1 else qp.s_prod(global_phase, op)
+
+        factors = [Prod(*factor).simplify() if len(factor) > 1 else factor[0] for factor in factors]
+        op = Sum(*factors).simplify()
+        return op if global_phase == 1 else qp.s_prod(global_phase, op).simplify()
+
+    @classmethod
+    def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
+        """Insertion sort algorithm that sorts a list of product factors by their wire indices, taking
+        into account the operator commutivity.
+
+        Args:
+            op_list (List[.Operator]): list of operators to be sorted
+            wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
+                Defaults to None.
+
+        Returns:
+            List[.Operator]: sorted list of operators
+        """
+
+        if isinstance(op_list, tuple):
+            op_list = list(op_list)
+
+        for i in range(1, len(op_list)):
+            key_op = op_list[i]
+
+            j = i - 1
+            while j >= 0 and _swappable_ops(op1=op_list[j], op2=key_op, wire_map=wire_map):
+                op_list[j + 1] = op_list[j]
+                j -= 1
+            op_list[j + 1] = key_op
+
+        return op_list
+
+    @handle_recursion_error
+    def terms(self):
+        r"""Representation of the operator as a linear combination of other operators.
+
+        .. math:: O = \sum_i c_i O_i
+
+        A ``TermsUndefinedError`` is raised if no representation by terms is defined.
+
+        Returns:
+            tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
+            and list of operations :math:`O_i`
+
+        **Example**
+
+        >>> op = qp.X(0) @ (0.5 * qp.X(1) + qp.X(2))
+        >>> op.terms()
+        ([np.float64(0.5), 1.0], [X(0) @ X(1), X(0) @ X(2)])
+
+        """
+        # try using pauli_rep:
+        if pr := self.pauli_rep:
+            with qp.QueuingManager.stop_recording():
+                ops = [to_operator(pauli) for pauli in pr.keys()]
+            return list(pr.values()), ops
+
+        with qp.QueuingManager.stop_recording():
+            global_phase, factors = self._simplify_factors(factors=self.operands)
+            factors = list(itertools.product(*factors))
+
+            factors = [
+                Prod(*factor).simplify() if len(factor) > 1 else factor[0] for factor in factors
+            ]
+
+        # harvest coeffs and ops
+        coeffs = []
+        ops = []
+        for factor in factors:
+            if isinstance(factor, SProd):
+                coeffs.append(global_phase * factor.scalar)
+                ops.append(factor.base)
+            else:
+                coeffs.append(global_phase)
+                ops.append(factor)
+        return coeffs, ops
+
+
+def _prod_standard_resources(resources):
+    return resources
+
+
+@qp.register_resources(_prod_standard_resources, name="expand_factors")
+def _prod_standard(*_, wires=None, operands, **__):  # pylint: disable=unused-argument
+    for op in reversed(operands):
+        qp.apply(op)
+
+
+qp.add_decomps(Prod, _prod_standard)
+
+
+def _controlled_product_with_work_wires_resources(
+    num_control_wires,
+    base_params,
+    **_,
+):
+    factor_reps = base_params["resources"]
+
+    resources = Counter()
+    resources[qp.TemporaryAND] += num_control_wires - 1
+    resources[_adjoint_abstract(qp.TemporaryAND)] += num_control_wires - 1
+
+    # Per-factor single-control fan-out from the single aux qubit
+    for rep, count in factor_reps.items():
+        resources[_ctrl_abstract(rep, Wire[1])] += count
+
+    return dict(resources)
+
+
+@qp.register_condition(
+    lambda num_control_wires, num_work_wires, work_wire_type, **_: num_control_wires >= 2
+    and num_work_wires >= num_control_wires - 1
+    and work_wire_type == "zeroed"
+)
+@qp.register_resources(_controlled_product_with_work_wires_resources, name="with_work_wires")
+def _controlled_product_with_work_wires(*_, control_wires, work_wires, base, **__):
+    """Decomposition of ``C(Prod)`` with at least ``num_control_wires - 1`` work wires.
+
+    Assumes that all ``control_values`` are 1. Zero-control flipping is handled
+    by wrapping this rule with ``flip_zero_control``.
+    """
+    target_wire = _multi_temporary_and_all_ones(control_wires, work_wires)
+    for op in base.operands[::-1]:
+        qp.ctrl(op, control=[target_wire])
+    qp.adjoint(_multi_temporary_and_all_ones)(control_wires, work_wires)
+
+
+def _controlled_product_with_one_work_wire_resources(
+    num_control_wires,
+    base_params,
+    **_,
+):
+    factor_reps = base_params["resources"]  # {rep: count} from Prod
+    multicx_rep = qp.MultiControlledX(Wire[num_control_wires + 1])
+
+    resources = Counter()
+    resources[multicx_rep] += 2
+
+    # Per-factor single-control fan-out from the single aux qubit
+    for rep, count in factor_reps.items():
+        resources[_ctrl_abstract(rep, Wire[1])] += count
+
+    return dict(resources)
+
+
+@qp.register_condition(
+    lambda num_control_wires, num_work_wires, work_wire_type, **_: num_control_wires >= 2
+    and num_work_wires >= 1
+    and work_wire_type == "zeroed"
+)
+@qp.register_resources(_controlled_product_with_one_work_wire_resources, name="with_one_work_wire")
+def _controlled_product_with_one_work_wire(*_, control_wires, work_wires, base, **__):
+    """Decomposition of ``C(Prod)`` with a single zeroed work wire.
+
+    Assumes that all ``control_values`` are 1. Zero-control flipping is handled
+    by wrapping this rule with ``flip_zero_control``.
+    """
+    qp.MultiControlledX([*control_wires, work_wires[0]])
+    for op in base.operands[::-1]:
+        qp.ctrl(op, control=work_wires[:1])
+    qp.MultiControlledX([*control_wires, work_wires[0]])
+
+
+qp.add_decomps(
+    "C(Prod)",
+    flip_zero_control(_controlled_product_with_work_wires, name="with_work_wires"),
+    flip_zero_control(_controlled_product_with_one_work_wire, name="with_one_work_wire"),
+)

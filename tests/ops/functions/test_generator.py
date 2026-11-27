@@ -24,10 +24,10 @@ from operator import matmul
 import pytest
 from scipy import sparse
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.exceptions import QuantumFunctionError
-from pennylane.ops import Prod, SProd, Sum
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.exceptions import QuantumFunctionError
+from pennylane2.ops import Prod, SProd, Sum
 
 ###################################################################
 # Test operations

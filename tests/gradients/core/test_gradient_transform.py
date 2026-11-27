@@ -17,10 +17,10 @@ import inspect
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.core.transforms import Transform
-from pennylane.gradients.gradient_transform import (
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.core.transforms import Transform
+from pennylane2.gradients.gradient_transform import (
     SUPPORTED_GRADIENT_KWARGS,
     _find_gradient_methods,
     _validate_gradient_methods,

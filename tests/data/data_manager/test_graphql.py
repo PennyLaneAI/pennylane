@@ -3,8 +3,8 @@
 import pytest
 import requests
 
-import pennylane.data.data_manager
-from pennylane.data.data_manager.graphql import GRAPHQL_URL
+import pennylane2.data.data_manager
+from pennylane2.data.data_manager.graphql import GRAPHQL_URL
 
 
 class TestGetGraphql:
@@ -21,7 +21,7 @@ class TestGetGraphql:
     def test_return_json(self):
         """Tests that a dictionary representation of a json response is returned for a
         valid query and url."""
-        response = pennylane.data.data_manager.graphql.get_graphql(
+        response = pennylane2.data.data_manager.graphql.get_graphql(
             GRAPHQL_URL,
             self.query,
         )
@@ -31,7 +31,7 @@ class TestGetGraphql:
         """Tests that a ``ConnectionError`` is returned for a valid query and invalid url."""
 
         with pytest.raises(requests.exceptions.ConnectionError):
-            pennylane.data.data_manager.graphql.get_graphql(
+            pennylane2.data.data_manager.graphql.get_graphql(
                 "https://bad/url/graphql",
                 self.query,
             )
@@ -48,7 +48,7 @@ class TestGetGraphql:
             """
 
         with pytest.raises(requests.exceptions.HTTPError):
-            pennylane.data.data_manager.graphql.get_graphql(
+            pennylane2.data.data_manager.graphql.get_graphql(
                 GRAPHQL_URL,
                 bad_query,
             )

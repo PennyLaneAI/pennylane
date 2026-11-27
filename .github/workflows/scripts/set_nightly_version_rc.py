@@ -19,7 +19,7 @@ This module bumps the PennyLane development version by one unit.
 import os
 import re
 
-version_file_path = os.path.join(os.path.dirname(__file__), "../../../pennylane/_version.py")
+version_file_path = os.path.join(os.path.dirname(__file__), "../../../pennylane2/_version.py")
 
 assert os.path.isfile(version_file_path)
 

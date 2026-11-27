@@ -50,9 +50,9 @@ def _platform_for_backend(backend: str, fallback_arch: str, fallback_warp_size: 
 
 pytestmark = [pytest.mark.gpu]
 
-from pennylane.backline.decoders.triton import triton_so_builder as builder
-from pennylane.backline.decoders.triton.persistent_kernel import _persistent_decoder_kernel
-from pennylane.backline.functions import _TRITON_LAUNCHER_ABI_VERSION
+from pennylane2.backline.decoders.triton import triton_so_builder as builder
+from pennylane2.backline.decoders.triton.persistent_kernel import _persistent_decoder_kernel
+from pennylane2.backline.functions import _TRITON_LAUNCHER_ABI_VERSION
 
 
 @triton.jit

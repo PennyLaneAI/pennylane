@@ -26,7 +26,7 @@ where it is recommended that you follow general `pytest guidelines <https://docs
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
 
     def test_circuit_expval(self):
         """ Test that the circuit expectation value for PauliX is 0."""
@@ -189,7 +189,7 @@ PennyLane provides a set of integration tests for all PennyLane plugins and devi
 
 .. code-block:: bash
 
-    pytest pennylane/devices/tests --device=default.qubit --shots=1000
+    pytest pennylane2/devices/tests --device=default.qubit --shots=1000
 
 All PennyLane tests and the device suite on core devices can be run from the PennyLane root folder via:
 

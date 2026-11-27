@@ -23,12 +23,12 @@ import pytest
 triton = pytest.importorskip("triton")
 pytestmark = [pytest.mark.gpu]
 
-from pennylane.backline.decoders.triton import triton_so_builder as builder
-from pennylane.backline.decoders.triton.decoder_frontend import (
+from pennylane2.backline.decoders.triton import triton_so_builder as builder
+from pennylane2.backline.decoders.triton.decoder_frontend import (
     _make_css_decoder,
     _triton_jit_with_unique_names,
 )
-from pennylane.backline.decoders.triton.persistent_kernel import _persistent_decoder_kernel
+from pennylane2.backline.decoders.triton.persistent_kernel import _persistent_decoder_kernel
 
 
 class TestConstexprCacheKeys:  # pylint: disable=too-few-public-methods

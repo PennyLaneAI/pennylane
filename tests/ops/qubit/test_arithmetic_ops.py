@@ -21,11 +21,11 @@ import itertools
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.decomposition import gate_sets
-from pennylane.testing import assert_decomposable
-from pennylane.transforms import _tape_decompose as decompose
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2.decomposition import gate_sets
+from pennylane2.testing import assert_decomposable
+from pennylane2.transforms import _tape_decompose as decompose
+from pennylane2.wires import Wires
 
 label_data = [
     (qp.QubitCarry(wires=(0, 1, 2, 3)), "QubitCarry"),

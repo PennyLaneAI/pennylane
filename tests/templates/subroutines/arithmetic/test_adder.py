@@ -17,10 +17,10 @@ Tests for the Adder template.
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.templates.subroutines.arithmetic.adder import _adder_arithmetic
-from pennylane.testing import assert_valid_decomp_rule
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.templates.subroutines.arithmetic.adder import _adder_arithmetic
+from pennylane2.testing import assert_valid_decomp_rule
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")

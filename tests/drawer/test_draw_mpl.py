@@ -22,8 +22,8 @@ from functools import partial
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
 
 mpl = pytest.importorskip("matplotlib")
 plt = pytest.importorskip("matplotlib.pyplot")

@@ -61,7 +61,8 @@ jobs:
     name: Determine runner type to use
     uses: ./.github/workflows/determine-workflow-runner.yml
     with:
-      default_runner: ubuntu-24.04
+      # Temporary: use Blacksmith while downloading the Catalyst PR wheel.
+      default_runner: blacksmith-4vcpu-ubuntu-2404
       force_large_runner: ${{ github.event_name == 'merge_group' }}
 
   sphinx:
@@ -73,14 +74,19 @@ jobs:
       DOCUTILSCONFIG: "doc/docutils.conf"
     steps:
       - uses: actions/checkout@v6
+      - name: Prepare companion dependencies
+        uses: ./.github/actions/prepare-companion-dependencies
+        with:
+          catalyst: 'true'
+          github-token: ${{ github.token }}
       - uses: PennyLaneAI/sphinx-action@master
         with:
           docs-folder: "doc/"
+          # Lightning is built from its PR branch, so the container needs Git and a compiler.
           pre-build-command: >
-            apt install -y graphviz
-            && python -m pip install --upgrade pip
-            && pip3 install --extra-index-url https://test.pypi.org/simple/ pennylane-catalyst --pre
-            && pip3 install torch~=$TORCH_VERSION --index-url https://download.pytorch.org/whl/cpu
-            && pip3 install --group docs
-            && pip3 install .
+            apt install -y graphviz git build-essential
+            && python -m pip install --upgrade pip uv==0.9.12
+            && uv pip install . pennylane-catalyst
+            && uv pip install torch~=$TORCH_VERSION --index-url https://download.pytorch.org/whl/cpu
+            && uv pip install --group docs
           build-command: "sphinx-build -b html . _build -W --keep-going"

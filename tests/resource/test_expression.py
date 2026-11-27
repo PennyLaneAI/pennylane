@@ -23,7 +23,7 @@ from fractions import Fraction
 
 import pytest
 
-from pennylane.resource.expression import (
+from pennylane2.resource.expression import (
     Expression,
     _cast_if_constant,
     _term_to_str,

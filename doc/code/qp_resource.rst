@@ -1,5 +1,5 @@
 qp.resource
 =============
 
-.. currentmodule:: pennylane.resource
-.. automodule:: pennylane.resource
+.. currentmodule:: pennylane2.resource
+.. automodule:: pennylane2.resource

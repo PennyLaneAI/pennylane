@@ -20,11 +20,11 @@ from functools import partial
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.core.operator import abstractify
-from pennylane.ops import CNOT, adjoint
-from pennylane.templates.subroutines.arithmetic.semi_adder import (
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.core.operator import abstractify
+from pennylane2.ops import CNOT, adjoint
+from pennylane2.templates.subroutines.arithmetic.semi_adder import (
     _controlled_semi_adder_ppm,
     _controlled_semi_adder_ppm_condition,
     _controlled_semi_adder_ppm_work_wires,
@@ -35,10 +35,10 @@ from pennylane.templates.subroutines.arithmetic.semi_adder import (
     _semi_adder_standard,
     _semi_adder_standard_resources,
 )
-from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
-from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
-from pennylane.typing import Wire
-from pennylane.wires import Wires
+from pennylane2.templates.subroutines.arithmetic.temporary_and import TemporaryAND
+from pennylane2.testing import assert_decomposable, assert_valid_decomp_rule
+from pennylane2.typing import Wire
+from pennylane2.wires import Wires
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -482,7 +482,7 @@ class TestControlledSemiAdderPPM:
     def test_condition(self, compiler_active, num_controls, mocker):
         """The specialized PPM rule needs a compiler and at least one control."""
         mocker.patch(
-            "pennylane.templates.subroutines.arithmetic.semi_adder.compiler.active",
+            "pennylane2.templates.subroutines.arithmetic.semi_adder.compiler.active",
             return_value=compiler_active,
         )
         base = qp.SemiAdder(Wire[2], Wire[3], Wire[5])
@@ -533,7 +533,7 @@ class TestControlledSemiAdderPPM:
             qp.ops.PauliMeasure(pauli_word, wires)
             return 1
 
-        module = "pennylane.templates.subroutines.arithmetic.semi_adder"
+        module = "pennylane2.templates.subroutines.arithmetic.semi_adder"
         mocker.patch(f"{module}.pauli_measure", side_effect=record_measurement)
         # Exercise every correction independently to check the declared upper bound.
         mocker.patch(f"{module}.cond", side_effect=lambda _, correction, *args: correction)

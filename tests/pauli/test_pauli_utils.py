@@ -24,8 +24,8 @@ import itertools
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import (
+import pennylane2 as qp
+from pennylane2 import (
     RX,
     RY,
     U3,
@@ -37,7 +37,7 @@ from pennylane import (
     PauliZ,
     is_commuting,
 )
-from pennylane.pauli import (
+from pennylane2.pauli import (
     are_identical_pauli_words,
     are_pauli_words_qwc,
     binary_to_pauli,

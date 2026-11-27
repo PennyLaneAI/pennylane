@@ -17,8 +17,8 @@ Unit tests for the :mod:`pauli` interface functions in ``pauli/pauli_interface.p
 
 import pytest
 
-import pennylane as qp
-from pennylane.pauli import pauli_word_prefactor
+import pennylane2 as qp
+from pennylane2.pauli import pauli_word_prefactor
 
 ops_factors = (
     (qp.PauliX(0), 1),

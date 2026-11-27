@@ -20,10 +20,10 @@ from itertools import product
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.exceptions import WireError
-from pennylane.ops import channel
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.exceptions import WireError
+from pennylane2.ops import channel
 
 X = np.array([[0, 1], [1, 0]])
 Y = np.array([[0, -1j], [1j, 0]])

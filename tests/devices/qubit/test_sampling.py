@@ -18,11 +18,11 @@ from random import shuffle
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.shots import Shots
-from pennylane.devices.qubit import measure_with_samples, sample_state, simulate
-from pennylane.devices.qubit.sampling import sample_probs
-from pennylane.devices.qubit.simulate import _FlexShots
+import pennylane2 as qp
+from pennylane2.core.shots import Shots
+from pennylane2.devices.qubit import measure_with_samples, sample_state, simulate
+from pennylane2.devices.qubit.sampling import sample_probs
+from pennylane2.devices.qubit.simulate import _FlexShots
 
 two_qubit_state = np.array([[0, 1j], [-1, 0]], dtype=np.complex128) / np.sqrt(2)
 APPROX_ATOL = 0.01

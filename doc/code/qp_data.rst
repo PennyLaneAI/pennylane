@@ -1,7 +1,7 @@
 qp.data
 =========
 
-.. currentmodule:: pennylane.data
+.. currentmodule:: pennylane2.data
 
-.. automodule:: pennylane.data
+.. automodule:: pennylane2.data
 

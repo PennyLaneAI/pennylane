@@ -21,15 +21,15 @@ import warnings
 import numpy as np
 import pytest
 
-import pennylane as qp
-import pennylane.numpy as qnp
-from pennylane.core.operator import Operation
-from pennylane.core.queuing import AnnotatedQueue
-from pennylane.ops import Conditional, MidMeasure
-from pennylane.transforms.decompose import (
+import pennylane2 as qp
+import pennylane2.numpy as qnp
+from pennylane2.core.operator import Operation
+from pennylane2.core.queuing import AnnotatedQueue
+from pennylane2.ops import Conditional, MidMeasure
+from pennylane2.transforms.decompose import (
     _operator_decomposition_gen,
 )
-from pennylane.transforms.decompose import _tape_decompose as decompose
+from pennylane2.transforms.decompose import _tape_decompose as decompose
 
 
 @pytest.fixture(autouse=True)

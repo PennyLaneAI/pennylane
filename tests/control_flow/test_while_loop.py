@@ -15,8 +15,8 @@
 Tests for the while_loop
 """
 
-import pennylane as qp
-from pennylane.control_flow.while_loop import WhileLoopCallable
+import pennylane2 as qp
+from pennylane2.control_flow.while_loop import WhileLoopCallable
 
 
 def test_while_loop_python_fallback():

@@ -21,8 +21,8 @@ Tests for capturing measurements.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.measurements import (
+import pennylane2 as qp
+from pennylane2.measurements import (
     ClassicalShadowMP,
     CountsMP,
     DensityMatrixMP,
@@ -39,8 +39,8 @@ from pennylane.measurements import (
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.primitives import AbstractMeasurement
-from pennylane.testing import assert_eqn_matches_op
+from pennylane2.capture.primitives import AbstractMeasurement
+from pennylane2.testing import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 

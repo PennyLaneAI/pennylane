@@ -18,8 +18,8 @@ Tests for the combine_global_phases transform.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.transforms import combine_global_phases
+import pennylane2 as qp
+from pennylane2.transforms import combine_global_phases
 
 
 def original_qfunc(phi1, phi2, return_state=False):
@@ -114,7 +114,7 @@ def test_combine_global_phases():
 @pytest.mark.autograd
 def test_differentiability_autograd():
     """Test that the output of the ``combine_global_phases`` transform is differentiable with autograd"""
-    import pennylane.numpy as pnp
+    import pennylane2.numpy as pnp
 
     dev = qp.device("default.qubit", wires=3)
     original_qnode = qp.QNode(original_qfunc, device=dev)

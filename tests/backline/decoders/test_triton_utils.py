@@ -37,7 +37,7 @@ pytestmark = [
     pytest.mark.skipif(not _has_cuda_target(), reason="Triton decoder tests require a CUDA device"),
 ]
 
-from pennylane.backline.decoders.triton.bp_iters import (
+from pennylane2.backline.decoders.triton.bp_iters import (
     _bp_c2v_msg,
     _get_syndrome_signs,
     _llr_from_p,

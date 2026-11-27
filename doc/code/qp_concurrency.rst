@@ -1,9 +1,9 @@
 qp.concurrency
 ===============
 
-.. currentmodule:: pennylane.concurrency
+.. currentmodule:: pennylane2.concurrency
 
 .. warning::
     This module is intended for developer use only.
 
-.. automodule:: pennylane.concurrency
+.. automodule:: pennylane2.concurrency

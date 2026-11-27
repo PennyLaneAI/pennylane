@@ -20,9 +20,9 @@
 import numpy as onp
 import pytest
 
-import pennylane as qp
-import pennylane.numpy as np
-from pennylane.shadows import ClassicalShadow, median_of_means, pauli_expval
+import pennylane2 as qp
+import pennylane2.numpy as np
+from pennylane2.shadows import ClassicalShadow, median_of_means, pauli_expval
 
 wires = range(3)
 shots = 10000

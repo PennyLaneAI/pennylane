@@ -20,10 +20,10 @@ import numpy as np
 import pytest
 from scipy import sparse
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.fermi.fermionic import (
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.exceptions import PennyLaneDeprecationWarning
+from pennylane2.fermi.fermionic import (
     FermiA,
     FermiC,
     FermiSentence,
@@ -343,8 +343,8 @@ class TestFermiWordArithmetic:  # pylint: disable=too-many-public-methods
         (fw2, 3.7, FermiSentence({fw2: 3.7})),  # float
         (fw2, 2j, FermiSentence({fw2: 2j})),  # complex
         (fw2, np.array([2]), FermiSentence({fw2: 2})),  # numpy array
-        (fw1, pnp.array([2]), FermiSentence({fw1: 2})),  # pennylane numpy array
-        (fw1, pnp.array([2, 2])[0], FermiSentence({fw1: 2})),  # pennylane tensor with no length
+        (fw1, pnp.array([2]), FermiSentence({fw1: 2})),  # pennylane2 numpy array
+        (fw1, pnp.array([2, 2])[0], FermiSentence({fw1: 2})),  # pennylane2 tensor with no length
     )
 
     @pytest.mark.parametrize("fw, number, result", WORDS_AND_NUMBERS_MUL)
@@ -431,12 +431,12 @@ class TestFermiWordArithmetic:  # pylint: disable=too-many-public-methods
         (fw2, 2.8, FermiSentence({fw2: 1, fw4: 2.8})),  # float
         (fw3, (1 + 3j), FermiSentence({fw3: 1, fw4: (1 + 3j)})),  # complex
         (fw1, np.array([5]), FermiSentence({fw1: 1, fw4: 5})),  # numpy array
-        (fw2, pnp.array([2.8]), FermiSentence({fw2: 1, fw4: 2.8})),  # pennylane numpy array
+        (fw2, pnp.array([2.8]), FermiSentence({fw2: 1, fw4: 2.8})),  # pennylane2 numpy array
         (
             fw1,
             pnp.array([2, 2])[0],
             FermiSentence({fw1: 1, fw4: 2}),
-        ),  # pennylane tensor with no length
+        ),  # pennylane2 tensor with no length
         (fw4, 2, FermiSentence({fw4: 3})),  # FermiWord is Identity
     ]
 
@@ -499,12 +499,12 @@ class TestFermiWordArithmetic:  # pylint: disable=too-many-public-methods
         (fw2, 2.8, FermiSentence({fw2: 1, fw4: -2.8})),  # float
         (fw3, (1 + 3j), FermiSentence({fw3: 1, fw4: -(1 + 3j)})),  # complex
         (fw1, np.array([5]), FermiSentence({fw1: 1, fw4: -5})),  # numpy array
-        (fw2, pnp.array([2.8]), FermiSentence({fw2: 1, fw4: -2.8})),  # pennylane numpy array
+        (fw2, pnp.array([2.8]), FermiSentence({fw2: 1, fw4: -2.8})),  # pennylane2 numpy array
         (
             fw1,
             pnp.array([2, 2])[0],
             FermiSentence({fw1: 1, fw4: -2}),
-        ),  # pennylane tensor with no length
+        ),  # pennylane2 tensor with no length
         (fw4, 2, FermiSentence({fw4: -1})),  # FermiWord is Identity
     ]
 
@@ -525,12 +525,12 @@ class TestFermiWordArithmetic:  # pylint: disable=too-many-public-methods
         (fw2, 2.8, FermiSentence({fw2: -1, fw4: 2.8})),  # float
         (fw3, (1 + 3j), FermiSentence({fw3: -1, fw4: (1 + 3j)})),  # complex
         (fw1, np.array([5]), FermiSentence({fw1: -1, fw4: 5})),  # numpy array
-        (fw2, pnp.array([2.8]), FermiSentence({fw2: -1, fw4: 2.8})),  # pennylane numpy array
+        (fw2, pnp.array([2.8]), FermiSentence({fw2: -1, fw4: 2.8})),  # pennylane2 numpy array
         (
             fw1,
             pnp.array([2, 2])[0],
             FermiSentence({fw1: -1, fw4: 2}),
-        ),  # pennylane tensor with no length
+        ),  # pennylane2 tensor with no length
         (fw4, 2, FermiSentence({fw4: 1})),  # FermiWord is Identity
     ]
 
@@ -923,12 +923,12 @@ class TestFermiSentenceArithmetic:  # pylint: disable=too-many-public-methods
             fs1,
             pnp.array([2]),
             FermiSentence({fw1: 1.23 * 2, fw2: 4j * 2, fw3: -0.5 * 2}),
-        ),  # pennylane numpy array
+        ),  # pennylane2 numpy array
         (
             fs1,
             pnp.array([2, 2])[0],
             FermiSentence({fw1: 1.23 * 2, fw2: 4j * 2, fw3: -0.5 * 2}),
-        ),  # pennylane tensor with no length
+        ),  # pennylane2 tensor with no length
     )
 
     @pytest.mark.parametrize("fs, number, result", SENTENCES_AND_NUMBERS_MUL)
@@ -999,12 +999,12 @@ class TestFermiSentenceArithmetic:  # pylint: disable=too-many-public-methods
             FermiSentence({fw1: 1.2, fw3: 3j}),
             pnp.array([3]),
             FermiSentence({fw1: 1.2, fw3: 3j, fw4: 3}),
-        ),  # pennylane numpy array
+        ),  # pennylane2 numpy array
         (
             FermiSentence({fw1: 1.2, fw3: 3j}),
             pnp.array([3, 0])[0],
             FermiSentence({fw1: 1.2, fw3: 3j, fw4: 3}),
-        ),  # pennylane tensor with no length
+        ),  # pennylane2 tensor with no length
     ]
 
     @pytest.mark.parametrize("s, c, res", SENTENCES_AND_CONSTANTS_ADD)
@@ -1071,12 +1071,12 @@ class TestFermiSentenceArithmetic:  # pylint: disable=too-many-public-methods
             FermiSentence({fw1: 1.2, fw3: 3j}),
             pnp.array([3]),
             FermiSentence({fw1: 1.2, fw3: 3j, fw4: -3}),
-        ),  # pennylane numpy array
+        ),  # pennylane2 numpy array
         (
             FermiSentence({fw1: 1.2, fw3: 3j}),
             pnp.array([3, 2])[0],
             FermiSentence({fw1: 1.2, fw3: 3j, fw4: -3}),
-        ),  # pennylane tensor with no len
+        ),  # pennylane2 tensor with no len
     )
 
     @pytest.mark.parametrize("fs, c, result", SENTENCE_MINUS_CONSTANT)
@@ -1107,12 +1107,12 @@ class TestFermiSentenceArithmetic:  # pylint: disable=too-many-public-methods
             FermiSentence({fw1: 1.2, fw3: 3j}),
             pnp.array([3]),
             FermiSentence({fw1: -1.2, fw3: -3j, fw4: 3}),
-        ),  # pennylane numpy array
+        ),  # pennylane2 numpy array
         (
             FermiSentence({fw1: 1.2, fw3: 3j}),
             pnp.array([3, 3])[0],
             FermiSentence({fw1: -1.2, fw3: -3j, fw4: 3}),
-        ),  # pennylane tensor with to len
+        ),  # pennylane2 tensor with to len
     )
 
     @pytest.mark.parametrize("fs, c, result", CONSTANT_MINUS_SENTENCE)

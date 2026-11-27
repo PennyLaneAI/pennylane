@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.devices.DefaultMixed` device.
+Unit tests for the :mod:`pennylane2.devices.DefaultMixed` device.
 """
 
 # pylint: disable=protected-access
@@ -20,9 +20,9 @@ Unit tests for the :mod:`pennylane.devices.DefaultMixed` device.
 
 import pytest
 
-import pennylane as qp
-from pennylane.devices import DefaultMixed
-from pennylane.math import Interface
+import pennylane2 as qp
+from pennylane2.devices import DefaultMixed
+from pennylane2.math import Interface
 
 ML_INTERFACES = ["numpy", "autograd", "torch", "jax"]
 

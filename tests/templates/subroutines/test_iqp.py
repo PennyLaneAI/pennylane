@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :func:`pennylane.template.subroutines.iqp` class.
+Unit tests for the :func:`pennylane2.template.subroutines.iqp` class.
 """
 
 import re
@@ -21,13 +21,13 @@ from itertools import combinations
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import math
-from pennylane.core.operator import abstractify
-from pennylane.ops import PPR_4, H, MultiRZ
-from pennylane.templates.subroutines.iqp import IQP
-from pennylane.testing import assert_decomposable, assert_valid
-from pennylane.typing import AbstractArray, AbstractWires
+import pennylane2 as qp
+from pennylane2 import math
+from pennylane2.core.operator import abstractify
+from pennylane2.ops import PPR_4, H, MultiRZ
+from pennylane2.templates.subroutines.iqp import IQP
+from pennylane2.testing import assert_decomposable, assert_valid
+from pennylane2.typing import AbstractArray, AbstractWires
 
 
 def local_gates(n_qubits: int, max_weight=2):

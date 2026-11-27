@@ -20,14 +20,14 @@ Tests for capturing differentiation into jaxpr.
 
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.primitives import jacobian_prim, qnode_prim
-from pennylane.testing import assert_eqn_matches_op
+from pennylane2.capture.primitives import jacobian_prim, qnode_prim
+from pennylane2.testing import assert_eqn_matches_op
 
 jnp = jax.numpy
 

@@ -2,7 +2,7 @@ qp.gradients
 =============
 
 
-.. currentmodule:: pennylane.gradients
+.. currentmodule:: pennylane2.gradients
 
-.. automodule:: pennylane.gradients
+.. automodule:: pennylane2.gradients
 

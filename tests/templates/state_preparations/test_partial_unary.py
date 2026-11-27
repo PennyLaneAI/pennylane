@@ -22,10 +22,10 @@ import jax
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.decomposition import list_decomps
-from pennylane.math import binary_matrix_rank, ceil_log2
-from pennylane.templates.state_preparations.partial_unary import (
+import pennylane2 as qp
+from pennylane2.decomposition import list_decomps
+from pennylane2.math import binary_matrix_rank, ceil_log2
+from pennylane2.templates.state_preparations.partial_unary import (
     PartialUnaryStatePreparation,
     PUIsometryFinder,
     _find_affine_subspace_isometry,
@@ -34,9 +34,9 @@ from pennylane.templates.state_preparations.partial_unary import (
     _partial_unary_state_prep_core,
     _partial_unary_state_prep_standard_resources,
 )
-from pennylane.testing import assert_valid, assert_valid_decomp_rule
-from pennylane.typing import Complex, Float, Wire
-from pennylane.wires import Wires
+from pennylane2.testing import assert_valid, assert_valid_decomp_rule
+from pennylane2.typing import Complex, Float, Wire
+from pennylane2.wires import Wires
 
 
 def random_distinct_integers(high, size, rng):

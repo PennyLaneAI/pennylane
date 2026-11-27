@@ -99,14 +99,14 @@ MeasurementProcess
 ******************
 
 While the :class:`~.Operator` class describes a physical system and its dynamics,
-the :class:`pennylane.measurement.MeasurementProcess` class describes how we extract information from the quantum system.
-Each measurement in pennylane has a specific class that inherits from :class:`pennylane.measurement.MeasurementProcess`.
-The measurement functions such as :func:`~pennylane.expval` create an instance of its corresponding
-class (:class:`pennylane.measurements.ExpectationMP`). 
+the :class:`pennylane2.measurement.MeasurementProcess` class describes how we extract information from the quantum system.
+Each measurement in pennylane2 has a specific class that inherits from :class:`pennylane2.measurement.MeasurementProcess`.
+The measurement functions such as :func:`~pennylane2.expval` create an instance of its corresponding
+class (:class:`pennylane2.measurements.ExpectationMP`).
 
 >>> m = qp.expval(qp.PauliZ("a"))
 >>> type(m)
-<class 'pennylane.measurements.expval.ExpectationMP'>
+<class 'pennylane2.measurements.expval.ExpectationMP'>
 
 An instance of the :class:`~.MeasurementProcess` class specifies the measured observables,
 which are themselves operators.
@@ -136,7 +136,7 @@ of :class:`~.Operator` and :class:`~.MeasurementProcesses` instances.
 
 If we call the quantum function in a tape context, the
 gates are stored in the tape's ``operation`` property, while the
-measurement functions such as :func:`~pennylane.expval` are responsible for adding measurement processes
+measurement functions such as :func:`~pennylane2.expval` are responsible for adding measurement processes
 to the tape's ``measurement`` property.
 
 >>> with qp.tape.QuantumTape() as tape:
@@ -162,7 +162,7 @@ Devices
 *******
 
 In PennyLane, the abstraction of a quantum computation device is encompassed
-within the :class:`pennylane.devices.Device` class. The main job of devices is to
+within the :class:`pennylane2.devices.Device` class. The main job of devices is to
 interpret and execute tapes. The most important method is ``batch_execute``,
 which executes a list of tapes, such as a list of the single tape created above:
 
@@ -175,7 +175,7 @@ particular types of devices.  For example, qubit-based devices can inherit from
 the :class:`~.QubitDevice` class, easing development.
 
 To register a new device with PennyLane, a device subclass has to be created and registered
-as an `entry point <https://packaging.python.org/specifications/entry-points/>`__ under the ``pennylane.plugins``
+as an `entry point <https://packaging.python.org/specifications/entry-points/>`__ under the ``pennylane2.plugins``
 namespace using Setuptools. Once registered, the device can be instantiated using the :func:`~.device`
 loader function, using the device's name.
 
@@ -204,8 +204,8 @@ b: ──RX(0.50)─╰X───────────┤  <Z>
 
 .. note::
 
-    Users don't typically instantiate QNodes directly---instead, the :func:`~pennylane.qnode` decorator or
-    :func:`~pennylane.QNode` constructor function automates the process of creating a QNode from a provided
+    Users don't typically instantiate QNodes directly---instead, the :func:`~pennylane2.qnode` decorator or
+    :func:`~pennylane2.QNode` constructor function automates the process of creating a QNode from a provided
     quantum function and device.
 
 Internally, the QNode translates the quantum function into one or more quantum tapes

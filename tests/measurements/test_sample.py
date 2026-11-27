@@ -16,9 +16,9 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.operator import Operator
-from pennylane.exceptions import EigvalsUndefinedError, MeasurementShapeError, QuantumFunctionError
+import pennylane2 as qp
+from pennylane2.core.operator import Operator
+from pennylane2.exceptions import EigvalsUndefinedError, MeasurementShapeError, QuantumFunctionError
 
 
 class TestSample:  # pylint: disable=too-many-public-methods

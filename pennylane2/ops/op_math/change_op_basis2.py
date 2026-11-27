@@ -1,0 +1,264 @@
+# Copyright 2018-2026 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This submodule defines a class for compute-uncompute patterns.
+"""
+
+from collections import Counter, defaultdict
+from functools import reduce
+
+from pennylane2 import math
+from pennylane2.core.apply import apply
+from pennylane2.core.operator import Operator, Operator2, abstractify
+from pennylane2.decomposition import add_decomps, register_resources
+from pennylane2.decomposition.resources import change_op_basis_resource_rep
+from pennylane2.exceptions import (
+    DiagGatesUndefinedError,
+    MatrixUndefinedError,
+    SparseMatrixUndefinedError,
+)
+from pennylane2.ops.op_math import adjoint, ctrl
+from pennylane2.ops.op_math.adjoint import Adjoint, _adjoint_eager
+from pennylane2.ops.op_math.adjoint2 import Adjoint2
+from pennylane2.ops.op_math.controlled2 import flip_zero_control
+from pennylane2.typing import Bool
+
+from .composite import handle_recursion_error
+from .composite2 import CompositeOp2
+
+
+class ChangeOpBasis2(CompositeOp2):
+    r"""Composite operator representing a compute-uncompute pattern of ``Operator2``\ s.
+
+    Args:
+        compute_op (~.Operator2): operator applied before the target
+        target_op (~.Operator2): operator applied in the changed basis
+        uncompute_op (~.Operator2 or None): Operator applied after the target.
+            ``None`` uses the adjoint of ``compute_op``.
+
+    .. note::
+        The factors are stored and iterated in matrix-product order: uncompute, target, compute.
+
+    .. seealso:: :func:`~.change_op_basis`, :class:`~.ops.op_math.ChangeOpBasis`
+
+    **Example**
+
+    >>> op = qp.ops.ChangeOpBasis2(qp.H(0), qp.RZ(0.3, 0))
+    >>> op.compute_op
+    H(0)
+    >>> op.target_op
+    RZ(0.3, wires=[0])
+    """
+
+    def __init__(
+        self, compute_op: Operator, target_op: Operator, uncompute_op: Operator | None = None
+    ):
+        if uncompute_op is None:
+            uncompute_op = adjoint(compute_op)
+            self._init_args["uncompute_op"] = uncompute_op
+        super().__init__((uncompute_op, target_op, compute_op))
+
+    hybrid_argnames = ("compute_op", "target_op", "uncompute_op")
+
+    _hash = None
+    _has_overlapping_wires = None
+    _overlapping_ops = None
+
+    has_matrix = False
+    has_sparse_matrix = False
+
+    _op_symbol = "@"
+    _math_op = staticmethod(math.prod)
+
+    def matrix(self, wire_order=None):
+        raise MatrixUndefinedError
+
+    def sparse_matrix(self, wire_order=None, format="csr"):
+        raise SparseMatrixUndefinedError
+
+    def diagonalizing_gates(self):
+        raise DiagGatesUndefinedError
+
+    @property
+    def operands(self):
+        """The operators in matrix-product order."""
+        return self.uncompute_op, self.target_op, self.compute_op
+
+    def _check_batching(self):
+        self._batch_size = None
+        self._ndim_params = ()
+
+    grad_method = None
+
+    @classmethod
+    def _sort(cls, op_list: list, wire_map: dict = None) -> list[Operator]:
+        """
+        We do not sort the ops. The order is guaranteed to matter since if the compute operator
+        and the base operator commute, the pattern would simplify to just being the base operator.
+
+        Args:
+            op_list (List[.Operator]): list of operators to be sorted
+            wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
+                Defaults to None.
+
+        Returns:
+            List[.Operator]: sorted list of operators
+        """
+        return op_list
+
+    @property
+    def is_verified_hermitian(self):
+        """Check if the product operator is hermitian.
+
+        Note, this check is not exhaustive. There can be hermitian operators for which this check
+        yields false, which ARE hermitian. So a false result only implies that a more explicit check
+        must be performed.
+        """
+        return self.target_op.is_verified_hermitian
+
+    def adjoint(self):
+        return ChangeOpBasis2(
+            _adjoint_eager(self.uncompute_op, update_queue=True),
+            _adjoint_eager(self.target_op, update_queue=True),
+            _adjoint_eager(self.compute_op, update_queue=True),
+        )
+
+    @handle_recursion_error
+    def map_wires(self, wire_map: dict):
+        # ``CompositeOp2.map_wires`` rebuilds via ``cls(operands, _init_pauli_rep)``, which does
+        # not match this operator's three-argument constructor.
+        return ChangeOpBasis2(
+            self.compute_op.map_wires(wire_map=wire_map),
+            self.target_op.map_wires(wire_map=wire_map),
+            self.uncompute_op.map_wires(wire_map=wire_map),
+        )
+
+    def _build_pauli_rep(self):
+        """PauliSentence representation of the Product of operations."""
+        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands[::-1]]):
+            return reduce(lambda a, b: a @ b, operand_pauli_reps) if operand_pauli_reps else None
+        return None
+
+
+@abstractify.register
+def _abstractify_change_op_basis(op: ChangeOpBasis2):
+    """Create the abstract resource representation of a concrete COB."""
+    if op.is_fully_abstract:
+        return op
+    return _change_op_basis_abstract(
+        abstractify(op.compute_op), abstractify(op.target_op), abstractify(op.uncompute_op)
+    )
+
+
+def _change_op_basis_abstract(compute_op, target_op, uncompute_op):
+    """Construct a native abstract COB across the legacy resource boundary.
+
+    The operands are abstractified here so callers can pass concrete operators, abstract
+    operators, operator types (e.g. those with a fixed signature), or ``CompressedResourceOp``
+    representations interchangeably.
+    """
+    compute_op = abstractify(compute_op)
+    target_op = abstractify(target_op)
+    uncompute_op = abstractify(uncompute_op)
+    if all(isinstance(op, Operator2) for op in (compute_op, target_op, uncompute_op)):
+        return ChangeOpBasis2(compute_op, target_op, uncompute_op)
+    return change_op_basis_resource_rep(compute_op, target_op, uncompute_op)
+
+
+def _controlled_change_op_basis_standard_resources(  # pylint: disable=unused-argument
+    base,
+    control_wires,
+    control_values,
+    work_wires,
+    work_wire_type,
+):
+    resources = defaultdict(int)
+    resources[base.compute_op] += 1
+    resources[
+        ctrl(
+            base.target_op,
+            control=control_wires,
+            control_values=Bool[len(control_wires)],
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+    ] += 1
+    resources[base.uncompute_op] += 1
+    return resources
+
+
+@register_resources(_controlled_change_op_basis_standard_resources, name="control_target")
+def _controlled_change_op_basis_standard(
+    base,
+    control_wires,
+    control_values,
+    work_wires,
+    work_wire_type,
+):
+    apply(base.compute_op)
+    ctrl(
+        base.target_op,
+        control=control_wires,
+        control_values=control_values,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+    apply(base.uncompute_op)
+
+
+def _change_op_basis_standard_resources(compute_op, target_op, uncompute_op):
+    resources = Counter()
+
+    resources[compute_op] += 1
+    resources[target_op] += 1
+    resources[uncompute_op] += 1
+
+    return resources
+
+
+@register_resources(_change_op_basis_standard_resources, name="expand_basis_change")
+def _change_op_basis_standard(compute_op, target_op, uncompute_op):
+    apply(compute_op)
+    apply(target_op)
+    apply(uncompute_op)
+
+
+add_decomps(ChangeOpBasis2, _change_op_basis_standard)
+add_decomps(
+    "C(ChangeOpBasis2)",
+    flip_zero_control(_controlled_change_op_basis_standard, name="control_target"),
+)
+
+
+def _inverse(op):
+    """Invert an operand, unwrapping an existing adjoint instead of nesting another one."""
+    if isinstance(op, (Adjoint, Adjoint2)):
+        return op.base
+    return adjoint(op)
+
+
+def _adjoint_change_op_basis_standard_resources(base):
+    return {
+        _change_op_basis_abstract(
+            _inverse(base.uncompute_op), adjoint(base.target_op), _inverse(base.compute_op)
+        ): 1
+    }
+
+
+@register_resources(_adjoint_change_op_basis_standard_resources, name="adjoint_target")
+def _adjoint_change_op_basis_standard(base):
+    ChangeOpBasis2(_inverse(base.uncompute_op), adjoint(base.target_op), _inverse(base.compute_op))
+
+
+add_decomps("Adjoint(ChangeOpBasis2)", _adjoint_change_op_basis_standard)

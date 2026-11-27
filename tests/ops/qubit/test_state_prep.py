@@ -22,9 +22,9 @@ import numpy as np
 import pytest
 import scipy as sp
 
-import pennylane as qp
-from pennylane.core.operator import StatePrepBase, StatePrepBase2
-from pennylane.exceptions import WireError
+import pennylane2 as qp
+from pennylane2.core.operator import StatePrepBase, StatePrepBase2
+from pennylane2.exceptions import WireError
 
 densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
 

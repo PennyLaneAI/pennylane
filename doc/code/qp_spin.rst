@@ -10,7 +10,7 @@ spin models.
 Hamiltonian functions
 ^^^^^^^^^^^^^^^^^^^^^
 
-.. currentmodule:: pennylane.spin
+.. currentmodule:: pennylane2.spin
 
 .. autosummary::
     :toctree: api
@@ -26,7 +26,7 @@ Hamiltonian functions
 Hamiltonian custom functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. currentmodule:: pennylane.spin
+.. currentmodule:: pennylane2.spin
 
 .. autosummary::
     :toctree: api
@@ -37,7 +37,7 @@ Hamiltonian custom functions
 Lattice classes and functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. currentmodule:: pennylane.spin
+.. currentmodule:: pennylane2.spin
 
 .. autosummary::
     :toctree: api

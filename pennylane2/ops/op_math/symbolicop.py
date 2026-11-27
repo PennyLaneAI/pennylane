@@ -1,0 +1,287 @@
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This submodule defines a base class for symbolic operations representing operator math.
+"""
+
+from abc import abstractmethod
+from copy import copy
+from warnings import warn
+
+import numpy as np
+
+import pennylane2 as qp
+from pennylane2 import math as pl_math
+from pennylane2.core.operator import Operator, Operator2
+from pennylane2.core.operator.base import _UNSET_BATCH_SIZE  # tach-ignore
+from pennylane2.core.queuing import QueuingManager
+from pennylane2.exceptions import PennyLaneDeprecationWarning
+from pennylane2.pytrees import flatten, unflatten
+
+from .composite import handle_recursion_error
+
+
+class SymbolicOp(Operator):
+    """Developer-facing base class for single-operator symbolic operators.
+
+    Args:
+        base (~.operation.Operator): the base operation that is modified symbolically
+
+    This *developer-facing* class can serve as a parent to single base symbolic operators, such as
+    :class:`~.ops.op_math.Adjoint`.
+
+    New symbolic operators can inherit from this class to receive some common default behaviour, such
+    as deferring properties to the base class, copying the base class during a shallow copy, and
+    updating the metadata of the base operator during queueing.
+
+    The child symbolic operator should define the `_name` property during initialization and define
+    any relevant representations, such as :meth:`~.operation.Operator.matrix`,
+    :meth:`~.operation.Operator.diagonalizing_gates`, :meth:`~.operation.Operator.eigvals`, and
+    :meth:`~.operation.Operator.decomposition`.
+    """
+
+    _name = "Symbolic"
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        leaves, structure = flatten((args, kwargs), is_leaf=lambda x: isinstance(x, Operator))
+
+        new_leaves = []
+        for leaf in leaves:
+            if isinstance(leaf, Operator2):
+                if leaf.tracer is None:
+                    leaf._bind_primitive()  # pylint: disable=protected-access
+                new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
+            else:
+                new_leaves.append(leaf)
+
+        new_args, new_kwargs = unflatten(new_leaves, structure)
+        # needs to be overwritten because it doesnt take wires
+        return cls._primitive.bind(*new_args, **new_kwargs)
+
+    @handle_recursion_error
+    def __copy__(self):
+        # this method needs to be overwritten because the base must be copied too.
+        copied_op = object.__new__(type(self))
+        # copied_op must maintain inheritance structure of self
+        # Relevant for symbolic ops that mix in operation-specific components.
+
+        for attr, value in vars(self).items():
+            if attr not in {"_hyperparameters"}:
+                setattr(copied_op, attr, value)
+
+        copied_op._hyperparameters = copy(self.hyperparameters)
+        copied_op.hyperparameters["base"] = copy(self.base)
+
+        return copied_op
+
+    def __init__(self, base):  # pylint: disable=super-init-not-called
+        self.hyperparameters["base"] = base
+        if isinstance(base, (qp.ops.MidMeasure, qp.ops.PauliMeasure)):
+            raise ValueError("Symbolic operators of mid-circuit measurements are not supported.")
+        self._pauli_rep = None
+        self.queue()
+        self._wires = base.wires
+
+    @property
+    def batch_size(self):
+        return self.base.batch_size
+
+    @property
+    def base(self) -> Operator:
+        """The base operator."""
+        return self.hyperparameters["base"]
+
+    @property
+    def data(self):
+        """The trainable parameters"""
+        return self.base.data
+
+    @property
+    def num_params(self):
+        return self.base.num_params
+
+    @property
+    @handle_recursion_error
+    def basis(self):  # pylint: disable=missing-function-docstring
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return self.base.basis
+
+    @property
+    def num_wires(self):
+        """Number of wires the operator acts on."""
+        return len(self.wires)
+
+    @property
+    def has_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
+        return self.base.has_matrix
+
+    @property
+    def is_verified_hermitian(self):
+        return self.base.is_verified_hermitian
+
+    def queue(self, context=QueuingManager):
+        context.remove(self.base)
+        context.append(self)
+        return self
+
+    @property
+    @handle_recursion_error
+    def arithmetic_depth(self) -> int:
+        return 1 + self.base.arithmetic_depth
+
+    def __hash__(self):
+        return hash(
+            (
+                str(self.name),
+                hash(self.base),
+            )
+        )
+
+    @handle_recursion_error
+    def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
+        new_op = copy(self)
+        new_base = self.base.map_wires(wire_map=wire_map)
+        new_op.hyperparameters["base"] = new_base
+        new_op._wires = new_base.wires
+        if (p_rep := new_op.pauli_rep) is not None:
+            new_op._pauli_rep = p_rep.map_wires(wire_map)
+        return new_op
+
+
+class ScalarSymbolicOp(SymbolicOp):
+    """Developer-facing base class for single-operator symbolic operators that contain a
+    scalar coefficient.
+
+    Args:
+        base (~.operation.Operator): the base operation that is modified symbolically
+        scalar (float): the scalar coefficient
+
+    This *developer-facing* class can serve as a parent to single base symbolic operators, such as
+    :class:`~.ops.op_math.SProd` and :class:`~.ops.op_math.Pow`.
+    """
+
+    _name = "ScalarSymbolicOp"
+
+    def __init__(self, base, scalar: float):
+        self.scalar = np.array(scalar) if isinstance(scalar, list) else scalar
+        super().__init__(base)
+        self._batch_size = _UNSET_BATCH_SIZE
+
+    @property
+    @handle_recursion_error
+    def batch_size(self):
+        if self._batch_size is _UNSET_BATCH_SIZE:
+            base_batch_size = self.base.batch_size
+            if pl_math.ndim(self.scalar) == 0:
+                # coeff is not batched
+                self._batch_size = base_batch_size
+            else:
+                # coeff is batched
+                scalar_size = pl_math.size(self.scalar)
+                if base_batch_size is not None and base_batch_size != scalar_size:
+                    raise ValueError(
+                        "Broadcasting was attempted but the broadcasted dimensions "
+                        f"do not match: {scalar_size}, {base_batch_size}."
+                    )
+                self._batch_size = scalar_size
+        return self._batch_size
+
+    @property
+    @handle_recursion_error
+    def data(self):
+        return (self.scalar, *self.base.data)
+
+    @property
+    @handle_recursion_error
+    def has_matrix(self):
+        return self.base.has_matrix
+
+    @handle_recursion_error
+    def __hash__(self):
+        return hash(
+            (
+                str(self.name),
+                str(self.scalar),
+                hash(self.base),
+            )
+        )
+
+    @staticmethod
+    @abstractmethod
+    def _matrix(scalar, mat):
+        """Scalar-matrix operation that doesn't take into account batching.
+
+        ``ScalarSymbolicOp.matrix`` will call this method to compute the matrix for a single scalar
+        and base matrix.
+
+        Args:
+            scalar (Union[int, float]): non-broadcasted scalar
+            mat (ndarray): non-broadcasted matrix
+        """
+
+    @handle_recursion_error
+    def matrix(self, wire_order=None):
+        r"""Representation of the operator as a matrix in the computational basis.
+
+        If ``wire_order`` is provided, the numerical representation considers the position of the
+        operator's wires in the global wire order. Otherwise, the wire order defaults to the
+        operator's wires.
+
+        If the matrix depends on trainable parameters, the result
+        will be cast in the same autodifferentiation framework as the parameters.
+
+        A ``MatrixUndefinedError`` is raised if the base matrix representation has not been defined.
+
+        .. seealso:: :meth:`~.Operator.compute_matrix`
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels from the
+            operator's wires
+
+        Returns:
+            tensor_like: matrix representation
+        """
+        # compute base matrix
+        base_matrix = self.base.matrix()
+
+        scalar_interface = pl_math.get_interface(self.scalar)
+        scalar = self.scalar
+        if scalar_interface == "torch":
+            # otherwise get `RuntimeError: Can't call numpy() on Tensor that requires grad.`
+            base_matrix = pl_math.convert_like(base_matrix, self.scalar)
+        # compute scalar operation on base matrix taking batching into account
+        scalar_size = pl_math.size(scalar)
+        if scalar_size != 1:
+            if scalar_size == self.base.batch_size:
+                # both base and scalar are broadcasted
+                mat = pl_math.stack(
+                    [self._matrix(s, m) for s, m in zip(scalar, base_matrix, strict=True)]
+                )
+            else:
+                # only scalar is broadcasted
+                mat = pl_math.stack([self._matrix(s, base_matrix) for s in scalar])
+        elif self.base.batch_size is not None:
+            # only base is broadcasted
+            mat = pl_math.stack([self._matrix(scalar, ar2) for ar2 in base_matrix])
+        else:
+            # none are broadcasted
+            mat = self._matrix(scalar, base_matrix)
+
+        return pl_math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)

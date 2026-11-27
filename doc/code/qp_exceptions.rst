@@ -1,6 +1,6 @@
 qp.exceptions
 ==============
 
-.. currentmodule:: pennylane.exceptions
+.. currentmodule:: pennylane2.exceptions
 
-.. automodule:: pennylane.exceptions
+.. automodule:: pennylane2.exceptions

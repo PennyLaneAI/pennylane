@@ -18,14 +18,14 @@ import copy
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.operator import Operator2
-from pennylane.core.qscript import QuantumScript, process_queue
-from pennylane.core.queuing import AnnotatedQueue
-from pennylane.core.shots import Shots
-from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.measurements import StateMP
-from pennylane.operation import _UNSET_BATCH_SIZE
+import pennylane2 as qp
+from pennylane2.core.operator import Operator2
+from pennylane2.core.qscript import QuantumScript, process_queue
+from pennylane2.core.queuing import AnnotatedQueue
+from pennylane2.core.shots import Shots
+from pennylane2.exceptions import PennyLaneDeprecationWarning
+from pennylane2.measurements import StateMP
+from pennylane2.operation import _UNSET_BATCH_SIZE
 
 
 def test_process_queue_error_if_not_operator_or_measurement():

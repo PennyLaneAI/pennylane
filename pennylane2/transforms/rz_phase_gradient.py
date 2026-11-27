@@ -1,0 +1,227 @@
+# Copyright 2025 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+A transform for decomposing RZ rotations using a phase gradient catalyst state.
+"""
+
+import numpy as np
+
+import pennylane2 as qp
+from pennylane2 import math
+from pennylane2.core.operator import Operator
+from pennylane2.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane2.core.queuing import QueuingManager
+from pennylane2.ops.op_math import change_op_basis
+from pennylane2.transforms import transform
+from pennylane2.typing import PostprocessingFn
+from pennylane2.wires import Wires
+
+
+def _rz_phase_gradient(
+    phi: float, wire: Wires, angle_wires: Wires, phase_grad_wires: Wires, work_wires: Wires
+) -> Operator:
+    """Function that transforms the RZ gate to the phase gradient circuit
+    The precision is implicitly defined by the length of ``angle_wires``
+    Note that the global phases are collected and added as one big global phase in the main function
+    """
+    precision = len(angle_wires)
+
+    binary_int = math.binary_decimals(phi, precision, unit=2 * np.pi)
+
+    control_wire = Wires(wire)[0]
+    compute_op = qp.ctrl(qp.MultiX(binary_int, angle_wires), control=control_wire)
+    target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires)
+
+    return change_op_basis(compute_op, target_op, compute_op)
+
+
+@transform
+def rz_phase_gradient(
+    tape: QuantumScript,
+    angle_wires: Wires,
+    phase_grad_wires: Wires,
+    work_wires: Wires,
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    r"""Quantum function transform to decompose all instances of :class:`~.RZ` gates into additions
+    using a phase gradient resource state.
+
+    For example, an :class:`~.RZ` gate with angle :math:`\phi = (0 \cdot 2^{-1} + 1 \cdot 2^{-2} + 0 \cdot 2^{-3}) 2\pi`
+    is translated into the following routine, where the angle is loaded onto the ``angle_wires`` in
+    binary by a :class:`~.MultiX` (one ``X`` per set bit) controlled by the target - realizing one
+    controlled-``X`` per set bit, here only wire ``3`` - and added to a ``phase_grad_wires``
+    register
+    semi-inplace via :class:`~.SemiAdder`.
+
+    .. code-block::
+
+             1: ─RZ(ϕ)─ = ─╭●────────────╭●──exp(iϕ/2)─┤
+             2:           ─│──╭SemiAdder─│─────────────┤
+             3:           ─╰X─├SemiAdder─╰X────────────┤
+             4:           ────├SemiAdder───────────────┤
+             5:           ────├SemiAdder───────────────┤
+             6:           ────├SemiAdder───────────────┤
+             7:           ────╰SemiAdder───────────────┤
+
+    For this routine to work, the provided ``phase_grad_wires`` need to hold a phase gradient
+    state :math:`|\nabla n\rangle = \frac{1}{\sqrt{N}} \sum_{m=0}^{N-1} e^{-2 \pi i \frac{m}{N}} |m\rangle`,
+    where :math:`n` is the number of qubits and :math:`N=2^n`.
+    Because this state is not modified and can be re-used at a later stage, the transform does not prepare it but
+    rather assumes it has been prepared on those wires at an earlier stage.
+
+    Note that :class:`~.SemiAdder` requires additional ``work_wires`` (not shown in the diagram) for the semi-in-place addition
+    :math:`\text{SemiAdder}|x\rangle_\text{ang} |y\rangle_\text{phg} = |x\rangle_\text{ang} |x + y\rangle_\text{phg}`.
+
+    More details can be found on page 4 in `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`__
+    and Figure 17a in `arXiv:2211.15465 <https://arxiv.org/abs/2211.15465>`__ (a generalization to
+    multiplexed :class:`~.RZ` rotations is provided in Figure 4 in
+    `arXiv:2409.07332 <https://arxiv.org/abs/2409.07332>`__).
+
+    Note that technically, this circuit realizes :class:`~.PhaseShift`, i.e. :math:`R_\phi(\phi) = R_Z(\phi) e^{i\phi/2}`.
+    The additional global phase is taken into account in the decomposition.
+
+    Args:
+        tape (QNode or QuantumTape or Callable): A quantum circuit containing :class:`~.RZ` gates.
+        angle_wires (Wires): The qubits that conditionally load the angle :math:`\phi` of
+            the :class:`~.RZ` gate in binary as a multiple of :math:`2\pi`.
+            The length of the ``angle_wires`` implicitly determines the precision
+            with which the angle is represented.
+            E.g., :math:`(2^{-1} + 2^{-2} + 2^{-3}) 2\pi` is exactly represented by three bits as ``111``.
+        phase_grad_wires (Wires): The catalyst qubits with a phase gradient state prepared on them.
+            Needs to be at least the length of ``angle_wires`` and will only
+            use the first ``len(angle_wires)``.
+        work_wires (Wires): Additional work wires to realize the :class:`~.SemiAdder` between the ``angle_wires`` and
+            ``phase_grad_wires``. Needs to be at least ``b-1`` wires, where ``b=len(phase_grad_wires)`` is
+            the precision of the angle :math:`\phi`.
+
+    Returns:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane2.transform>`.
+
+    **Example**
+
+    .. code-block:: python
+
+        from pennylane2.transforms.rz_phase_gradient import rz_phase_gradient
+
+        precision = 3
+        phi = (1 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi
+        wire = 1
+        angle_wires = list(range(2, 2 + precision))
+        phase_grad_wires = list(range(2 + precision, 2 + 2 * precision))
+        work_wires = list(range(2 + 2 * precision, 2 + 3 * precision - 1))
+        wire_order = [wire] + angle_wires + phase_grad_wires + work_wires
+
+
+        @qp.transforms.combine_global_phases
+        @qp.transforms._tape_decompose(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1)
+        @rz_phase_gradient(
+            angle_wires=angle_wires,
+            phase_grad_wires=phase_grad_wires,
+            work_wires=work_wires,
+        )
+        @qp.qnode(qp.device("default.qubit"))
+        def rz_circ(phi, wire):
+            qp.PhaseGradientStatePrep(phase_grad_wires)
+
+            qp.Hadamard(wire)  # transform rotation
+            qp.RZ(phi, wire)
+            qp.Hadamard(wire)  # transform rotation
+
+            return qp.probs(wire)
+
+
+    In this example we perform the rotation of an angle of :math:`\phi = (0.111)_2 2\pi`.
+    Because phase shifts are trivial on computational basis states, we transform the :math:`R_Z`
+    rotation to :math:`R_X = H R_Z H` via two :class:`~.Hadamard` gates.
+
+    Note that for the transform to work, we needed to also prepare a phase gradient state on
+    the ``phase_grad_wires`` via ``phase_gradient``.
+
+    Overall, the full circuit looks like the following:
+
+    >>> print(qp.draw(rz_circ, wire_order=wire_order)(phi, wire))
+    1: ──RZ(3.14)──RY(1.57)─╭●─────────────────────╭●───────────RZ(3.14)──RY(1.57) ···
+    2: ─────────────────────├MultiX(M0)─╭SemiAdder─├MultiX(M0)──────────────────── ···
+    3: ─────────────────────├MultiX(M0)─├SemiAdder─├MultiX(M0)──────────────────── ···
+    4: ─────────────────────╰MultiX(M0)─├SemiAdder─╰MultiX(M0)──────────────────── ···
+    5: ──H─────────Z────────────────────├SemiAdder──────────────────────────────── ···
+    6: ──H─────────S─────────H──────────├SemiAdder──────────────────────────────── ···
+    7: ──H─────────T─────────X──────────├SemiAdder──────────────────────────────── ···
+    8: ─────────────────────────────────├SemiAdder──────────────────────────────── ···
+    9: ─────────────────────────────────╰SemiAdder──────────────────────────────── ···
+    <BLANKLINE>
+    1: ··· ─╭GlobalPhase(1.18)─┤  Probs
+    2: ··· ─├GlobalPhase(1.18)─┤
+    3: ··· ─├GlobalPhase(1.18)─┤
+    4: ··· ─├GlobalPhase(1.18)─┤
+    5: ··· ─├GlobalPhase(1.18)─┤
+    6: ··· ─├GlobalPhase(1.18)─┤
+    7: ··· ─├GlobalPhase(1.18)─┤
+    8: ··· ─├GlobalPhase(1.18)─┤
+    9: ··· ─╰GlobalPhase(1.18)─┤
+    <BLANKLINE>
+    M0 =
+    [ True  True  True]
+
+    The additional work wires are required by the :class:`~.SemiAdder`.
+    Executing the circuit, we get the following result:
+
+    >>> rz_circ(phi, wire)
+    array([0.853..., 0.146...])
+
+    This matches the expected result of just applying a simple ``RX`` gate:
+
+    >>> np.abs(qp.RX(phi, 0).matrix()[:, 0]) ** 2
+    array([0.853..., 0.146...])
+
+    """
+
+    if len(phase_grad_wires) < len(angle_wires):
+        raise ValueError(
+            "phase_grad_wires needs to be at least as large as angle_wires. "
+            f"Got {len(phase_grad_wires)} phase_grad_wires, which is fewer than the "
+            f"{len(angle_wires)} angle wires."
+        )
+
+    operations = []
+    global_phases = []
+    for op in tape.operations:
+        if isinstance(op, qp.RZ):
+            wire = op.wires
+            phi = op.parameters[0]
+            global_phases.append(phi / 2)
+
+            with QueuingManager.stop_recording():
+                operations.append(
+                    _rz_phase_gradient(
+                        phi,
+                        wire,
+                        angle_wires=angle_wires,
+                        phase_grad_wires=phase_grad_wires,
+                        work_wires=work_wires,
+                    )
+                )
+        else:
+            operations.append(op)
+
+    operations.append(qp.GlobalPhase(sum(global_phases)))
+
+    new_tape = tape.copy(operations=operations)
+
+    def null_postprocessing(results):
+        """A postprocessing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [new_tape], null_postprocessing

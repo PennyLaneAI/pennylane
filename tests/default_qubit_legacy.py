@@ -14,8 +14,8 @@
 r"""
 This module contains the legacy implementation of default.qubit.
 
-It implements the necessary :class:`~pennylane.devices._legacy_device.Device` methods as well as some built-in
-:mod:`qubit operations <pennylane.ops.qubit>`, and provides a very simple pure state
+It implements the necessary :class:`~pennylane2.devices._legacy_device.Device` methods as well as some built-in
+:mod:`qubit operations <pennylane2.ops.qubit>`, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
 """
 
@@ -26,16 +26,16 @@ from string import ascii_letters
 import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix
 
-import pennylane as qp
-from pennylane import BasisState, Snapshot, StatePrep
-from pennylane._version import __version__
-from pennylane.core.operator import Operation
-from pennylane.devices._qubit_device import QubitDevice
-from pennylane.devices.qubit import measure
-from pennylane.exceptions import DeviceError, WireError
-from pennylane.measurements import ExpectationMP
-from pennylane.ops import Sum
-from pennylane.ops.qubit.attributes import diagonal_in_z_basis
+import pennylane2 as qp
+from pennylane2 import BasisState, Snapshot, StatePrep
+from pennylane2._version import __version__
+from pennylane2.core.operator import Operation
+from pennylane2.devices._qubit_device import QubitDevice
+from pennylane2.devices.qubit import measure
+from pennylane2.exceptions import DeviceError, WireError
+from pennylane2.measurements import ExpectationMP
+from pennylane2.ops import Sum
+from pennylane2.ops.qubit.attributes import diagonal_in_z_basis
 
 ascii_letter_arr = np.array(list(ascii_letters))
 
@@ -80,13 +80,13 @@ class DefaultQubitLegacy(QubitDevice):
     .. warning::
 
         This is the legacy implementation of DefaultQubit and is deprecated. It has been replaced by
-        :class:`~pennylane.devices.DefaultQubit`, which can be accessed with the familiar constructor,
+        :class:`~pennylane2.devices.DefaultQubit`, which can be accessed with the familiar constructor,
         ``qp.device("default.qubit")``, and now supports backpropagation.
 
         This change will not alter device behaviour for most workflows, but may have implications for
         plugin developers and users who directly interact with device methods. Please consult
-        :class:`pennylane.devices.Device` and the implementation in
-        :class:`pennylane.devices.DefaultQubit` for more information on what the new
+        :class:`pennylane2.devices.Device` and the implementation in
+        :class:`pennylane2.devices.DefaultQubit` for more information on what the new
         interface will look like and be prepared to make updates in a coming release. If you have any
         feedback on these changes, please create an
         `issue <https://github.com/PennyLaneAI/pennylane/issues>`_ or post in our

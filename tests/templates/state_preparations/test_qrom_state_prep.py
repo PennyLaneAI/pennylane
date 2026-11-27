@@ -18,9 +18,9 @@ Unit tests for the QROMStatePreparation template.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.templates.state_preparations.qrom_state_prep import _float_to_binary
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.templates.state_preparations.qrom_state_prep import _float_to_binary
 
 
 @pytest.mark.parametrize(

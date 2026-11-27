@@ -18,9 +18,9 @@ Unit tests for ``optimize_measurements`` function in ``/pauli/grouping/optimize_
 import numpy as np
 import pytest
 
-from pennylane import Identity, PauliX, PauliY, PauliZ
-from pennylane.pauli import are_identical_pauli_words
-from pennylane.pauli.grouping.optimize_measurements import optimize_measurements
+from pennylane2 import Identity, PauliX, PauliY, PauliZ
+from pennylane2.pauli import are_identical_pauli_words
+from pennylane2.pauli.grouping.optimize_measurements import optimize_measurements
 
 
 class TestOptimizeMeasurements:

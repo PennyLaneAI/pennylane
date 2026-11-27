@@ -4,9 +4,9 @@ qp.drawer
 The ``drawer`` module contains the code for generating visuals
 of circuits. 
 
-.. currentmodule:: pennylane.drawer
+.. currentmodule:: pennylane2.drawer
 
-.. automodapi:: pennylane.drawer
+.. automodapi:: pennylane2.drawer
     :no-heading:
     :no-inherited-members:
     :skip: available_styles

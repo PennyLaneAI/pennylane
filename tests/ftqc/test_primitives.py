@@ -20,12 +20,12 @@ import pytest
 
 pytest.importorskip("jax")
 
-from pennylane.capture.custom_primitives import QpPrimitive
-from pennylane.ftqc.primitives import measure_in_basis_prim
+from pennylane2.capture.custom_primitives import QpPrimitive
+from pennylane2.ftqc.primitives import measure_in_basis_prim
 
 
 def test_importing_primitive():
-    """Test that the measure_in_basis_prim is accessible from pennylane.ftqc.primitives.
+    """Test that the measure_in_basis_prim is accessible from pennylane2.ftqc.primitives.
     This is mostly for CodeCov."""
 
     assert isinstance(measure_in_basis_prim, QpPrimitive)

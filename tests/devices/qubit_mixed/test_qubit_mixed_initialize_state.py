@@ -15,11 +15,11 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane import BasisState, StatePrep, math
-from pennylane import numpy as np
-from pennylane.core.operator import StatePrepBase
-from pennylane.devices.qubit_mixed import create_initial_state
+import pennylane2 as qp
+from pennylane2 import BasisState, StatePrep, math
+from pennylane2 import numpy as np
+from pennylane2.core.operator import StatePrepBase
+from pennylane2.devices.qubit_mixed import create_initial_state
 
 ml_interfaces = ["numpy", "autograd", "jax", "torch"]
 

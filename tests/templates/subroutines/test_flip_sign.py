@@ -17,10 +17,10 @@ Tests for the FlipSign template.
 
 import pytest
 
-import pennylane as qp
-from pennylane import math
-from pennylane.testing import assert_decomposable
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2 import math
+from pennylane2.testing import assert_decomposable
+from pennylane2.wires import Wires
 
 
 @pytest.mark.parametrize("work_wires", [(), (2, 3)])

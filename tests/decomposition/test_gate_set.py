@@ -21,8 +21,8 @@ from collections.abc import Mapping
 
 import pytest
 
-import pennylane as qp
-from pennylane.decomposition.gate_set import GateSet
+import pennylane2 as qp
+from pennylane2.decomposition.gate_set import GateSet
 
 
 class TestGateSet:

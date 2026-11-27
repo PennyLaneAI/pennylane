@@ -22,15 +22,15 @@ import jax
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.allocation import Allocate, Deallocate
-from pennylane.templates.subroutines import AQFT, QROM, SemiAdder
-from pennylane.templates.subroutines.arithmetic import (
+import pennylane2 as qp
+from pennylane2.allocation import Allocate, Deallocate
+from pennylane2.templates.subroutines import AQFT, QROM, SemiAdder
+from pennylane2.templates.subroutines.arithmetic import (
     OutMultiplier,
     SignedOutMultiplier,
     SignedOutSquare,
 )
-from pennylane.templates.subroutines.time_evolution.trotter_vibronic import (
+from pennylane2.templates.subroutines.time_evolution.trotter_vibronic import (
     _diagonalization_matrix,
     _diagonalize_probs,
     _diagonalize_vibronic_circuit,
@@ -41,8 +41,8 @@ from pennylane.templates.subroutines.time_evolution.trotter_vibronic import (
     _validate_registers,
     _wires_are_concrete,
 )
-from pennylane.transforms.decompositions import make_rz_to_phase_gradient_decomp
-from pennylane.typing import AbstractWires
+from pennylane2.transforms.decompositions import make_rz_to_phase_gradient_decomp
+from pennylane2.typing import AbstractWires
 
 # ---------------------------------------------------------------------------
 # --------------------------- Test data helpers -----------------------------
@@ -210,7 +210,7 @@ def count_allocations(op):
     jaxpr's top-level equations instead of in the (executed) queue.
     """
     if qp.capture.enabled():
-        from pennylane.allocation import allocate_prim, deallocate_prim
+        from pennylane2.allocation import allocate_prim, deallocate_prim
 
         decomposition = qp.list_decomps(qp.TrotterVibronic)[0]
         jaxpr = jax.make_jaxpr(lambda: decomposition(**op.arguments))().jaxpr
@@ -778,7 +778,7 @@ class TestDecomposition:
         same regardless of the number of position fragments."""
         from jax._src.core import ClosedJaxpr, Jaxpr
 
-        from pennylane.capture.primitives import for_loop_prim
+        from pennylane2.capture.primitives import for_loop_prim
 
         def count_for_loops(jaxpr):
             count = sum(eqn.primitive == for_loop_prim for eqn in jaxpr.eqns)

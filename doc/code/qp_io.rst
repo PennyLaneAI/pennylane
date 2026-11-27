@@ -7,7 +7,7 @@ Overview
 This module contains functions and classes for translating quantum objects from external frameworks
 into PennyLane circuits and operators.
 
-.. currentmodule:: pennylane
+.. currentmodule:: pennylane2
 
 Functions
 ^^^^^^^^^

@@ -1,7 +1,7 @@
 qp.workflow
 ==============
 
-.. currentmodule:: pennylane.workflow
+.. currentmodule:: pennylane2.workflow
 
 .. warning::
 
@@ -13,4 +13,4 @@ qp.workflow
 
 .. rubric:: Modules
 
-.. automodule:: pennylane.workflow
+.. automodule:: pennylane2.workflow

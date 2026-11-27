@@ -22,21 +22,21 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.operator import Operation, Operator1, abstractify
-from pennylane.decomposition import DecompositionGraph, resource_rep
-from pennylane.decomposition.decomposition_graph import _DecompositionNode
-from pennylane.decomposition.decomposition_rule import DecompCollection, _fix_decomp
-from pennylane.decomposition.symbolic_decomposition import self_adjoint
-from pennylane.exceptions import DecompositionError, DecompositionWarning
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.controlled2 import (
+import pennylane2 as qp
+from pennylane2.core.operator import Operation, Operator1, abstractify
+from pennylane2.decomposition import DecompositionGraph, resource_rep
+from pennylane2.decomposition.decomposition_graph import _DecompositionNode
+from pennylane2.decomposition.decomposition_rule import DecompCollection, _fix_decomp
+from pennylane2.decomposition.symbolic_decomposition import self_adjoint
+from pennylane2.exceptions import DecompositionError, DecompositionWarning
+from pennylane2.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane2.ops.op_math.controlled2 import (
     ControlledOp2,
     _controlled_flip_adjoint,
     _ctrl_abstract,
 )
-from pennylane.ops.op_math.pow2 import _pow_abstract
-from pennylane.typing import Bool, Float, Wire
+from pennylane2.ops.op_math.pow2 import _pow_abstract
+from pennylane2.typing import Bool, Float, Wire
 from tests.core.operator.operator2_utils import (
     DynOp,
     NonParametricOp,
@@ -143,7 +143,7 @@ class AnotherOp(Operation):
 
 
 @pytest.mark.unit
-@patch("pennylane.decomposition.decomposition_rule._decompositions_var", decompositions)
+@patch("pennylane2.decomposition.decomposition_rule._decompositions_var", decompositions)
 class TestDecompGraphConstruction:
     """Unit tests for the decomposition graph."""
 
@@ -654,7 +654,7 @@ class TestDecompGraphConstruction:
 
 
 @pytest.mark.unit
-@patch("pennylane.decomposition.decomposition_rule._decompositions_var", decompositions)
+@patch("pennylane2.decomposition.decomposition_rule._decompositions_var", decompositions)
 class TestDecompGraphSolver:
     """Unit tests for solving the decomposition graph."""
 
@@ -1298,7 +1298,7 @@ class TestDecompGraphWorkWireBudgeting:
 
 
 @pytest.mark.unit
-@patch("pennylane.decomposition.decomposition_rule._decompositions_var", decompositions)
+@patch("pennylane2.decomposition.decomposition_rule._decompositions_var", decompositions)
 class TestControlledDecompositions:
     """Tests that the decomposition graph can handle controlled decompositions."""
 
@@ -1452,7 +1452,7 @@ decompositions.get()["Adjoint(LegacyRX)"] = decompositions.get()["Adjoint(RX)"]
 decompositions.get()["C(LegacyRX)"] = decompositions.get()["C(RX)"]
 
 
-@patch("pennylane.decomposition.decomposition_rule._decompositions_var", decompositions)
+@patch("pennylane2.decomposition.decomposition_rule._decompositions_var", decompositions)
 class TestSymbolicDecompositions:
     """Tests decompositions of symbolic ops."""
 

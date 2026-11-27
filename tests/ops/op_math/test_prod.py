@@ -24,15 +24,15 @@ import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
 import pytest
 
-import pennylane as qp
-import pennylane.numpy as qnp
-from pennylane import math
-from pennylane.core.operator import Operator, abstractify
-from pennylane.exceptions import DeviceError, MatrixUndefinedError
-from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
-from pennylane.testing import assert_decomposable
-from pennylane.typing import Float, Wire
-from pennylane.wires import Wires
+import pennylane2 as qp
+import pennylane2.numpy as qnp
+from pennylane2 import math
+from pennylane2.core.operator import Operator, abstractify
+from pennylane2.exceptions import DeviceError, MatrixUndefinedError
+from pennylane2.ops.op_math.prod import Prod, _swappable_ops, prod
+from pennylane2.testing import assert_decomposable
+from pennylane2.typing import Float, Wire
+from pennylane2.wires import Wires
 
 X, Y, Z = qp.PauliX, qp.PauliY, qp.PauliZ
 

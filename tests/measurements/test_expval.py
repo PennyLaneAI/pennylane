@@ -18,8 +18,8 @@ import copy
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.measurements.expval import ExpectationMP
+import pennylane2 as qp
+from pennylane2.measurements.expval import ExpectationMP
 
 
 def test_expval_identity_nowires_DQ():

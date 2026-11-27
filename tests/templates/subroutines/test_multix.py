@@ -19,11 +19,11 @@ import numpy as np
 import pytest
 from scipy import sparse
 
-import pennylane as qp
-from pennylane.testing import assert_decomposable
-from pennylane.transforms import _tape_decompose
-from pennylane.typing import AbstractArray, AbstractWires, Bool, Float, Int, Wire
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2.testing import assert_decomposable
+from pennylane2.transforms import _tape_decompose
+from pennylane2.typing import AbstractArray, AbstractWires, Bool, Float, Int, Wire
+from pennylane2.wires import Wires
 
 
 class TestInitialization:
@@ -314,8 +314,8 @@ class TestDecomposition:
 
         import jax
 
-        from pennylane.capture.primitives import for_loop_prim
-        from pennylane.testing import find_eqns
+        from pennylane2.capture.primitives import for_loop_prim
+        from pennylane2.testing import find_eqns
 
         bitstring = jax.numpy.array([1, 0, 1])
         wires = (0, 1, 2)
@@ -353,8 +353,8 @@ class TestDecomposition:
         """
         import jax
 
-        from pennylane.allocation import allocate
-        from pennylane.capture.primitives import cond_prim, for_loop_prim
+        from pennylane2.allocation import allocate
+        from pennylane2.capture.primitives import cond_prim, for_loop_prim
 
         bitstring = jax.numpy.array([1, 0, 1])
         decomposition = qp.list_decomps(qp.MultiX)[0]
@@ -370,8 +370,8 @@ class TestDecomposition:
 
     def test_multix_decomposition_unrolls_for_dynamic_wire(self):
         """``DynamicWire`` handles cannot be stacked for ``for_loop`` indexing, so unroll."""
-        from pennylane.templates.subroutines.multix import _multix_standard
-        from pennylane.wires import DynamicWire
+        from pennylane2.templates.subroutines.multix import _multix_standard
+        from pennylane2.wires import DynamicWire
 
         qp.capture.disable()
         wires = [DynamicWire() for _ in range(3)]
@@ -440,7 +440,7 @@ class TestDecomposition:
             control=range(num_controls),
         )
         rules = qp.list_decomps(op)
-        mocker.patch("pennylane.templates.subroutines.multix.compiler.active", return_value=True)
+        mocker.patch("pennylane2.templates.subroutines.multix.compiler.active", return_value=True)
         first_applicable = next(rule for rule in rules if rule.is_applicable(**op.arguments))
         assert first_applicable.name == "controlled_x"
 
@@ -533,7 +533,7 @@ class TestDecomposition:
 
     def test_controlled_multix_ladder_extra_work_wires(self):
         """Tests how many zeroed work wires the ladder decomp requests beyond those supplied."""
-        from pennylane.templates.subroutines.multix import (
+        from pennylane2.templates.subroutines.multix import (
             _controlled_multix_ladder_standard_work_wires,
         )
 
@@ -549,9 +549,9 @@ class TestDecomposition:
 
     def test_controlled_multix_ladder_with_supplied_work_wires(self, mocker):
         """When enough zeroed work wires are supplied, the ladder decomp does not allocate."""
-        from pennylane.templates.subroutines.multix import _controlled_multix_ladder_standard
+        from pennylane2.templates.subroutines.multix import _controlled_multix_ladder_standard
 
-        fanout = mocker.patch("pennylane.templates.subroutines.multix._multix_ladder_fanout")
+        fanout = mocker.patch("pennylane2.templates.subroutines.multix._multix_ladder_fanout")
         base = qp.MultiX([1, 0, 1], wires=[3, 4, 5])
         _controlled_multix_ladder_standard(
             base=base,
@@ -567,8 +567,8 @@ class TestDecomposition:
         """With static wires, the CNOT fanout uses a ``for_loop`` under capture."""
         import jax
 
-        from pennylane.capture.primitives import for_loop_prim
-        from pennylane.templates.subroutines.multix import _multix_ladder_fanout
+        from pennylane2.capture.primitives import for_loop_prim
+        from pennylane2.templates.subroutines.multix import _multix_ladder_fanout
 
         base = qp.MultiX([1, 0, 1], wires=[3, 4, 5])
         jaxpr = jax.make_jaxpr(
@@ -666,7 +666,7 @@ class TestControlledMultiXLatticeSurgeryPPM:
             return outcome
 
         mocker.patch(
-            "pennylane.templates.subroutines.multix.pauli_measure",
+            "pennylane2.templates.subroutines.multix.pauli_measure",
             new=measure_branch,
         )
         tape = qp.tape.make_qscript(rule)(**op.arguments)

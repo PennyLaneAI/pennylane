@@ -21,15 +21,15 @@ from functools import partial
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.templates.subroutines.select_pauli_rot import (
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.templates.subroutines.select_pauli_rot import (
     _select_pauli_rot_standard,
     _SelectPauliRotYBasis,
     _UniformRZ,
 )
-from pennylane.testing import assert_decomposable
-from pennylane.typing import AbstractWires, Float
+from pennylane2.testing import assert_decomposable
+from pennylane2.typing import AbstractWires, Float
 
 
 def get_tape(angles, wires):

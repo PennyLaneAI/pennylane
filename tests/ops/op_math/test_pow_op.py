@@ -24,12 +24,12 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.exceptions import AdjointUndefinedError, DecompositionUndefinedError
-from pennylane.ops.op_math.controlled import ControlledOp
-from pennylane.ops.op_math.pow import Pow, PowOperation
-from pennylane.ops.op_math.pow2 import Pow2
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.exceptions import AdjointUndefinedError, DecompositionUndefinedError
+from pennylane2.ops.op_math.controlled import ControlledOp
+from pennylane2.ops.op_math.pow import Pow, PowOperation
+from pennylane2.ops.op_math.pow2 import Pow2
 
 
 class TempOperator(qp.operation.Operator):
@@ -722,7 +722,7 @@ class TestMatrix:
     @pytest.mark.autograd
     @pytest.mark.parametrize("z", (2, -2, 1.23, -0.5))
     def test_matrix_against_shortcut_autograd(self, z):
-        """Test the matrix using a pennylane numpy array/ autograd numpy."""
+        """Test the matrix using a pennylane2 numpy array/ autograd numpy."""
         param = qp.numpy.array(2.34)
         assert self.check_matrix(param, z)
 

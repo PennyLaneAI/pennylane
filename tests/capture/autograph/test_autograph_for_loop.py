@@ -22,8 +22,8 @@ from unittest import mock
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.exceptions import AutoGraphError
+import pennylane2 as qp
+from pennylane2.exceptions import AutoGraphError
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -36,10 +36,10 @@ from jax.core import eval_jaxpr
 from malt.operators import py_builtins as ag_py_builtins
 
 # pylint: disable-next=ungrouped-imports
-from pennylane.capture.autograph.ag_primitives import PEnumerate, PRange
-from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
-from pennylane.capture.primitives import cond_prim, for_loop_prim
-from pennylane.testing import extract_all_primitives
+from pennylane2.capture.autograph.ag_primitives import PEnumerate, PRange
+from pennylane2.capture.autograph.transformer import TRANSFORMER, run_autograph
+from pennylane2.capture.primitives import cond_prim, for_loop_prim
+from pennylane2.testing import extract_all_primitives
 
 check_cache = TRANSFORMER.has_cache
 
@@ -65,7 +65,7 @@ class TestCustomRangeAndEnumeration:
         assert pl_range.get_raw_range() == (0, 5, 1)
 
     @mock.patch.dict(
-        "pennylane.capture.autograph.ag_primitives.py_builtins_map",
+        "pennylane2.capture.autograph.ag_primitives.py_builtins_map",
         {**ag_py_builtins.BUILTIN_FUNCTIONS_MAP},
     )
     def test_prange_vs_range(self):

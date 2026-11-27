@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for pennylane/dla/lie_closure.py functionality"""
+"""Tests for pennylane2/dla/lie_closure.py functionality"""
 
 # pylint: disable=protected-access
 
@@ -21,8 +21,8 @@ from copy import copy
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.pauli import PauliSentence, PauliVSpace, PauliWord
+import pennylane2 as qp
+from pennylane2.pauli import PauliSentence, PauliVSpace, PauliWord
 
 ops1 = [
     PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),

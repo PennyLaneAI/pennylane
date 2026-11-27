@@ -20,8 +20,8 @@ undergoing cosmetic changes.
 import pathlib
 import matplotlib.pyplot as plt
 
-from pennylane.drawer import MPLDrawer
-from pennylane.drawer.style import _set_style
+from pennylane2.drawer import MPLDrawer
+from pennylane2.drawer.style import _set_style
 
 folder = pathlib.Path(__file__).parent
 

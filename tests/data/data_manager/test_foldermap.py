@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the :class:`pennylane.data.data_manger.FolderMapView` class.
+Tests for the :class:`pennylane2.data.data_manger.FolderMapView` class.
 """
 
 import re
 
 import pytest
 
-from pennylane.data.data_manager import DEFAULT, FULL, DataPath
-from pennylane.data.data_manager.foldermap import Description, FolderMapView
+from pennylane2.data.data_manager import DEFAULT, FULL, DataPath
+from pennylane2.data.data_manager.foldermap import Description, FolderMapView
 
 pytestmark = pytest.mark.data
 

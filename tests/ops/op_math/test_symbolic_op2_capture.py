@@ -19,16 +19,16 @@
 import pytest
 from test_adjoint2 import RX2
 
-import pennylane as qp
-from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.ops.op_math.controlled2 import ControlledOp2
+import pennylane2 as qp
+from pennylane2.ops.op_math.adjoint2 import Adjoint2
+from pennylane2.ops.op_math.controlled2 import ControlledOp2
 
 jax = pytest.importorskip("jax")
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
-from pennylane.capture.primitives import AbstractOperator, operator_p
-from pennylane.testing import find_eqns
+from pennylane2.capture.primitives import AbstractOperator, operator_p
+from pennylane2.testing import find_eqns
 from tests.core.operator.operator2_utils import NonParametricOp
 
 

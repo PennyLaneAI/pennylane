@@ -18,15 +18,15 @@ import re
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.exceptions import (
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.exceptions import (
     DecompositionUndefinedError,
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
 )
-from pennylane.gradients import parameter_frequencies
-from pennylane.ops.op_math import Evolution, Exp
+from pennylane2.gradients import parameter_frequencies
+from pennylane2.ops.op_math import Evolution, Exp
 
 
 @pytest.mark.parametrize("constructor", (qp.exp, Exp))
@@ -772,7 +772,7 @@ class TestIntegration:
 
     @pytest.mark.autograd
     def test_autograd_qnode(self):
-        """Test execution and gradient with pennylane numpy array."""
+        """Test execution and gradient with pennylane2 numpy array."""
         phi = qp.numpy.array(1.2)
 
         dev = qp.device("default.qubit", wires=1)
@@ -791,7 +791,7 @@ class TestIntegration:
     @pytest.mark.xfail  # related to #6333
     @pytest.mark.autograd
     def test_autograd_param_shift_qnode(self):
-        """Test execution and gradient with pennylane numpy array."""
+        """Test execution and gradient with pennylane2 numpy array."""
 
         phi = qp.numpy.array(1.2)
 

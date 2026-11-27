@@ -17,9 +17,9 @@ import copy
 
 import pytest
 
-from pennylane.resource import PBCSpecsResources, SpecsResources
-from pennylane.resource.expression import Expression
-from pennylane.resource.parsing import (
+from pennylane2.resource import PBCSpecsResources, SpecsResources
+from pennylane2.resource.expression import Expression
+from pennylane2.resource.parsing import (
     _convert_to_subclass,
     _generate_display_name_for_symbolic_var,
     _mlir_resources_to_specs_resources,

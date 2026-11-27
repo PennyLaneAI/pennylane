@@ -17,12 +17,12 @@ Tests for the PhaseAdder template.
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.core.operator import Operator2, abstractify
-from pennylane.templates.subroutines.arithmetic.phase_adder import _add_k_fourier
-from pennylane.testing import assert_decomposable
-from pennylane.typing import Int, Wire
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.core.operator import Operator2, abstractify
+from pennylane2.templates.subroutines.arithmetic.phase_adder import _add_k_fourier
+from pennylane2.testing import assert_decomposable
+from pennylane2.typing import Int, Wire
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")

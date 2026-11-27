@@ -20,11 +20,11 @@ import copy
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.operator import abstractify
-from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
-from pennylane.ops.op_math.prod2 import Prod2
-from pennylane.typing import Wire
+import pennylane2 as qp
+from pennylane2.core.operator import abstractify
+from pennylane2.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane2.ops.op_math.prod2 import Prod2
+from pennylane2.typing import Wire
 
 
 @pytest.mark.parametrize(

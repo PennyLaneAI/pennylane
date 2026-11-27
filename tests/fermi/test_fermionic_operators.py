@@ -15,7 +15,7 @@
 
 import pytest
 
-from pennylane.fermi.fermionic import FermiA, FermiC, FermiWord
+from pennylane2.fermi.fermionic import FermiA, FermiC, FermiWord
 
 
 class TestFermiC:

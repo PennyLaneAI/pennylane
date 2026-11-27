@@ -18,9 +18,9 @@ Tests for the ``DatasetArray`` attribute type.
 import numpy as np
 import pytest
 
-import pennylane.data.attributes.array
-from pennylane import numpy as qp_numpy
-from pennylane.data.attributes import DatasetArray
+import pennylane2.data.attributes.array
+from pennylane2 import numpy as qp_numpy
+from pennylane2.data.attributes import DatasetArray
 
 pytestmark = pytest.mark.data
 
@@ -30,7 +30,7 @@ class TestDatasetArray:
         "value, py_type, interface",
         [
             (np.array([1, 2, 3]), "numpy.ndarray", "numpy"),
-            (qp_numpy.tensor([1, 2, 3]), "pennylane.numpy.tensor.tensor", "autograd"),
+            (qp_numpy.tensor([1, 2, 3]), "pennylane2.numpy.tensor.tensor", "autograd"),
         ],
     )
     def test_value_init(self, value, interface, py_type):
@@ -59,7 +59,7 @@ class TestDatasetArray:
     def test_value_init_invalid_interface(self, monkeypatch, interface):
         """Test that a TypeError is raised if value initialized with an
         incompatible array type."""
-        monkeypatch.setattr(pennylane.data.attributes.array, "get_interface", lambda _: interface)
+        monkeypatch.setattr(pennylane2.data.attributes.array, "get_interface", lambda _: interface)
 
         with pytest.raises(TypeError):
             DatasetArray([1, 2, 3, 4])

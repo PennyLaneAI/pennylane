@@ -20,8 +20,8 @@ from itertools import permutations
 
 import pytest
 
-import pennylane as qp
-from pennylane.transforms.optimization.relative_phases import (
+import pennylane2 as qp
+from pennylane2.transforms.optimization.relative_phases import (
     match_controlled_iX_gate,
     match_relative_phase_toffoli,
 )

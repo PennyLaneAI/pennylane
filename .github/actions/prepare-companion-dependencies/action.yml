@@ -1,0 +1,73 @@
+name: Prepare PennyLane2 companion dependencies
+description: Use the local PennyLane checkout, the Lightning PR, and an optional Catalyst PR wheel.
+inputs:
+  catalyst:
+    description: Download the Catalyst wheel for jobs that use Catalyst.
+    default: 'false'
+  catalyst-run-id:
+    # Temporary PR #3505 build; update this after rebuilding the companion PR.
+    description: Successful Linux x86_64 wheel build from Catalyst PR 3505.
+    default: '45280597785'
+  github-token:
+    description: GitHub token used to download the Catalyst artifact.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Select companion sources
+      shell: bash
+      run: |
+        mkdir -p companion-wheels
+        # Catalyst's wheel names both Git branches. Keep PennyLane on this checkout.
+        # Lightning builds from its PR until compatible published wheels are available.
+        cat > companion-wheels/overrides.txt <<'OVERRIDES'
+        pennylane2 @ file://${GITHUB_WORKSPACE}
+        pennylane-lightning @ git+https://github.com/PennyLaneAI/pennylane-lightning.git@chore/update-pennylane-rename
+        OVERRIDES
+        # Relative paths also work inside the Sphinx action's container.
+        echo 'UV_OVERRIDE=companion-wheels/overrides.txt' >> "$GITHUB_ENV"
+        echo 'UV_SYSTEM_PYTHON=1' >> "$GITHUB_ENV"
+
+    - name: Check Catalyst wheel platform
+      if: inputs.catalyst == 'true'
+      shell: bash
+      run: |
+        if [[ "$RUNNER_OS/$RUNNER_ARCH" != 'Linux/X64' ]]; then
+          echo 'This temporary Catalyst artifact requires a Linux x86_64 runner.' >&2
+          exit 1
+        fi
+
+    - name: Download Catalyst PR wheel
+      if: inputs.catalyst == 'true'
+      uses: XanaduAI/cloud-actions/download-github-workflow-artifact@main
+      with:
+        repository_owner: PennyLaneAI
+        repository_name: catalyst
+        workflow_run_id: ${{ inputs.catalyst-run-id }}
+        artifact_name_regex: '^catalyst-manylinux_2_28_x86_64-wheel-py-3\.12\.zip$'
+        artifact_download_dir: ${{ github.workspace }}/companion-wheels
+        github_token: ${{ inputs.github-token }}
+
+    - name: Extract and select the Catalyst wheel
+      if: inputs.catalyst == 'true'
+      shell: bash
+      run: |
+        python3 - <<'PY'
+        from pathlib import Path
+        from zipfile import ZipFile
+
+        directory = Path("companion-wheels")
+        # The shared downloader appends .zip to an artifact name that already has it.
+        archive = directory / "catalyst-manylinux_2_28_x86_64-wheel-py-3.12.zip.zip"
+        if not archive.is_file():
+            raise SystemExit("Catalyst wheel artifact is missing or expired. Check the selected run.")
+        with ZipFile(archive) as bundle:
+            wheels = [name for name in bundle.namelist() if name.endswith(".whl")]
+            if len(wheels) != 1 or not wheels[0].startswith("pennylane_catalyst-"):
+                raise SystemExit("Expected exactly one Catalyst wheel in the artifact.")
+            wheel = Path(wheels[0]).name
+            (directory / wheel).write_bytes(bundle.read(wheels[0]))
+        with (directory / "overrides.txt").open("a") as overrides:
+            overrides.write("pennylane-catalyst @ file://${GITHUB_WORKSPACE}/companion-wheels/" + wheel + "\n")
+        print(f"Selected Catalyst wheel: {wheel}")
+        PY

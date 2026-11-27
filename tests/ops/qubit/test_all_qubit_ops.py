@@ -19,7 +19,7 @@ the more specific file.
 
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 
 @pytest.mark.parametrize(

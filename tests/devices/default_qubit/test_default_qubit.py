@@ -21,9 +21,9 @@ from unittest import mock
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.devices import DefaultQubit, ExecutionConfig
-from pennylane.exceptions import DeviceError
+import pennylane2 as qp
+from pennylane2.devices import DefaultQubit, ExecutionConfig
+from pennylane2.exceptions import DeviceError
 
 max_workers_list = [
     None,

@@ -1,0 +1,175 @@
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+r"""
+Contains the FlipSign template.
+"""
+
+from collections.abc import Sequence
+
+from pennylane2 import math
+from pennylane2.core.operator import Operator2
+from pennylane2.decomposition import add_decomps, register_resources
+from pennylane2.ops import CZ, X, Z, ctrl
+from pennylane2.typing import AbstractArray, Bool, Wire
+from pennylane2.wires import Wires, WiresLike
+
+
+class FlipSign(Operator2):
+    r"""Flips the sign of a given basis state.
+
+    This template performs the following operation:
+
+    FlipSign(n) :math:`|m\rangle = -|m\rangle` if :math:`m = n`
+
+    FlipSign(n) :math:`|m\rangle = |m\rangle` if :math:`m \not = n`,
+
+    where :math:`n` is the basis state (argument ``state``) to flip and :math:`m` is the input.
+
+    Args:
+        state (tuple[int] or list[int] or int): integer or binary sequence representing
+            the basis state whose sign is to be flipped
+        wires (WiresLike): wires that the template acts on
+        work_wires (WiresLike): optional auxiliary wires that can be used in the decomposition
+            of the multi-controlled :class:`~.Z` gate. They are assumed to be in the state
+            :math:`|0\rangle` and are restored to it.
+
+    **Example**
+
+    This template changes the sign of the basis state passed as an argument. In this example,
+    when passing the element ``[1, 0]``, we will change the sign of the state :math:`|10\rangle`
+    on two qubits. We could alternatively pass the integer ``2`` and get the same result since
+    its two-bit binary representation is ``[1, 0]``.
+
+    .. code-block:: python
+
+        num_wires = 2
+        dev = qp.device("default.qubit", wires=num_wires)
+
+        @qp.qnode(dev)
+        def circuit():
+            for wire in range(num_wires):
+                qp.Hadamard(wire)
+            qp.FlipSign([1, 0], wires=range(num_wires))
+            return qp.state()
+
+    The result for the above circuit is:
+
+    >>> circuit()
+    array([ 0.5+0.j,  0.5+0.j, -0.5+0.j,  0.5+0.j])
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.FlipSign
+            :stacked:
+            :symbols: :math:`n` wires and basis state :math:`b=(b_0, \dots, b_{n-1})` (``state``)
+            :example: :math:`n=3`, :math:`b=(1, 0, 0)`
+
+            .. decomposition-rule:: to_controlled_z
+                :image: /_static/decomposition_thumbnails/flip_sign_controlled_z.svg
+                :where: the controls are on :math:`|b_0 \cdots b_{n-2}\rangle`, and
+                    :math:`[\cdot]` is 1 if the condition holds and 0 otherwise
+
+                :class:`~.Z` with :math:`n-1` controls | :math:`1` | 1
+                :class:`~.X` | :math:`2[b_{n-1} = 0]` | 2
+
+    """
+
+    compilable_argnames = ("state",)
+    wire_argnames = ("wires", "work_wires")
+    arg_specs = {"wires": Wire[-1], "work_wires": Wire[-1]}
+
+    @staticmethod
+    def _canonicalize_state(
+        state: int | Sequence[int] | AbstractArray, num_wires: int
+    ) -> tuple[int] | AbstractArray:
+        """Canonicalize the input state into a tuple of integers."""
+
+        if isinstance(state, int):
+            if not 0 <= state < 2**num_wires:
+                raise ValueError(
+                    "The given basis state must be a non-negative integer smaller "
+                    f"than {2**num_wires}, but got {state}."
+                )
+            return tuple(map(int, math.int_to_binary(state, num_wires)))
+
+        if num_wires != len(state):
+            raise ValueError(
+                "The basis state and wires must have equal length, "
+                f"but got {len(state)} and {num_wires}."
+            )
+
+        return state if isinstance(state, AbstractArray) else tuple(state)
+
+    def __init__(
+        self,
+        state: int | list[int] | tuple[int],
+        wires: WiresLike,
+        work_wires: WiresLike = None,
+    ):
+        wires = Wires(wires)
+        num_wires = len(wires)
+        if num_wires == 0:
+            raise ValueError("At least one wire is required.")
+        state = self._canonicalize_state(state, num_wires)
+        work_wires = () if work_wires is None else work_wires
+        super().__init__(state, wires, work_wires)
+
+
+def _flip_sign_standard_resources(state: tuple[int], wires: WiresLike, work_wires: WiresLike):
+    num_wires = len(wires)
+    num_ctrl_wires = num_wires - 1
+    if num_ctrl_wires == 0:
+        res = {Z: 1}
+    elif num_ctrl_wires == 1 and state[0]:
+        res = {CZ: 1}
+    else:
+        res = {
+            ctrl(
+                Z(Wire[1]),
+                control=Wire[num_ctrl_wires],
+                control_values=Bool[num_ctrl_wires],
+                work_wires=Wire[len(work_wires)],
+                work_wire_type="zeroed",
+            ): 1
+        }
+
+    if state[-1] == 0:
+        res[X] = 2
+    return res
+
+
+@register_resources(_flip_sign_standard_resources, name="to_controlled_z")
+def _flip_sign_standard(state: tuple[int], wires: WiresLike, work_wires: WiresLike):
+    if state[-1] == 0:
+        X(wires[-1])
+
+    if len(wires) == 1:
+        Z(wires)
+    elif len(wires) == 2 and state[0]:
+        CZ(wires)
+    else:
+        ctrl(
+            Z(wires[-1]),
+            control=wires[:-1],
+            work_wire_type="zeroed",
+            work_wires=work_wires,
+            control_values=state[:-1],
+        )
+
+    if state[-1] == 0:
+        X(wires[-1])
+
+
+add_decomps(FlipSign, _flip_sign_standard)

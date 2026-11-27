@@ -18,17 +18,17 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.measurements import (
+import pennylane2 as qp
+from pennylane2.core.measurements import (
     MeasurementProcess,
     MeasurementTransform,
     SampleMeasurement,
     StateMeasurement,
 )
-from pennylane.core.queuing import AnnotatedQueue
-from pennylane.core.shots import Shots
-from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
-from pennylane.measurements import (
+from pennylane2.core.queuing import AnnotatedQueue
+from pennylane2.core.shots import Shots
+from pennylane2.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
+from pennylane2.measurements import (
     ClassicalShadowMP,
     CountsMP,
     ExpectationMP,
@@ -44,7 +44,7 @@ from pennylane.measurements import (
     sample,
     var,
 )
-from pennylane.wires import Wires
+from pennylane2.wires import Wires
 
 
 def test_measurements_module_getattr():
@@ -58,7 +58,7 @@ def test_mid_measure_deprecations():
     assert qp.measurements.MeasurementValue == qp.ops.MeasurementValue
     assert qp.measurements.measure == qp.ops.measure
     assert qp.measurements.get_mcm_predicates == qp.ops.mid_measure.get_mcm_predicates
-    from pennylane.devices.qubit.simulate import _find_post_processed_mcms
+    from pennylane2.devices.qubit.simulate import _find_post_processed_mcms
 
     assert qp.measurements.find_post_processed_mcms == _find_post_processed_mcms
 

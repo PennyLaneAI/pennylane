@@ -6,9 +6,9 @@ from math import isclose
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.transforms.transpile import transpile
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.transforms.transpile import transpile
 
 
 def build_qfunc_probs(wires):

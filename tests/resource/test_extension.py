@@ -19,9 +19,9 @@ from typing import cast
 
 import pytest
 
-import pennylane as qp
-from pennylane.resource.extension import _RESOURCE_EXTENSIONS, weighted_sum
-from pennylane.resource.parsing import parse_resources_json
+import pennylane2 as qp
+from pennylane2.resource.extension import _RESOURCE_EXTENSIONS, weighted_sum
+from pennylane2.resource.parsing import parse_resources_json
 
 
 @pytest.fixture(autouse=True)

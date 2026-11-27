@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the pennylane.drawer.drawable_layers` module.
+Unit tests for the pennylane2.drawer.drawable_layers` module.
 """
 
 import sys
 
 import pytest
 
-import pennylane as qp
-from pennylane.core.queuing import AnnotatedQueue
-from pennylane.drawer.drawable_layers import (
+import pennylane2 as qp
+from pennylane2.core.queuing import AnnotatedQueue
+from pennylane2.drawer.drawable_layers import (
     _recursive_find_layer,
     _recursive_find_mcm_stats_layer,
     drawable_layers,
