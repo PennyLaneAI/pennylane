@@ -74,10 +74,6 @@ def _validate_computational_basis_sampling(tape):
             if idx == len(comp_basis_sampling_obs) - 1:
                 all_wires = qp.wires.Wires.all_wires(all_wires)
 
-        # This happens when a MeasurementRegisterMP is the only computational basis state measurement
-        if all_wires == empty_wires:
-            return
-
         with (
             QueuingManager.stop_recording()
         ):  # stop recording operations - the constructed operator is just aux
