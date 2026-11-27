@@ -1063,6 +1063,14 @@ Improvements 🛠
   `(#10401) <https://github.com/PennyLaneAI/pennylane/pull/10401>`__
   `(#10445) <https://github.com/PennyLaneAI/pennylane/pull/10445>`__
 
+* The kinetic terms of :class:`~.TrotterVibronic` now load the phases :math:`-t_r P_r^2 \Delta t`
+  for all momenta :math:`P_r` of a mode with a :class:`~.QROMLoad`, add them into the
+  phase-gradient register with a :class:`~.SemiAdder`, and unload them with the adjoint
+  :class:`~.QROMLoad`. This replaces squaring the momentum with a :class:`~.SignedOutSquare` and
+  multiplying it with the coefficient with an :class:`~.OutMultiplier`, and rounds the full phase
+  instead of the coefficient to the precision of the phase-gradient register.
+  `(#10607) <https://github.com/PennyLaneAI/pennylane/pull/10607>`__
+
 * Added ``pennylane.core.get_op_class_by_name``
   to retrieve built-in and user-defined ``Operator2`` classes by name. Operator classes are
   automatically registered when they are defined.

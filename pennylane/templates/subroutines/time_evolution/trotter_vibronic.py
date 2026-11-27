@@ -38,8 +38,8 @@ from ..arithmetic.out_multiplier import (
 from ..arithmetic.semi_adder import SemiAdder
 from ..arithmetic.signed_out_multiplier import SignedOutMultiplier
 from ..arithmetic.signed_out_square import SignedOutSquare
-from ..multix import MultiX
 from ..qrom import QROM
+from ..qrom_load import QROMLoad
 
 _BRANCH_TERMS = ("constant", "linear", "quadratic", "bilinear", "kinetic")
 
@@ -134,7 +134,8 @@ class TrotterVibronic(Operator2):
 
         # Retain the arithmetic subtemplates in the resource counts.
         gate_set = qp.gate_sets.ALL_OPS | {
-            qp.PhaseGradientStatePrep, qp.QROM, qp.SemiAdder, qp.MultiX,
+            qp.PhaseGradientStatePrep, qp.QROM, qp.QROMLoad, "Adjoint(QROMLoad)", qp.SemiAdder,
+            qp.MultiX,
             qp.MultiControlledX, qp.TemporaryAND, "Adjoint(TemporaryAND)",
             qp.AQFT, "Adjoint(AQFT)", qp.SignedOutSquare, "Adjoint(SignedOutSquare)",
             qp.OutMultiplier, "C(MultiX)",
@@ -155,7 +156,7 @@ class TrotterVibronic(Operator2):
             return qp.probs(wires=wires["electronic"])
 
     >>> qp.analyze(circuit)().resources.quantum_operations
-    {'1C(MultiX)': 8, 'AQFT': 1, 'Adjoint(AQFT)': 1, 'Adjoint(SignedOutSquare)': 1, 'Adjoint(TemporaryAND)': 10, 'CNOT': 48, 'MultiControlledX': 16, 'MultiX': 2, 'OutMultiplier': 1, 'PauliX': 28, 'PhaseGradientStatePrep': 1, 'QROM': 6, 'SemiAdder': 4, 'SignedOutSquare': 1, 'TemporaryAND': 10}
+    {'1C(MultiX)': 8, 'AQFT': 1, 'Adjoint(AQFT)': 1, 'Adjoint(QROMLoad)': 1, 'Adjoint(SignedOutSquare)': 0, 'Adjoint(TemporaryAND)': 10, 'CNOT': 48, 'MultiControlledX': 16, 'OutMultiplier': 0, 'PauliX': 28, 'PhaseGradientStatePrep': 1, 'QROM': 6, 'QROMLoad': 1, 'SemiAdder': 5, 'SignedOutSquare': 0, 'TemporaryAND': 10}
 
     .. note::
 
@@ -202,13 +203,14 @@ class TrotterVibronic(Operator2):
                 :class:`~.TemporaryAND` | :math:`\tfrac{Pk}{2}(M(2b-k+1) + 2K(2b-2k+1))` | 2
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`\tfrac{Pk}{2}(M(2b-k+1) + 2K(2b-2k+1))` | 2
                 :class:`~.QROM` | :math:`P(2 + 2M + K)` | 6
-                :class:`~.SemiAdder` | :math:`P(1 + M + K)` | 4
-                :class:`~.OutMultiplier` | :math:`PM + rM` | 1
-                :class:`~.SignedOutSquare` | :math:`PM + rM` | 1
-                :class:`Adjoint(SignedOutSquare) <.SignedOutSquare>` | :math:`PM + rM` | 1
+                :class:`~.QROMLoad` | :math:`rM` | 1
+                :class:`Adjoint(QROMLoad) <.QROMLoad>` | :math:`rM` | 1
+                :class:`~.SemiAdder` | :math:`P(1 + M + K) + rM` | 5
+                :class:`~.OutMultiplier` | :math:`PM` | 0
+                :class:`~.SignedOutSquare` | :math:`PM` | 0
+                :class:`Adjoint(SignedOutSquare) <.SignedOutSquare>` | :math:`PM` | 0
                 :class:`~.SignedOutMultiplier` | :math:`PK` | 0
                 :class:`Adjoint(SignedOutMultiplier) <.SignedOutMultiplier>` | :math:`PK` | 0
-                :class:`~.MultiX` | :math:`2rM` | 2
                 :class:`~.AQFT` | :math:`rM` | 1
                 :class:`Adjoint(AQFT) <.AQFT>` | :math:`rM` | 1
 
@@ -403,11 +405,24 @@ class TrotterVibronic(Operator2):
                                              \text{QFT}_r,
 
         where :math:`\text{QFT}_r` maps mode :math:`r` from position to momentum space
-        (implemented as an :class:`~.AQFT`), :math:`t_r` is read from the :math:`(0,0)` electronic
-        block of ``kinetic`` (any electronic dependence is ignored), and
-        :math:`e^{-i t_r P_r^2 \Delta t}` reuses the
-        square-and-multiply of the quadratic term (step 4). Since :math:`t_r` is state-independent,
-        it is written directly to ``coefficient_wires`` without a :class:`~.QROM`. See the demo's
+        (implemented as an :class:`~.AQFT`), and :math:`t_r` is read from the :math:`(0,0)`
+        electronic block of ``kinetic`` (any electronic dependence is ignored).
+        Since :math:`t_r` is state-independent, the phase of
+        :math:`e^{-i t_r P_r^2 \Delta t}` only depends on the :math:`2^k` values of :math:`P_r`.
+        Therefore, a :class:`~.QROMLoad` controlled on the mode register loads the encoded phase
+        :math:`\text{encode}(-t_r P_r^2 \Delta t)` into ``coefficient_wires``, a
+        :class:`~.SemiAdder` adds it into ``phase_gradient_wires`` as in step 2, and the adjoint
+        :class:`~.QROMLoad` unloads it again:
+
+        .. code-block::
+
+            mode r      : ─╭QROMLoad─────────────╭QROMLoad†─┤
+            coefficient : ─╰QROMLoad─╭SemiAdder──╰QROMLoad†─┤
+            |∇n⟩        : ───────────╰SemiAdder─────────────┤  e^{-i t_r P_r² Δt}
+
+        This requires neither squaring :math:`P_r` nor a multiplication, and rounds the phase
+        :math:`t_r P_r^2 \Delta t` itself to :math:`b` bits, rather than the coefficient
+        :math:`t_r \Delta t` before it is multiplied by :math:`P_r^2`. See the demo's
         `kinetic step <https://pennylane.ai/demos/simulating_vibronic_dynamics#the-kinetic-step>`__
         section for an explicit, ungraphed version of this basis change and arithmetic.
     """
@@ -566,7 +581,7 @@ def _trotter_vibronic_standard_resources(  # pylint: disable=too-many-arguments,
     half_signed_bilinear = _caddsub_multiplication_resources(
         2 * k, b, b, n_work, False, x_signed=True
     )
-    # The quadratic/kinetic terms multiply with the cache register minus its sign bit
+    # The quadratic terms multiply with the cache register minus its sign bit
     out_mult_quad = OutMultiplier(
         x_wires=Wire[max(2 * k - 1, 1)],
         y_wires=Wire[b],
@@ -622,16 +637,20 @@ def _trotter_vibronic_standard_resources(  # pylint: disable=too-many-arguments,
     resources[adj_signed_square] += num_quadratic
     resources[out_mult_quad] += num_quadratic
 
-    # -- Kinetic fragment (once per Trotter step): per mode, AQFT, then load the momentum
-    #    coefficients as a basis state (``MultiX``), then SignedOutSquare + OutMultiplier and their
-    #    uncomputation --
+    # -- Kinetic fragment (once per Trotter step): per mode, AQFT, then load the scaled squared
+    #    momenta with a QROMLoad controlled on the mode register, add them with a SemiAdder, and
+    #    unload them again --
+    kinetic_qrom = QROMLoad(
+        np.zeros((2**k, b), dtype=int),
+        control_wires=Wire[k],
+        target_wires=Wire[b],
+        work_wires=Wire[n_work],
+    )
     resources[aqft] += num_kinetic
     resources[adj_aqft] += num_kinetic
-    multi_x = MultiX(np.zeros(b, dtype=bool), wires=Wire[b])
-    resources[multi_x] += num_kinetic * 2
-    resources[signed_square] += num_kinetic
-    resources[adj_signed_square] += num_kinetic
-    resources[out_mult_quad] += num_kinetic
+    resources[kinetic_qrom] += num_kinetic
+    resources[adjoint(kinetic_qrom)] += num_kinetic
+    resources[semi_adder] += num_kinetic
 
     return dict(resources)
 
@@ -1107,12 +1126,20 @@ def _load_coefficients(coefficients, precision, prev_bitstrings, qrom_wires):
     return new_bitstrings
 
 
+def _signed_squares(num_wires):
+    """Squares of the two's-complement integers stored in a ``num_wires``-wire register, indexed
+    by the unsigned integer of the register's basis state (most significant bit first)."""
+    values = np.arange(2**num_wires)
+    values = np.where(values >= 2 ** (num_wires - 1), values - 2**num_wires, values)
+    return values**2
+
+
 def _extract_registers(registers, mode_registers, term, *mode_ids):
     r"""Extract the wire registers required for a specific term of the Trotter step.
 
     See :class:`~.TrotterVibronic` for the meaning of the individual registers. ``term`` is one
-    of ``"constant"``, ``"linear"``, ``"quadratic"``, ``"bilinear"`` or ``"QROM"``, and
-    ``mode_ids`` are the indices of the mode(s) involved in the term.
+    of ``"constant"``, ``"linear"``, ``"quadratic"``, ``"bilinear"``, ``"kinetic"`` or
+    ``"QROM"``, and ``mode_ids`` are the indices of the mode(s) involved in the term.
     """
     if term == "quadratic":
         (k,) = mode_ids
@@ -1150,6 +1177,15 @@ def _extract_registers(registers, mode_registers, term, *mode_ids):
         }
         coeff_mult_wires = {new: registers[old] for new, old in coeff_mult_wires.items()}
         return mode_mult_wires, coeff_mult_wires
+
+    if term == "kinetic":
+        (k,) = mode_ids
+        qrom_wires = {
+            "control_wires": mode_registers[k],
+            "target_wires": registers["coefficients"],
+            "work_wires": registers["work"],
+        }
+        return qrom_wires, _extract_registers(registers, mode_registers, "constant")
 
     if term == "QROM":
         reg = {"control_wires": "electronic", "target_wires": "coefficients", "work_wires": "work"}
@@ -1318,6 +1354,7 @@ def _trotter_step_second_order(  # pylint: disable=too-many-arguments,too-many-s
         kinetic_coeffs = _momentum_coefficients(hamiltonian.kinetic) * time
         if compiler.active() or capture.enabled():
             kinetic_coeffs = math.array(kinetic_coeffs, like="jax")
+        momentum_squares = _signed_squares(mode_registers.shape[1])
 
         @for_loop(n_modes)
         def kinetic_terms(k):
@@ -1328,18 +1365,17 @@ def _trotter_step_second_order(  # pylint: disable=too-many-arguments,too-many-s
 
             @hint({"branch-prob": branch_probs.get("kinetic")})
             def actual_fn():
-                square_wires, mult_wires = _extract_registers(
-                    registers, mode_registers, "quadratic", k
+                qrom_wires, adder_wires = _extract_registers(
+                    registers, mode_registers, "kinetic", k
                 )
                 # Negated for the same phase-gradient sign convention as ``_load_coefficients``.
-                bitstring = math.binary_decimals(-_coeffs, precision, unit=2 * np.pi)
+                bitstrings = math.binary_decimals(
+                    -_coeffs * momentum_squares, precision, unit=2 * np.pi
+                )
                 AQFT(order=aqft_order, wires=mode_registers[k])
-                MultiX(bitstring, registers["coefficients"])
-                SignedOutSquare(**square_wires, output_wires_zeroed=True)
-                OutMultiplier(**mult_wires)
-                adjoint(SignedOutSquare(**square_wires, output_wires_zeroed=True))
-                # ``MultiX`` is self-adjoint, so the unload is the same call.
-                MultiX(bitstring, registers["coefficients"])
+                QROMLoad(bitstrings, **qrom_wires)
+                SemiAdder(**adder_wires)
+                adjoint(QROMLoad(bitstrings, **qrom_wires))
                 adjoint(AQFT(order=aqft_order, wires=mode_registers[k]))
 
             cond(math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
