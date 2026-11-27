@@ -1687,6 +1687,11 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* The public decomposition functions ``one_qubit_decomposition``,
+  ``two_qubit_decomposition``, and ``multi_qubit_decomposition`` have moved from
+  ``pennylane.ops`` to ``pennylane.decomposition_rules``.
+  `(#10596) <https://github.com/PennyLaneAI/pennylane/pull/10596>`__
+
 * :func:`~.sign_expand` now requires `controls` wires instead of defaulting to ``("Hadamard", "Target")``
   as string wires will no longer be supported.
   `(#10592) <https://github.com/PennyLaneAI/pennylane/pull/10592>`__
@@ -2128,6 +2133,9 @@ Deprecations 👋
 
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
+
+* Decomposition rules have been migrated to the new ``pennylane.decomposition_rules`` module.
+  `(#10596) <https://github.com/PennyLaneAI/pennylane/pull/10596>`__
 
 * The helper that inserts the resource analysis passes for :func:`~.analyze` and
   :func:`~pennylane.estimate` now inserts the requested analysis pass at every level, instead of
