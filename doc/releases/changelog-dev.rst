@@ -2699,6 +2699,13 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed :func:`~.ftqc.diagonalize_mcms` changing the measurement values of the terminal
+  measurements of the input tape in place. This raised a ``ValueError`` when a parametric
+  mid-circuit measurement was both returned and used in a combined condition such as
+  ``qp.cond(m0 ^ m1, ...)``. Terminal measurements of a list of measurement values, such as
+  ``qp.probs(op=[m0, m1])``, are now also supported by the transform.
+  `(#10613) <https://github.com/PennyLaneAI/pennylane/pull/10613>`__
+
 * Fixed :func:`~.ctrl` to return the original operator or callable when the control wires are empty.
   `(#10595) <https://github.com/PennyLaneAI/pennylane/pull/10595>`__
 
@@ -3084,6 +3091,7 @@ Thomas C. Fraser,
 Connor Gambla,
 Vellala Gowthami,
 Pragati Gupta,
+Andy He,
 Sengthai Heng,
 Austin Huang,
 Harshal Janjani,
