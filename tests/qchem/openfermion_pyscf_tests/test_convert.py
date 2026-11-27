@@ -41,7 +41,7 @@ pauli_ops_and_prod = (qp.PauliX, qp.PauliY, qp.PauliZ, qp.Identity, qp.ops.Prod)
         None,
         qp.wires.Wires([10, 11, 3, 42, 20, 23, 30] + list(range(100, 120))),
         list(range(100, 120)),
-        {13 - i: 30 + i for i in range(14)},
+        {13 - i: 100 + i for i in range(14)},
     ],
     name="custom_wires",
 )

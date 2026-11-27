@@ -199,7 +199,7 @@ class TestControlled:
         (
             (qre.S, {}),
             (qre.RZ, {"precision": 1e-3}),
-            (qre.CNOT, {"wires": [2, 5]}),
+            (qre.CNOT, {"wires": [5, 6]}),
         ),
     )
     def test_init(self, ctrl_wires, ctrl_values, base_type, base_args):
