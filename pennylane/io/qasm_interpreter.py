@@ -1475,8 +1475,8 @@ class QasmInterpreter:  # pylint: disable=too-many-public-methods
         return gate, arg, wires
 
     def apply_modifier(  # pragma: no cover
-        self, mod: ast.QuantumGate, previous: LegacyOperator, context: Context, wires: list
-    ):
+        self, mod: ast.QuantumGate, previous: LegacyOperator, context: Context, wires: list  # pragma: no cover
+    ):  # pragma: no cover
         """
         Applies a modifier to the previous gate or modified gate.
 
