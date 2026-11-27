@@ -17,7 +17,7 @@ hypercontraction (THC) qubitization."""
 import numpy as np
 
 from pennylane import math
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import RY, GlobalPhase, Hadamard, MultiControlledX, X, Z, adjoint, ctrl
 from pennylane.typing import Bool, Wire
@@ -29,7 +29,7 @@ from .arithmetic.temporary_and import TemporaryAND
 from .flip_sign import FlipSign
 
 
-class SuperpositionTHC(Operator2):
+class SuperpositionTHC(Operator):
     r"""Prepare the uniform superposition over the valid :math:`(\mu, \nu)` index
     pairs of the tensor hypercontraction (THC) representation.
 

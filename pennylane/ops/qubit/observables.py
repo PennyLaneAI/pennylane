@@ -24,14 +24,14 @@ import numpy as np
 from scipy.sparse import csr_matrix, spmatrix
 
 import pennylane as qp
-from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator import LegacyOperator, Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .matrix_ops import QubitUnitary
 
 
-class Hermitian(Operator):
+class Hermitian(LegacyOperator):
     r"""
     An arbitrary Hermitian observable.
 
@@ -184,7 +184,7 @@ class Hermitian(Operator):
             A (array or Sequence): hermitian matrix
             wires (Iterable[int], Wires): wires that the operator acts on
         Returns:
-            list[.Operator]: decomposition of the hermitian matrix
+            list[.LegacyOperator]: decomposition of the hermitian matrix
 
         **Examples**
 
@@ -229,7 +229,7 @@ class Hermitian(Operator):
     @staticmethod
     def compute_diagonalizing_gates(  # pylint: disable=arguments-differ
         eigenvectors: TensorLike, wires: WiresLike
-    ) -> list["qp.operation.Operator"]:
+    ) -> list["qp.operation.LegacyOperator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -245,7 +245,7 @@ class Hermitian(Operator):
             eigenvectors (array): eigenvectors of the operator, as extracted from op.eigendecomposition["eigvec"].
             wires (Iterable[int], Wires): wires that the operator acts on
         Returns:
-            list[.Operator]: list of diagonalizing gates
+            list[.LegacyOperator]: list of diagonalizing gates
 
         **Example**
 
@@ -260,7 +260,7 @@ class Hermitian(Operator):
         """
         return [QubitUnitary(eigenvectors.conj().T, wires=wires)]
 
-    def diagonalizing_gates(self) -> list["qp.operation.Operator"]:
+    def diagonalizing_gates(self) -> list["qp.operation.LegacyOperator"]:
         """Return the gate set that diagonalizes a circuit according to the
         specified Hermitian observable.
 
@@ -271,7 +271,7 @@ class Hermitian(Operator):
         return self.compute_diagonalizing_gates(self.eigendecomposition["eigvec"], self.wires)
 
 
-class SparseHamiltonian(Operator):
+class SparseHamiltonian(LegacyOperator):
     r"""
     A Hamiltonian represented directly as a sparse matrix in Compressed Sparse Row (CSR) format.
 
@@ -408,7 +408,7 @@ class SparseHamiltonian(Operator):
         return H
 
 
-class Projector(Operator):
+class Projector(LegacyOperator):
     r"""Projector(state, wires)
     Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`.
 
@@ -497,7 +497,7 @@ class Projector(Operator):
             f"{len(wires)}, respectively."
         )
 
-    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qp.operation.LegacyOperator"]:
         """Raise this projector to the power ``z``."""
         return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
 
@@ -636,7 +636,7 @@ class BasisStateProjector(Projector, Operation):
     def compute_diagonalizing_gates(  # pylint: disable=arguments-differ,unused-argument
         basis_state: TensorLike,
         wires: WiresLike,
-    ) -> list["qp.operation.Operator"]:
+    ) -> list["qp.operation.LegacyOperator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -652,7 +652,7 @@ class BasisStateProjector(Projector, Operation):
             basis_state (Iterable): basis state that the operator projects on
             wires (Iterable[int], Wires): wires that the operator acts on
         Returns:
-            list[.Operator]: list of diagonalizing gates
+            list[.LegacyOperator]: list of diagonalizing gates
 
         **Example**
 
@@ -815,7 +815,7 @@ class StateVectorProjector(Projector):
     @staticmethod
     def compute_diagonalizing_gates(  # pylint: disable=arguments-differ
         state_vector: TensorLike, wires: WiresLike
-    ) -> list["qp.operation.Operator"]:
+    ) -> list["qp.operation.LegacyOperator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -831,7 +831,7 @@ class StateVectorProjector(Projector):
             state_vector (Iterable): state vector that the operator projects on.
             wires (Iterable[int], Wires): wires that the operator acts on.
         Returns:
-            list[.Operator]: list of diagonalizing gates.
+            list[.LegacyOperator]: list of diagonalizing gates.
 
         **Example**
 

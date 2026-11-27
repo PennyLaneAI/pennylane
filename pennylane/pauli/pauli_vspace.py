@@ -20,7 +20,7 @@ import numpy as np
 import scipy
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.pauli import PauliSentence
 
 
@@ -59,7 +59,7 @@ class PauliVSpace:
     where we have set the numbering based on appearance in the list of generators. This mapping is in general not unique.
 
     Args:
-        generators (Iterable[Union[PauliWord, PauliSentence, Operator]]): Operators that span the vector space.
+        generators (Iterable[Union[PauliWord, PauliSentence, LegacyOperator]]): Operators that span the vector space.
         dtype (type): ``dtype`` of the underlying DOK sparse matrix ``M``. Default is ``float``.
         tol (float): Numerical tolerance for the linear independence check. If the norm of the projection of the candidate vector
             onto :math:`M^\perp` is greater than ``tol``, then it is deemed to be linearly independent.
@@ -153,7 +153,7 @@ class PauliVSpace:
         r"""Adding Pauli sentences if they are linearly independent.
 
         Args:
-            other (List[:class:`~.PauliWord`, :class:`~.PauliSentence`, :class:`~.Operator`]): List of candidate operators to add to the ``PauliVSpace``, if they are linearly independent.
+            other (List[:class:`~.PauliWord`, :class:`~.PauliSentence`, :class:`~.LegacyOperator`]): List of candidate operators to add to the ``PauliVSpace``, if they are linearly independent.
             tol (float): Numerical tolerance for linear independence check. Defaults to ``1e-15``.
 
         Returns:
@@ -177,7 +177,7 @@ class PauliVSpace:
         if tol is None:
             tol = self.tol
 
-        if isinstance(other, (qp.pauli.PauliWord, qp.pauli.PauliSentence, Operator)):
+        if isinstance(other, (qp.pauli.PauliWord, qp.pauli.PauliSentence, LegacyOperator)):
             other = [other]
 
         other = [

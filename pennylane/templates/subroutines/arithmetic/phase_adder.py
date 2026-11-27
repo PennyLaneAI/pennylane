@@ -18,7 +18,7 @@ Contains the PhaseAdder template.
 import numpy as np
 
 from pennylane import ops
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
@@ -38,7 +38,7 @@ def _add_k_fourier(k, wires: WiresLike):
     return op_list
 
 
-class PhaseAdder(Operator2):
+class PhaseAdder(Operator):
     r"""Performs the in-place modular phase addition operation.
 
     This operator performs the modular addition by an integer :math:`k` modulo :math:`mod` in the

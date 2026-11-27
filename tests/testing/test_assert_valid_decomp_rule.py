@@ -23,7 +23,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.testing import assert_decomposable, assert_valid_decomp_rule, decomp_rule_to_tape
 from pennylane.typing import Wire
 from tests.core.operator.operator2_utils import OneWireDynOp
@@ -77,7 +77,7 @@ class TestDecompRuleToTape:
 
     @pytest.mark.parametrize("capture", [False, pytest.param(True, marks=pytest.mark.capture)])
     def test_operator2_dynamic_args(self, capture):
-        """Test that the dynamic arguments of an Operator2 reach the rule."""
+        """Test that the dynamic arguments of an Operator reach the rule."""
 
         @qp.register_resources({OneWireDynOp: 2}, name="rule")
         def rule(phi, wires):
@@ -92,7 +92,7 @@ class TestDecompRuleToTape:
     def test_operator1_hyperparameters_captured(self):
         """Test that the hyperparameters of a legacy operator are passed to a captured rule."""
 
-        class MyOp(Operator):
+        class MyOp(LegacyOperator):
             num_wires = 1
 
             def __init__(self, phi, wires, n):
@@ -176,7 +176,7 @@ class TestAssertValidDecompositionRule:
     def test_rule_with_non_int_counts(self):
         """Test that a rule with non-int counts raises an error."""
 
-        class MyOp(Operator):
+        class MyOp(LegacyOperator):
             num_wires = 2
 
         op = MyOp([0, 1])
@@ -205,7 +205,7 @@ class TestAssertValidDecompositionRule:
     def test_numpy_ints_are_not_allowed(self, numpy_int):
         """Test that numpy integer types are not allowed."""
 
-        class MyOp(Operator):
+        class MyOp(LegacyOperator):
             num_wires = 2
 
         op = MyOp([0, 1])
@@ -225,7 +225,7 @@ class TestAssertValidDecompositionRule:
     def test_bad_new_decomposition_rule_exact(self):
         """Exact estimates must match each gate count; unused gates may have a zero count."""
 
-        class MyOp(Operator):
+        class MyOp(LegacyOperator):
             num_wires = 2
 
         op = MyOp([0, 1])
@@ -253,7 +253,7 @@ class TestAssertValidDecompositionRule:
         This test checks for missing gate types, not underestimated gate counts.
         """
 
-        class MyOp(Operator):
+        class MyOp(LegacyOperator):
             num_wires = 2
 
         def rule(wires):
@@ -273,7 +273,7 @@ class TestAssertValidDecompositionRule:
     def test_new_decomposition_rule_with_mcm_skips_matrix_check(self, mocker):
         """Test that matrix check is skipped for decompositions containing mid-circuit measurements."""
 
-        class MyOp(Operator):
+        class MyOp(LegacyOperator):
             num_wires = 1
 
             @staticmethod
@@ -297,7 +297,7 @@ class TestAssertValidDecompositionRule:
     def test_new_decomposition_rule_capture(self):
         """A captured decomposition is converted to a tape before validating its resources."""
 
-        class MyOp(Operator):
+        class MyOp(LegacyOperator):
             num_wires = 3
 
         @qp.register_resources({qp.S: 3}, name="rule")
@@ -312,7 +312,7 @@ class TestAssertValidDecompositionRule:
 
     @pytest.mark.capture
     def test_new_decomposition_rule_capture_operator2(self):
-        """Operator2 dynamic and wire arguments are forwarded as capture inputs."""
+        """Operator dynamic and wire arguments are forwarded as capture inputs."""
 
         @qp.register_resources({OneWireDynOp: 3}, name="rule")
         def rule(phi, wires):  # pylint: disable=unused-argument
@@ -389,7 +389,7 @@ class TestAssertValidDecompositionRule:
         assert_valid_decomp_rule(qp.H(0), rule)
 
 
-class MyOneWireOp(Operator):
+class MyOneWireOp(LegacyOperator):
     """A one-wire operator without any registered decomposition rules."""
 
     num_wires = 1

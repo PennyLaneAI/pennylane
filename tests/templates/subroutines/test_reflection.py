@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the Reflection Operator template
+Tests for the Reflection LegacyOperator template
 """
 
 import numpy as np

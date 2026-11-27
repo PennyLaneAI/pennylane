@@ -20,7 +20,7 @@ from itertools import combinations, combinations_with_replacement
 from scipy.linalg import null_space, sqrtm
 
 from pennylane import math
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.liealg.center import _intersect_bases
 from pennylane.ops import Identity
 from pennylane.ops.functions import commutator, equal, matrix, simplify
@@ -302,7 +302,7 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
 
     Args:
         adj_vecs (TensorLike): collection of vectors with shape ``(batch, len(basis))``
-        basis (List[Union[PauliSentence, Operator, TensorLike]]): collection of basis operators
+        basis (List[Union[PauliSentence, LegacyOperator, TensorLike]]): collection of basis operators
         is_orthogonal (bool): Whether the ``basis`` consists of orthogonal elements.
 
     Returns:
@@ -332,7 +332,7 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
             res.append(op_j)
         return res
 
-    if all(isinstance(op, Operator) for op in basis):
+    if all(isinstance(op, LegacyOperator) for op in basis):
         if not is_orthogonal:
             basis_ps = [op.pauli_rep for op in basis]
             gram = _gram_ps(basis_ps)
@@ -391,8 +391,8 @@ def _op_to_adjvec_ps(ops: PauliSentence, basis: PauliSentence, is_orthogonal: bo
 
 
 def op_to_adjvec(
-    ops: Iterable[PauliSentence | Operator | TensorLike],
-    basis: PauliSentence | Operator | TensorLike,
+    ops: Iterable[PauliSentence | LegacyOperator | TensorLike],
+    basis: PauliSentence | LegacyOperator | TensorLike,
     is_orthogonal: bool = True,
 ):
     r"""Decompose a batch of operators into a given operator basis.
@@ -404,8 +404,8 @@ def op_to_adjvec(
     .. seealso:: :func:`~adjvec_to_op`
 
     Args:
-        ops (Iterable[Union[PauliSentence, Operator, TensorLike]]): List of operators to decompose.
-        basis (Iterable[Union[PauliSentence, Operator, TensorLike]]): Operator basis.
+        ops (Iterable[Union[PauliSentence, LegacyOperator, TensorLike]]): List of operators to decompose.
+        basis (Iterable[Union[PauliSentence, LegacyOperator, TensorLike]]): LegacyOperator basis.
         is_orthogonal (bool): Whether the basis is orthogonal with respect to the trace inner
             product. Defaults to ``True``, which allows to skip some computations.
 
@@ -438,7 +438,7 @@ def op_to_adjvec(
     array([[1. , 0.5, 0. ]])
     """
 
-    if all(isinstance(op, Operator) for op in basis):
+    if all(isinstance(op, LegacyOperator) for op in basis):
         ops = [op.pauli_rep for op in ops]
         basis = [op.pauli_rep for op in basis]
 
@@ -515,13 +515,13 @@ def change_basis_ad_rep(adj: TensorLike, basis_change: TensorLike):
     return math.einsum("mnp,ip->mni", new_adj, basis_change)
 
 
-def check_abelian(ops: list[PauliSentence | TensorLike | Operator]):
+def check_abelian(ops: list[PauliSentence | TensorLike | LegacyOperator]):
     r"""Helper function to check if all operators in ``ops`` commute, i.e., form an Abelian set of operators.
 
     .. warning:: This function is expensive to compute
 
     Args:
-        ops (List[Union[PauliSentence, TensorLike, Operator]]): List of operators to check for mutual commutation
+        ops (List[Union[PauliSentence, TensorLike, LegacyOperator]]): List of operators to check for mutual commutation
 
     Returns:
         bool: Whether or not all operators commute with each other
@@ -546,7 +546,7 @@ def check_abelian(ops: list[PauliSentence | TensorLike | Operator]):
 
         return_True = True
 
-    if all(isinstance(op, Operator) for op in ops):
+    if all(isinstance(op, LegacyOperator) for op in ops):
         for oi, oj in combinations(ops, 2):
             com = simplify(commutator(oj, oi))
             if not equal(com, 0 * Identity()):

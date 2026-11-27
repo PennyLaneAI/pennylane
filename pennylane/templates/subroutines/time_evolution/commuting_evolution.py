@@ -194,7 +194,7 @@ class CommutingEvolution(Operation):
         .. seealso:: :meth:`~.CommutingEvolution.decomposition`.
 
         Returns:
-            list[.Operator]: decomposition of the operator
+            list[.LegacyOperator]: decomposition of the operator
         """
         # uses standard PauliRot decomposition through ApproxTimeEvolution.
         return [ApproxTimeEvolution(hamiltonian, time, 1)]

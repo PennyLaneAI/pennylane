@@ -297,7 +297,7 @@ def debug_expval(op):
     next operation in the circuit.
 
     Args:
-        op (Operator): the observable to compute the expectation value for.
+        op (LegacyOperator): the observable to compute the expectation value for.
 
     Returns:
         complex: expectation value of the operator
@@ -359,7 +359,7 @@ def debug_probs(wires=None, op=None):
 
     Args:
         wires (Union[Iterable, int, list]): the wires the operation acts on
-        op (Union[Operator, MeasurementValue]): an observable (with a ``diagonalizing_gates``
+        op (Union[LegacyOperator, MeasurementValue]): an observable (with a ``diagonalizing_gates``
             attribute) that rotates the computational basis, or a  ``MeasurementValue``
             corresponding to mid-circuit measurements.
 

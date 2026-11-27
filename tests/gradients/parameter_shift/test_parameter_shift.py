@@ -2585,7 +2585,7 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
                 new = self.val + (other.val if isinstance(other, self.__class__) else other)
                 return SpecialObject(new)
 
-        class SpecialObservable(qp.operation.Operator):
+        class SpecialObservable(qp.operation.LegacyOperator):
             """SpecialObservable"""
 
             def diagonalizing_gates(self):

@@ -19,7 +19,7 @@ from jax.extend.core import ClosedJaxpr, Jaxpr, JaxprEqn, Primitive
 
 from pennylane.capture import pause
 from pennylane.capture.primitives import operator_p
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.core.qscript import QuantumScript
 from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
@@ -140,7 +140,7 @@ def extract_all_primitives(jaxpr: Jaxpr | ClosedJaxpr) -> set:
 def assert_eqn_matches_op(eqn, expected_op: type) -> None:
     """Assert that a jaxpr equation creates an operator of the expected type.
 
-    Subclasses of :class:`~.core.Operator2` are all captured with the shared ``operator``
+    Subclasses of :class:`~.core.Operator` are all captured with the shared ``operator``
     primitive, so the operator class is read from the equation's parameters. Other
     operators are captured with a primitive of their own.
 
@@ -158,7 +158,7 @@ def assert_eqn_matches_op(eqn, expected_op: type) -> None:
     >>> qp.testing.assert_eqn_matches_op(plxpr.eqns[0], qp.RX)
 
     """
-    if issubclass(expected_op, Operator2):
+    if issubclass(expected_op, Operator):
         assert eqn.primitive == operator_p
         assert eqn.params["op_cls"] == expected_op
     else:

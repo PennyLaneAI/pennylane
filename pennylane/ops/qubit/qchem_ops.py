@@ -25,7 +25,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
-from pennylane.core.operator import Operation, Operator2
+from pennylane.core.operator import Operation, Operator
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
@@ -94,7 +94,7 @@ def _double_excitations_matrix(phi: TensorLike, phase_prefactor: TensorLike) -> 
     return diag + off_diag
 
 
-class SingleExcitation(Operator2):
+class SingleExcitation(Operator):
     r"""
     Single excitation rotation.
 
@@ -232,7 +232,7 @@ class SingleExcitation(Operator2):
     def adjoint(self) -> "SingleExcitation":
         return SingleExcitation(-self.phi, wires=self.wires)
 
-    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qp.operation.LegacyOperator"]:
         return [SingleExcitation(self.phi * z, wires=self.wires)]
 
     def label(
@@ -327,7 +327,9 @@ class SingleExcitationMinus(Operation):
         return _single_excitations_matrix(phi, -0.5j)
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qp.operation.Operator"]:
+    def compute_decomposition(
+        phi: TensorLike, wires: WiresLike
+    ) -> list["qp.operation.LegacyOperator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -340,7 +342,7 @@ class SingleExcitationMinus(Operation):
             wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
-            list[Operator]: decomposition into lower level operations
+            list[LegacyOperator]: decomposition into lower level operations
 
         **Example:**
 
@@ -467,7 +469,9 @@ class SingleExcitationPlus(Operation):
         return _single_excitations_matrix(phi, 0.5j)
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qp.operation.Operator"]:
+    def compute_decomposition(
+        phi: TensorLike, wires: WiresLike
+    ) -> list["qp.operation.LegacyOperator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -480,7 +484,7 @@ class SingleExcitationPlus(Operation):
             wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
-            list[Operator]: decomposition into lower level operations
+            list[LegacyOperator]: decomposition into lower level operations
 
         **Example:**
 
@@ -517,7 +521,7 @@ class SingleExcitationPlus(Operation):
         return super().label(decimals=decimals, base_label=base_label or "G₊", cache=cache)
 
 
-class DoubleExcitation(Operator2):
+class DoubleExcitation(Operator):
     r"""
     Double excitation rotation.
 
@@ -592,7 +596,7 @@ class DoubleExcitation(Operator2):
             ],
         )
 
-    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qp.operation.LegacyOperator"]:
         return [DoubleExcitation(self.phi * z, wires=self.wires)]
 
     def __init__(self, phi: TensorLike, wires: WiresLike):
@@ -816,7 +820,7 @@ class DoubleExcitationMinus(Operation):
         return super().label(decimals=decimals, base_label=base_label or "G²₋", cache=cache)
 
 
-class OrbitalRotation(Operator2):
+class OrbitalRotation(Operator):
     r"""
     Spin-adapted spatial orbital rotation.
 
@@ -974,7 +978,7 @@ class OrbitalRotation(Operator2):
         return OrbitalRotation(-phi, wires=self.wires)
 
 
-class FermionicSWAP(Operator2):
+class FermionicSWAP(Operator):
     r"""Fermionic SWAP rotation.
 
     .. math:: U(\phi) = \begin{bmatrix}
@@ -1101,7 +1105,7 @@ class FermionicSWAP(Operator2):
         (phi,) = self.parameters
         return FermionicSWAP(-phi, wires=self.wires)
 
-    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qp.operation.LegacyOperator"]:
         return [FermionicSWAP(self.data[0] * z, wires=self.wires)]
 
     def label(

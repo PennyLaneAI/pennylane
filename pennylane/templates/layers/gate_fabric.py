@@ -262,7 +262,7 @@ class GateFabric(Operation):
                 Default value is :math:`\hat{I}`.
 
         Returns:
-            list[.Operator]: decomposition of the operator
+            list[.LegacyOperator]: decomposition of the operator
 
         **Example**
 

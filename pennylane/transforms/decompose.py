@@ -22,7 +22,7 @@ from collections.abc import Callable, Generator, Iterable, Sequence
 
 from pennylane.allocation import Allocate, Deallocate
 from pennylane.core import queuing
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.decomposition import DecompositionGraph, GateSet, gate_sets
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
 from pennylane.decomposition.utils import _get_decomp_args
@@ -159,13 +159,13 @@ def _tape_decompose(  # pylint: disable=too-many-arguments
             allocated. If ``None``, assume an infinite number of work wires. Defaults to ``0``.
         minimize_work_wires (bool): If ``True``, minimize the number of work wires simultaneously
             allocated throughout the circuit. Defaults to ``False``.
-        fixed_decomps (Dict[Type[Operator], DecompositionRule or str]): a dictionary mapping operator types
+        fixed_decomps (Dict[Type[LegacyOperator], DecompositionRule or str]): a dictionary mapping operator types
             to custom decomposition rules. A decomposition rule is a quantum function decorated with
             :func:`~pennylane.register_resources`. The custom decomposition rules specified here
             will be used in place of the existing decomposition rules defined for this operator.
             A string selects a registered rule by its public name, for example
             ``fixed_decomps={qp.SWAP: "to_cnot"}``.
-        alt_decomps (Dict[Type[Operator], List[DecompositionRule]]): a dictionary mapping operator
+        alt_decomps (Dict[Type[LegacyOperator], List[DecompositionRule]]): a dictionary mapping operator
             types to lists of alternative custom decomposition rules. A decomposition rule is a
             quantum function decorated with :func:`~pennylane.register_resources`. The custom
             decomposition rules specified here will be considered as alternatives to the existing
@@ -538,15 +538,15 @@ def _tape_decompose(  # pylint: disable=too-many-arguments
 
 
 def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-branches
-    op: Operator,
-    acceptance_function: Callable[[Operator], bool],
+    op: LegacyOperator,
+    acceptance_function: Callable[[LegacyOperator], bool],
     max_expansion: int | None = None,
     current_depth: int = 0,
     num_work_wires: int | None = 0,
     graph_solution: DecompGraphSolution | None = None,
-    custom_decomposer: Callable[[Operator], Sequence[Operator]] | None = None,
+    custom_decomposer: Callable[[LegacyOperator], Sequence[LegacyOperator]] | None = None,
     strict: bool = False,
-) -> Generator[Operator]:
+) -> Generator[LegacyOperator]:
     """A generator that yields the next operation that is accepted.
 
     Args:
@@ -669,8 +669,8 @@ def _process_gate_set(gate_set) -> tuple[GateSet, Callable]:
 
 def _resolve_gate_set(
     gate_set: Iterable[type | str] | dict[type | str, float] | None = None,
-    stopping_condition: Callable[[Operator], bool] | None = None,
-) -> tuple[GateSet, Callable[[Operator], bool]]:
+    stopping_condition: Callable[[LegacyOperator], bool] | None = None,
+) -> tuple[GateSet, Callable[[LegacyOperator], bool]]:
     """Resolve the gate set and the stopping condition from arguments.
 
     The ``gate_set`` can be provided in various forms, and the ``stopping_condition`` may or

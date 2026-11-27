@@ -22,7 +22,7 @@ from copy import copy, deepcopy
 from dataclasses import replace
 
 from pennylane import math, ops
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.qscript import QuantumScript
 from pennylane.core.shots import Shots
 from pennylane.core.transforms import CompilePipeline, transform
@@ -116,7 +116,7 @@ def legacy_device_batch_transform(tape, device):
     return _set_shots(device, tape.shots)(device.batch_transform)(tape)
 
 
-def adjoint_ops(op: Operator) -> bool:
+def adjoint_ops(op: LegacyOperator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
     if isinstance(op, ops.QubitUnitary) and not any(requires_grad(d) for d in op.data):
         return True

@@ -20,7 +20,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocate, for_loop, math
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -689,7 +689,7 @@ def compute_sos_encoding(bits):
     return U, b
 
 
-class SumOfSlatersPrep(Operator2):
+class SumOfSlatersPrep(Operator):
     r"""Prepare an arbitrary quantum state with the sum-of-Slaters technique.
 
     This operation prepares an arbitrary state

@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.exceptions import EigvalsUndefinedError, MeasurementShapeError, QuantumFunctionError
 
 
@@ -393,7 +393,7 @@ class TestSample:  # pylint: disable=too-many-public-methods
     def test_new_sample_with_operator_with_no_eigvals(self):
         """Test that calling process with an operator that has no eigvals defined raises an error."""
 
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(LegacyOperator):  # pylint: disable=too-few-public-methods
             """Dummy operator with no eigenvalues defined."""
 
             num_wires = 1

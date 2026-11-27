@@ -20,7 +20,7 @@ from collections.abc import Sequence
 
 from pennylane import math
 from pennylane.core.measurements import SampleMeasurement, StateMeasurement
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.queuing import QueuingManager
 from pennylane.ops import MeasurementValue
 from pennylane.typing import TensorLike
@@ -36,7 +36,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
     Please refer to :func:`pennylane.var` for detailed documentation.
 
     Args:
-        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
+        obs (Union[.LegacyOperator, .MeasurementValue]): The observable that is to be measured
             as part of the measurement process. Not all measurement processes require observables
             (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
@@ -118,11 +118,11 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         return math.dot(probabilities, (eigvals**2)) - math.dot(probabilities, eigvals) ** 2
 
 
-def var(op: Operator | MeasurementValue) -> VarianceMP:
+def var(op: LegacyOperator | MeasurementValue) -> VarianceMP:
     r"""Variance of the supplied observable.
 
     Args:
-        op (Union[Operator, MeasurementValue]): a quantum observable object.
+        op (Union[LegacyOperator, MeasurementValue]): a quantum observable object.
             To get variances for mid-circuit measurements, ``op`` should be a
             ``MeasurementValue``.
 

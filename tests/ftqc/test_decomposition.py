@@ -47,7 +47,7 @@ from pennylane.ftqc.decomposition import (
 from pennylane.ftqc.utils import QubitMgr
 
 PARAMETRIC_MCM_XFAIL = pytest.mark.pl2do(
-    reason="Parametric mid-circuit measurements have not yet been migrated to Operator2 [sc-130033]."
+    reason="Parametric mid-circuit measurements have not yet been migrated to Operator [sc-130033]."
 )
 
 

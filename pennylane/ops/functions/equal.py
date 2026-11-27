@@ -25,7 +25,7 @@ from typing import Any
 import pennylane as qp
 from pennylane import math
 from pennylane.core.measurements import MeasurementProcess
-from pennylane.core.operator import Operator, Operator2
+from pennylane.core.operator import LegacyOperator, Operator
 from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.core.qscript import QuantumScript
 from pennylane.decomposition.resources import CompressedResourceOp
@@ -60,8 +60,8 @@ BASE_OPERATION_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different base operati
 
 
 def equal(
-    op1: Operator | MeasurementProcess | QuantumScript | PauliWord | PauliSentence,
-    op2: Operator | MeasurementProcess | QuantumScript | PauliWord | PauliSentence,
+    op1: LegacyOperator | MeasurementProcess | QuantumScript | PauliWord | PauliSentence,
+    op2: LegacyOperator | MeasurementProcess | QuantumScript | PauliWord | PauliSentence,
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -84,8 +84,8 @@ def equal(
         and ``check_trainability``.
 
     Args:
-        op1 (.Operator or .MeasurementProcess or .QuantumTape or .PauliWord or .PauliSentence): First object to compare
-        op2 (.Operator or .MeasurementProcess or .QuantumTape or .PauliWord or .PauliSentence): Second object to compare
+        op1 (.LegacyOperator or .MeasurementProcess or .QuantumTape or .PauliWord or .PauliSentence): First object to compare
+        op2 (.LegacyOperator or .MeasurementProcess or .QuantumTape or .PauliWord or .PauliSentence): Second object to compare
         check_interface (bool, optional): Whether to compare interfaces. Default: ``True``.
         check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``.
         rtol (float, optional): Relative tolerance for parameters.
@@ -171,8 +171,8 @@ def equal(
 
 
 def assert_equal(
-    op1: Operator | MeasurementProcess | QuantumScript,
-    op2: Operator | MeasurementProcess | QuantumScript,
+    op1: LegacyOperator | MeasurementProcess | QuantumScript,
+    op2: LegacyOperator | MeasurementProcess | QuantumScript,
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -181,8 +181,8 @@ def assert_equal(
     """Function to assert that two operators, measurements, or tapes are equal
 
     Args:
-        op1 (.Operator or .MeasurementProcess or .QuantumTape): First object to compare
-        op2 (.Operator or .MeasurementProcess or .QuantumTape): Second object to compare
+        op1 (.LegacyOperator or .MeasurementProcess or .QuantumTape): First object to compare
+        op2 (.LegacyOperator or .MeasurementProcess or .QuantumTape): Second object to compare
         check_interface (bool, optional): Whether to compare interfaces. Default: ``True``.
         check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``.
         rtol (float, optional): Relative tolerance for parameters.
@@ -311,8 +311,8 @@ def _equal_circuit(
 
 @_equal_dispatch.register
 def _equal_operators(
-    op1: Operator,
-    op2: Operator,
+    op1: LegacyOperator,
+    op2: LegacyOperator,
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -384,14 +384,14 @@ def _equal_operators(
 
 @_equal_dispatch.register
 def _equal_operator2(
-    op1: Operator2,
-    op2: Operator2,
+    op1: Operator,
+    op2: Operator,
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
     atol=1e-9,
 ):
-    """Check equality between Operator2 instances."""
+    """Check equality between Operator instances."""
 
     if type(op1) is not type(op2):
         return f"op1 and op2 have different types. Got {type(op1)} and {type(op2)}."
@@ -476,7 +476,7 @@ def _equal_operator2(
 
 
 def _check_wire_value(wname: str, wval1: Any, wval2: Any):
-    """Check for equality of a wire argument of an Operator2 instance."""
+    """Check for equality of a wire argument of an Operator instance."""
 
     is_aw1 = isinstance(wval1, AbstractWires)
     is_aw2 = isinstance(wval2, AbstractWires)
@@ -525,7 +525,7 @@ def _check_dynamic_value(
     rtol=1e-5,
     atol=1e-9,
 ):
-    """Check for equality of a dynamic argument of an Operator2 instance."""
+    """Check for equality of a dynamic argument of an Operator instance."""
 
     is_aa1 = isinstance(dval1, AbstractArray)
     is_aa2 = isinstance(dval2, AbstractArray)
@@ -582,16 +582,16 @@ def _check_pytree_value(
     rtol=1e-5,
     atol=1e-9,
 ):
-    """Check for equality of a hybrid argument of an Operator2 instance."""
+    """Check for equality of a hybrid argument of an Operator instance."""
     unequal_str = f"op1 and op2 have different values for '{hname}'.\nGot {hval1} and {hval2}."
-    leaves1, tree1 = flatten(hval1, is_leaf=lambda v: isinstance(v, Operator2))
-    leaves2, tree2 = flatten(hval2, is_leaf=lambda v: isinstance(v, Operator2))
+    leaves1, tree1 = flatten(hval1, is_leaf=lambda v: isinstance(v, Operator))
+    leaves2, tree2 = flatten(hval2, is_leaf=lambda v: isinstance(v, Operator))
     if len(leaves1) != len(leaves2) or tree1 != tree2:
         return unequal_str
 
     for l1, l2 in zip(leaves1, leaves2, strict=True):
         # Case 1: Both leaf values are operators
-        if isinstance(l1, Operator2) and isinstance(l2, Operator2):
+        if isinstance(l1, Operator) and isinstance(l2, Operator):
             ops_equal = _equal(
                 l1,
                 l2,
@@ -607,7 +607,7 @@ def _check_pytree_value(
                 )
 
         # Case 2: One leaf value is an operator and the other is not. Not valid
-        elif isinstance(l1, Operator2) or isinstance(l2, Operator2):
+        elif isinstance(l1, Operator) or isinstance(l2, Operator):
             return unequal_str
 
         # Case 3: Neither leaf value is an operator. l1 and l2 are assumed to be numbers or arrays
@@ -1066,7 +1066,7 @@ def _equal_shadow_measurements(op1: ShadowExpvalMP, op2: ShadowExpvalMP, **_):
 
     wires_match = op1.wires == op2.wires
 
-    if isinstance(op1.H, Operator) and isinstance(op2.H, Operator):
+    if isinstance(op1.H, LegacyOperator) and isinstance(op2.H, LegacyOperator):
         H_match = equal(op1.H, op2.H)
     elif isinstance(op1.H, Iterable) and isinstance(op2.H, Iterable):
         if len(op1.H) != len(op2.H):

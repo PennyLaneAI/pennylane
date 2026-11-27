@@ -128,10 +128,10 @@ class AngleEmbedding(Operation):
         Args:
             features (tensor_like): input tensor of dimension ``(len(wires),)``
             wires (int or Iterable[int]): wires that the operator acts on
-            rotation (.Operator): rotation gate class
+            rotation (.LegacyOperator): rotation gate class
 
         Returns:
-            list[.Operator]: decomposition of the operator
+            list[.LegacyOperator]: decomposition of the operator
 
         **Example**
 

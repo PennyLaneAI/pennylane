@@ -38,7 +38,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
     Please refer to :func:`pennylane.probs` for detailed documentation.
 
     Args:
-        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
+        obs (Union[.LegacyOperator, .MeasurementValue]): The observable that is to be measured
             as part of the measurement process. Not all measurement processes require observables
             (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
@@ -220,7 +220,7 @@ def probs(wires=None, op=None) -> ProbabilityMP:
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-        op (Operator or MeasurementValue or Sequence[MeasurementValue]): Observable (with a ``diagonalizing_gates``
+        op (LegacyOperator or MeasurementValue or Sequence[MeasurementValue]): Observable (with a ``diagonalizing_gates``
             attribute) that rotates the computational basis, or a  ``MeasurementValue``
             corresponding to mid-circuit measurements.
 

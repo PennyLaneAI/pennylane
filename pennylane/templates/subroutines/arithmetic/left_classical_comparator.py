@@ -16,7 +16,7 @@ test of a quantum register and a classical integer."""
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, X, cond
 from pennylane.typing import AbstractArray, AbstractWires, Int, Wire
@@ -25,7 +25,7 @@ from pennylane.wires import Wires, WiresLike
 from .temporary_and import Elbow
 
 
-class LeftClassicalComparator(Operator2):
+class LeftClassicalComparator(Operator):
     r"""This operator performs an inequality test between a quantum register :math:`\lvert x\rangle` and a
     classical integer :math:`\mathrm{value}`, storing the result in a target qubit.
 

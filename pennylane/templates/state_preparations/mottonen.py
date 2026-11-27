@@ -129,7 +129,7 @@ def _uniform_rotation_dagger_ops(gate, alpha, control_wires, target_wire):
         target_wire (int): wire that acts as target
 
     Returns:
-          list[.Operator]: sequence of operators defined by this function
+          list[.LegacyOperator]: sequence of operators defined by this function
 
     """
 
@@ -382,7 +382,7 @@ class MottonenStatePreparation(Operation):
             wires (int or Iterable[int]): wires that the operator acts on
 
         Returns:
-            list[.Operator]: decomposition of the operator
+            list[.LegacyOperator]: decomposition of the operator
 
         **Example**
 

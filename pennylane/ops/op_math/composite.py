@@ -23,7 +23,7 @@ from warnings import warn
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operator, Operator2
+from pennylane.core.operator import LegacyOperator, Operator
 from pennylane.core.operator.base import _UNSET_BATCH_SIZE  # tach-ignore
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.pytrees import flatten, unflatten
@@ -48,27 +48,27 @@ def handle_recursion_error(func):
     return wrapper
 
 
-class CompositeOp(Operator):  # pylint: disable=too-many-instance-attributes
+class CompositeOp(LegacyOperator):  # pylint: disable=too-many-instance-attributes
     """A base class for operators that are composed of other operators.
 
     Args:
-        operands: (tuple[~.operation.Operator]): a tuple of operators which will be combined.
+        operands: (tuple[~.operation.LegacyOperator]): a tuple of operators which will be combined.
 
     Keyword Args:
         id (str or None): id for the operator. Default is None.
 
     The child composite operator should define the `_op_symbol` property
     during initialization and define any relevant representations, such as
-    :meth:`~.operation.Operator.matrix` and :meth:`~.operation.Operator.decomposition`.
+    :meth:`~.operation.LegacyOperator.matrix` and :meth:`~.operation.LegacyOperator.decomposition`.
     """
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
-        leaves, structure = flatten((args, kwargs), is_leaf=lambda x: isinstance(x, Operator))
+        leaves, structure = flatten((args, kwargs), is_leaf=lambda x: isinstance(x, LegacyOperator))
 
         new_leaves = []
         for leaf in leaves:
-            if isinstance(leaf, Operator2):
+            if isinstance(leaf, Operator):
                 if leaf.tracer is None:
                     leaf._bind_primitive()  # pylint: disable=protected-access
                 new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
@@ -90,7 +90,7 @@ class CompositeOp(Operator):  # pylint: disable=too-many-instance-attributes
     _eigs = {}  # cache eigen vectors and values like in qp.Hermitian
 
     # pylint: disable-next=super-init-not-called
-    def __init__(self, *operands: Operator, _pauli_rep=None):
+    def __init__(self, *operands: LegacyOperator, _pauli_rep=None):
         self._name = self.__class__.__name__
         if any(isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)) for op in operands):
             raise ValueError("Composite operators of mid-circuit measurements are not supported.")
@@ -220,11 +220,11 @@ class CompositeOp(Operator):  # pylint: disable=too-many-instance-attributes
         """Representation of the operator as a matrix in the computational basis."""
 
     @property
-    def overlapping_ops(self) -> list[list[Operator]]:
+    def overlapping_ops(self) -> list[list[LegacyOperator]]:
         """Groups all operands of the composite operator that act on overlapping wires.
 
         Returns:
-            List[List[Operator]]: List of lists of operators that act on overlapping wires. All the
+            List[List[LegacyOperator]]: List of lists of operators that act on overlapping wires. All the
             inner lists commute with each other.
         """
 
@@ -307,10 +307,10 @@ class CompositeOp(Operator):  # pylint: disable=too-many-instance-attributes
 
         A ``DiagGatesUndefinedError`` is raised if no representation by decomposition is defined.
 
-        .. seealso:: :meth:`~.Operator.compute_diagonalizing_gates`.
+        .. seealso:: :meth:`~.LegacyOperator.compute_diagonalizing_gates`.
 
         Returns:
-            list[.Operator] or None: a list of operators
+            list[.LegacyOperator] or None: a list of operators
         """
         diag_gates = []
         for ops in self.overlapping_ops:
@@ -373,7 +373,7 @@ class CompositeOp(Operator):  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     @abc.abstractmethod
-    def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
+    def _sort(cls, op_list, wire_map: dict = None) -> list[LegacyOperator]:
         """Sort composite operands by their wire indices."""
 
     @handle_recursion_error

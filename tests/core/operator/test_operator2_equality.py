@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for ``qp.equal`` with ``Operator2``."""
+"""Tests for ``qp.equal`` with ``Operator``."""
 
 # pylint: disable=too-few-public-methods
 
@@ -30,14 +30,14 @@ from operator2_utils import (
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.typing import AbstractArray, AbstractWires, Wire
 
 # ---------------------- Tests ----------------------
 
 
 class TestEqualBasic:
-    """Basic tests for ``qp.equal`` with ``Operator2``."""
+    """Basic tests for ``qp.equal`` with ``Operator``."""
 
     def test_equal_identical(self):
         """Test that ``qp.equal`` with an operator compared to itself returns ``True``."""
@@ -53,7 +53,7 @@ class TestEqualBasic:
         qp.assert_equal(op1, op2)
 
     def test_different_types_not_equal(self):
-        """Test that two operators of different ``Operator2`` subclasses are unequal."""
+        """Test that two operators of different ``Operator`` subclasses are unequal."""
         op1 = DynOp(0.5, wires=0)
         op2 = StaticOp("a", wires=0)
         assert qp.equal(op1, op2) is False
@@ -250,14 +250,14 @@ class TestHybridArgs:
         qp.assert_equal(op1, op2)
 
     def test_equal_with_operator_leaves(self):
-        """Test equality when hybrid arguments contain matching ``Operator2`` leaves."""
+        """Test equality when hybrid arguments contain matching ``Operator`` leaves."""
         op1 = HybridOp([DynOp(0.5, wires=1), DynOp(0.7, wires=2)], wires=0)
         op2 = HybridOp([DynOp(0.5, wires=1), DynOp(0.7, wires=2)], wires=0)
         assert qp.equal(op1, op2) is True
         qp.assert_equal(op1, op2)
 
     def test_different_operator_leaves_not_equal(self):
-        """Test that mismatched ``Operator2`` leaves produce an informative message."""
+        """Test that mismatched ``Operator`` leaves produce an informative message."""
         op1 = HybridOp([DynOp(0.5, wires=1)], wires=0)
         op2 = HybridOp([DynOp(0.6, wires=1)], wires=0)
         assert qp.equal(op1, op2) is False
@@ -439,7 +439,7 @@ class TestAbstractOperatorEquality:
     def test_abstract_wires(self, wires1, wires2, are_equal):
         """Test that operators with abstract wires are detected correctly."""
 
-        class SimpleOp(Operator2):
+        class SimpleOp(Operator):
             def __init__(self, wires) -> None:  # pylint: disable=useless-parent-delegation
                 super().__init__(wires)
 
@@ -451,7 +451,7 @@ class TestAbstractOperatorEquality:
     def test_comparing_abstract_and_concrete_wires(self):
         """Assert that an abstract type specifier is not the same as an operator instance."""
 
-        class SimpleOp(Operator2):
+        class SimpleOp(Operator):
             def __init__(self, wires) -> None:  # pylint: disable=useless-parent-delegation
                 super().__init__(wires)
 

@@ -21,7 +21,7 @@ import numpy as np
 from scipy.linalg import sqrtm
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 from pennylane.pauli import PauliSentence, PauliVSpace, PauliWord, trace_inner_product
 from pennylane.typing import TensorLike
@@ -237,11 +237,11 @@ def batched_pauli_decompose(H: TensorLike, tol: float | None = None, pauli: bool
     return H_ops
 
 
-def orthonormalize(basis: Iterable[PauliSentence | Operator | np.ndarray]) -> np.ndarray:
+def orthonormalize(basis: Iterable[PauliSentence | LegacyOperator | np.ndarray]) -> np.ndarray:
     r"""Orthonormalize a list of basis vectors.
 
     Args:
-        basis (Iterable[Union[PauliSentence, Operator, np.ndarray]]): List of basis vectors.
+        basis (Iterable[Union[PauliSentence, LegacyOperator, np.ndarray]]): List of basis vectors.
 
     Returns:
         np.ndarray: Orthonormalized basis vectors.
@@ -267,7 +267,7 @@ def orthonormalize(basis: Iterable[PauliSentence | Operator | np.ndarray]) -> np
     """
 
     if isinstance(basis, PauliVSpace) or all(
-        isinstance(op, (PauliSentence, Operator)) for op in basis
+        isinstance(op, (PauliSentence, LegacyOperator)) for op in basis
     ):
         return _orthonormalize_ps(basis)
 
@@ -285,7 +285,7 @@ def _orthonormalize_np(basis: Iterable[np.ndarray]):
     return np.tensordot(gram_inv, basis, axes=1)
 
 
-def _orthonormalize_ps(basis: PauliVSpace | Iterable[PauliSentence | Operator]):
+def _orthonormalize_ps(basis: PauliVSpace | Iterable[PauliSentence | LegacyOperator]):
     # We are generating a sparse pauli representation of the basis, where each entry of a basis vector corresponds to one of the Pauli words
     if isinstance(basis, PauliVSpace):
         basis = basis.basis
@@ -333,12 +333,12 @@ def _orthonormalize_ps(basis: PauliVSpace | Iterable[PauliSentence | Operator]):
     return generators_orthogonal
 
 
-def check_orthonormal(g: Iterable[PauliSentence | Operator], inner_product: callable) -> bool:
+def check_orthonormal(g: Iterable[PauliSentence | LegacyOperator], inner_product: callable) -> bool:
     r"""
     Utility function to check if operators in ``g`` are orthonormal with respect to the provided ``inner_product``.
 
     Args:
-        g (Iterable[Union[PauliSentence, Operator]]): List of operators
+        g (Iterable[Union[PauliSentence, LegacyOperator]]): List of operators
         inner_product (callable): Inner product function to check orthonormality
 
     Returns:

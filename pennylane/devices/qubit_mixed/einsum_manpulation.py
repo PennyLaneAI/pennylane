@@ -23,13 +23,13 @@ alphabet_array = math.array(list(alphabet))
 
 
 def get_einsum_mapping(
-    op: qp.operation.Operator,
+    op: qp.operation.LegacyOperator,
     state,
     is_state_batched: bool = False,
 ):
     r"""Finds the indices for einsum to apply kraus operators to a mixed state
     Args:
-        op (Operator): Operator to apply to the quantum state
+        op (LegacyOperator): LegacyOperator to apply to the quantum state
         state (array[complex]): Input quantum state
         map_indices (function): Maps the calculated indices to an einsum indices string
         is_state_batched (bool): Boolean representing whether the state is batched or not

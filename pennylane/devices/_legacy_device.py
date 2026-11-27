@@ -24,7 +24,7 @@ from functools import lru_cache
 import numpy as np
 
 from pennylane.core.measurements import MeasurementProcess
-from pennylane.core.operator import Operation, Operator, StatePrepBase
+from pennylane.core.operator import LegacyOperator, Operation, StatePrepBase
 from pennylane.core.qscript import QuantumScript
 from pennylane.core.shots import Shots
 from pennylane.decomposition.gate_set import GateSet
@@ -371,7 +371,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
         Args:
             queue (Iterable[~.operation.Operation]): operations to execute on the device
-            observables (Iterable[~.operation.Operator]): observables to measure and return
+            observables (Iterable[~.operation.LegacyOperator]): observables to measure and return
             parameters (dict[int, list[ParameterDependency]]): Mapping from free parameter index to the list of
                 :class:`Operations <pennylane.operation.Operation>` (in the queue) that depend on it.
 
@@ -776,7 +776,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             ValueError: if outside of the execution context
 
         Returns:
-            list[~.operation.Operator]
+            list[~.operation.LegacyOperator]
         """
         if self._obs_queue is None:
             raise ValueError(
@@ -868,18 +868,18 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             observable (type or str): observable to be checked
 
         Raises:
-            ValueError: if `observable` is not a :class:`~.Operator` class or string
+            ValueError: if `observable` is not a :class:`~.LegacyOperator` class or string
 
         Returns:
             bool: ``True`` iff supplied observable is supported
         """
-        if isinstance(observable, type) and issubclass(observable, Operator):
+        if isinstance(observable, type) and issubclass(observable, LegacyOperator):
             return observable.__name__ in self.observables
         if isinstance(observable, str):
             return observable in self.observables
 
         raise ValueError(
-            "The given observable must either be a pennylane.operation.Operator class or a string."
+            "The given observable must either be a pennylane.operation.LegacyOperator class or a string."
         )
 
     def check_validity(self, queue, observables):  # pylint: disable=too-many-branches
@@ -888,7 +888,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         Args:
             queue (Iterable[~.operation.Operation]): quantum operation objects which are intended
                 to be applied on the device
-            observables (Iterable[~.operation.Operator]): observables which are intended
+            observables (Iterable[~.operation.LegacyOperator]): observables which are intended
                 to be evaluated on the device
 
         Raises:

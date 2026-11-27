@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import Operator, abstractify
 from pennylane.templates.subroutines.arithmetic.phase_adder import _add_k_fourier
 from pennylane.testing import assert_decomposable
 from pennylane.typing import Int, Wire
@@ -309,7 +309,7 @@ class TestPhaseAdder:
     def test_abstract_inputs(self, mod, num_work_wires):
         """Abstract inputs retain the register sizes needed by decomposition resources."""
         op = qp.PhaseAdder(Int, Wire[3], mod, Wire[num_work_wires])
-        assert isinstance(op, Operator2)
+        assert isinstance(op, Operator)
         assert op.is_fully_abstract
         assert len(op.x_wires) == 3
         assert len(op.work_wire) == num_work_wires

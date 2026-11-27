@@ -10,26 +10,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Shared ``Operator2`` subclasses used across the ``tests/core/`` suite."""
+"""Shared ``Operator`` subclasses used across the ``tests/core/`` suite."""
 
 # pylint: disable=too-few-public-methods,useless-parent-delegation
 
 
 import pennylane as qp
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 
-class NonParametricOp(Operator2):
+class NonParametricOp(Operator):
     """Non parametric operator2."""
 
     def __init__(self, wires):
         super().__init__(wires)
 
 
-class DynOp(Operator2):
-    """Operator with one dynamic parameter and wires."""
+class DynOp(Operator):
+    """LegacyOperator with one dynamic parameter and wires."""
 
     dynamic_argnames = ("phi",)
 
@@ -37,8 +37,8 @@ class DynOp(Operator2):
         super().__init__(phi, wires=wires)
 
 
-class OneWireDynOp(Operator2):
-    """Operator with one dynamic parameter and wires."""
+class OneWireDynOp(Operator):
+    """LegacyOperator with one dynamic parameter and wires."""
 
     dynamic_argnames = ("phi",)
 
@@ -48,8 +48,8 @@ class OneWireDynOp(Operator2):
         super().__init__(phi, wires=wires)
 
 
-class TwoDynOp(Operator2):
-    """Operator with two dynamic parameters."""
+class TwoDynOp(Operator):
+    """LegacyOperator with two dynamic parameters."""
 
     dynamic_argnames = ("phi", "theta")
 
@@ -57,8 +57,8 @@ class TwoDynOp(Operator2):
         super().__init__(phi, theta, wires=wires)
 
 
-class DynOpWithMatrix(Operator2):
-    """Operator with a matrix defined."""
+class DynOpWithMatrix(Operator):
+    """LegacyOperator with a matrix defined."""
 
     dynamic_argnames = ("phi", "theta", "omega")
 
@@ -70,8 +70,8 @@ class DynOpWithMatrix(Operator2):
         return qp.Rot.compute_matrix(phi, theta, omega)
 
 
-class StaticOp(Operator2):
-    """Operator with a static argument."""
+class StaticOp(Operator):
+    """LegacyOperator with a static argument."""
 
     static_argnames = ("label",)
 
@@ -79,8 +79,8 @@ class StaticOp(Operator2):
         super().__init__(label, wires=wires)
 
 
-class CompilableOp(Operator2):
-    """Operator with a compilable static argument."""
+class CompilableOp(Operator):
+    """LegacyOperator with a compilable static argument."""
 
     compilable_argnames = ("n",)
 
@@ -88,8 +88,8 @@ class CompilableOp(Operator2):
         super().__init__(n, wires=wires)
 
 
-class CompilableDynOp(Operator2):
-    """Operator with a dynamic parameter, wires, and a compilable static argument."""
+class CompilableDynOp(Operator):
+    """LegacyOperator with a dynamic parameter, wires, and a compilable static argument."""
 
     dynamic_argnames = ("phi",)
     compilable_argnames = ("word",)
@@ -100,8 +100,8 @@ class CompilableDynOp(Operator2):
         super().__init__(phi, word, wires=wires)
 
 
-class MultiWireOp(Operator2):
-    """Operator with two wire arguments."""
+class MultiWireOp(Operator):
+    """LegacyOperator with two wire arguments."""
 
     wire_argnames = ("wires", "ctrl_wires")
 
@@ -109,8 +109,8 @@ class MultiWireOp(Operator2):
         super().__init__(wires=wires, ctrl_wires=ctrl_wires)
 
 
-class HybridOp(Operator2):
-    """Operator with a hybrid argument that can contain Operator2 leaves."""
+class HybridOp(Operator):
+    """LegacyOperator with a hybrid argument that can contain Operator leaves."""
 
     hybrid_argnames = ("ops",)
 
@@ -118,7 +118,7 @@ class HybridOp(Operator2):
         super().__init__(ops, wires=wires)
 
 
-class ParametrizedHybridOp(Operator2):
+class ParametrizedHybridOp(Operator):
 
     dynamic_argnames = ("params",)
 
@@ -132,8 +132,8 @@ class ParametrizedHybridOp(Operator2):
         super().__init__(params, wires, op)
 
 
-class HybridWireOp(Operator2):
-    """Operator with a wire argument that is also a hybrid argument."""
+class HybridWireOp(Operator):
+    """LegacyOperator with a wire argument that is also a hybrid argument."""
 
     wire_argnames = ("pytree_wires",)
     hybrid_argnames = ("pytree_wires",)
@@ -142,8 +142,8 @@ class HybridWireOp(Operator2):
         super().__init__([Wires(w) for w in pytree_wires])
 
 
-class MixedHybridOp(Operator2):
-    """Operator with dynamic, non-hybrid wires, hybrid wires, and hybrid ops."""
+class MixedHybridOp(Operator):
+    """LegacyOperator with dynamic, non-hybrid wires, hybrid wires, and hybrid ops."""
 
     dynamic_argnames = ("phi",)
     wire_argnames = ("wires", "pytree_wires")
@@ -153,8 +153,8 @@ class MixedHybridOp(Operator2):
         super().__init__(phi, ops, [Wires(w) for w in pytree_wires], wires=wires)
 
 
-class FullOp(Operator2):
-    """Operator using dynamic, static, and hybrid argument groups."""
+class FullOp(Operator):
+    """LegacyOperator using dynamic, static, and hybrid argument groups."""
 
     dynamic_argnames = ("phi",)
     static_argnames = ("static",)
@@ -164,8 +164,8 @@ class FullOp(Operator2):
         super().__init__(phi, static, hybrid, wires=wires)
 
 
-class OpBuildsNestedOp(Operator2):
-    """Operator that builds a sub-operator based on input wires."""
+class OpBuildsNestedOp(Operator):
+    """LegacyOperator that builds a sub-operator based on input wires."""
 
     def __init__(self, wires):
         _ = NonParametricOp(wires[1])

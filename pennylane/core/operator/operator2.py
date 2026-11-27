@@ -61,7 +61,7 @@ from pennylane.typing import (
 )
 from pennylane.wires import AbstractQubit, Wires, WiresLike
 
-from .base import _UNSET_BATCH_SIZE, AbstractOperator, Operator
+from .base import _UNSET_BATCH_SIZE, AbstractOperator, LegacyOperator
 from .meta import OperatorMeta
 from .utils import abstractify
 
@@ -88,7 +88,7 @@ ARGNAME_CATEGORIES = (
 
 
 class OperatorRegistry:
-    """A Singleton class that keeps track of all the Operator2 operators (including user-defined operators) defined."""
+    """A Singleton class that keeps track of all the Operator operators (including user-defined operators) defined."""
 
     _instance = None
     registry = {}
@@ -102,7 +102,7 @@ class OperatorRegistry:
         try:
             return self.registry[index]
         except KeyError as e:
-            raise KeyError(f"No defined Operator2 with the name {index} found.") from e
+            raise KeyError(f"No defined Operator with the name {index} found.") from e
 
     def __setitem__(self, index, value):
         if index not in self.registry:
@@ -113,47 +113,47 @@ class OperatorRegistry:
             )
 
 
-class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-methods
+class Operator(metaclass=OperatorMeta):  # pylint: disable=too-many-public-methods
     r"""Base class representing quantum operators that are designed for compatibility with
     :func:`~.qjit`.
 
-    Child classes of ``Operator2`` are defined by their name and argument types, of which there are
-    five categories that are designated as class variables. These arguments dictate how ``Operator2``
+    Child classes of ``Operator`` are defined by their name and argument types, of which there are
+    five categories that are designated as class variables. These arguments dictate how ``Operator``
     child classes are handled when compiling with :func:`~.qjit`.
 
-    * :attr:`wire_argnames <Operator2.wire_argnames>` : The names of arguments corresponding to
+    * :attr:`wire_argnames <Operator.wire_argnames>` : The names of arguments corresponding to
       wires. Values for these arguments are automatically wrapped in
-      :class:`~.Wires` objects by the ``Operator2`` constructor.
+      :class:`~.Wires` objects by the ``Operator`` constructor.
 
     .. note::
 
-        ``Operator2.wire_argnames`` defaults to ``("wires",)``. Thus, if an operator one
+        ``Operator.wire_argnames`` defaults to ``("wires",)``. Thus, if an operator one
         has one wire argument and it is called ``wires``, ``wire_argnames`` does not need
         to be overridden.
 
-    * :attr:`dynamic_argnames <Operator2.dynamic_argnames>` : The names of arguments that are
+    * :attr:`dynamic_argnames <Operator.dynamic_argnames>` : The names of arguments that are
       treated as dynamic. Inputs for these arguments must be scalars,
       arrays, or castable to arrays.
 
-    * :attr:`static_argnames <Operator2.static_argnames>` : The names of arguments that are
+    * :attr:`static_argnames <Operator.static_argnames>` : The names of arguments that are
       treated as static but are **not compilable** (see below).
 
-    * :attr:`compilable_argnames <Operator2.compilable_argnames>` : The names of arguments that are
+    * :attr:`compilable_argnames <Operator.compilable_argnames>` : The names of arguments that are
       treated as **compilable** static arguments. Compilable static arguments include numeric values,
       strings, lists, tuples, and dictionaries. This feature is opt-in; if any static arguments are
       not guaranteed to be compilable, it is safer to place them in
-      :attr:`static_argnames <Operator2.static_argnames>`.
+      :attr:`static_argnames <Operator.static_argnames>`.
 
     .. note::
 
-        An operator can only specify :attr:`static_argnames <Operator2.static_argnames>` or
-        :attr:`compilable_argnames <Operator2.compilable_argnames>`, but not both; if **any**
+        An operator can only specify :attr:`static_argnames <Operator.static_argnames>` or
+        :attr:`compilable_argnames <Operator.compilable_argnames>`, but not both; if **any**
         static arguments cannot be lowered to the IR, then all static arguments must be treated as
         not lowerable.
 
-    * :attr:`hybrid_argnames <Operator2.hybrid_argnames>` : The names of arguments that represent
+    * :attr:`hybrid_argnames <Operator.hybrid_argnames>` : The names of arguments that represent
       dynamic data wrapped in static structures (known as Pytrees). Names in this category may only
-      overlap with :attr:`wire_argnames <Operator2.wire_argnames>` when those arguments contain
+      overlap with :attr:`wire_argnames <Operator.wire_argnames>` when those arguments contain
       nested structures of wires.
 
     Args:
@@ -163,7 +163,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
     .. details::
         :title: Defining Custom Operators
 
-        Custom ``Operator2`` instances **must** designate all their arguments to
+        Custom ``Operator`` instances **must** designate all their arguments to
         one of the aforementioned categories. This means that the union of all the
         designated arguments must cover the full set of arguments.
 
@@ -172,10 +172,10 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         .. code-block:: python
 
             import pennylane as qp
-            from pennylane.core import Operator2
+            from pennylane.core import Operator
             import jax.numpy as jnp
 
-            class MyOp(Operator2):
+            class MyOp(Operator):
                 wire_argnames = ("wires", "rot_wire")
                 compilable_argnames = ("pauli_string")
                 dynamic_argnames = ("angle_array")
@@ -191,9 +191,9 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
                     return qp.matrix(qp.prod(pauli_op, rot_op))
 
         The ``wires`` and ``rot_wire`` arguments will be a part of
-        :attr:`wire_argnames <Operator2.wire_argnames>`, and ``pauli_string`` and ``angle_array``
-        will belong to :attr:`compilable_argnames <Operator2.compilable_argnames>` and
-        :attr:`dynamic_argnames <Operator2.dynamic_argnames>`, respectively.
+        :attr:`wire_argnames <Operator.wire_argnames>`, and ``pauli_string`` and ``angle_array``
+        will belong to :attr:`compilable_argnames <Operator.compilable_argnames>` and
+        :attr:`dynamic_argnames <Operator.dynamic_argnames>`, respectively.
 
         >>> from jax import numpy as jnp
         >>> angle_array = jnp.array([0.1, 0.2, 0.3])
@@ -324,17 +324,17 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
 
     wire_argnames: ClassVar[tuple[str, ...]] = ("wires",)
     """The names of arguments corresponding to wires. Values for these arguments are
-    automatically wrapped in :class:`~.Wires` objects by the ``Operator2`` constructor.
+    automatically wrapped in :class:`~.Wires` objects by the ``Operator`` constructor.
     If an argument is expected to be a structure that wraps wires (known as pytrees), such
     as a list of wire registers, make sure to include its name in ``hybrid_argnames`` as well.
-    Additionally, ``Operator2`` does not descend into the pytree structure of such arguments,
+    Additionally, ``Operator`` does not descend into the pytree structure of such arguments,
     so subclasses must ensure every wire leaf inside a hybrid wire argument is already a
     :class:`~.Wires` object before forwarding it to ``super().__init__``.
 
     The order in which names appear in ``wire_argnames`` determines the order in which
-    their wires appear in ``op.wires`` (see :attr:`Operator2.wires`). For hybrid wire
+    their wires appear in ``op.wires`` (see :attr:`Operator.wires`). For hybrid wire
     arguments, the contained :class:`~.Wires` leaves are ordered by pytree traversal
-    order. Wires contributed by arguments which are themselves :class:`~.Operator2`
+    order. Wires contributed by arguments which are themselves :class:`~.Operator`
     objects are appended *after* all ``wire_argnames`` wires. The special
     names ``"work_wires"`` and ``"work_wire"`` may be included in ``wire_argnames``
     but their values are excluded from ``op.wires``.
@@ -344,7 +344,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
     """The names of arguments that are treated as dynamic. Dynamic arguments are numerical
     arguments whose concrete values may not be known at compile-time, such as rotation angles,
     matrices, etc., and may include trainable data. Additionally, dynamic arguments are the only
-    ones used to infer :attr:`~.Operator2.batch_size`, necessary for broadcasting support.
+    ones used to infer :attr:`~.Operator.batch_size`, necessary for broadcasting support.
 
     Inputs for these arguments must be scalars, arrays, or castable to arrays (e.g. multi-
     dimensional lists with homogenous shapes), and operator constructors will be responsible
@@ -419,7 +419,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
     .. note::
 
         A type that is listed in 'arg_specs' says what an argument is allowed to be,
-        not what it actually is. For example, if arg_specs contains Complex[-1, -1], the Operator
+        not what it actually is. For example, if arg_specs contains Complex[-1, -1], the LegacyOperator
         can still be instantiated with a real float64 array, which will then be reported as
         complex even though it holds real data.
 
@@ -537,7 +537,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
 
         2. After all ``wire_argnames`` have been processed, for each name in
            ``hybrid_argnames`` that is **not** in ``wire_argnames``, the wires of any
-           :class:`~.Operator2` leaves inside that argument are appended to the end
+           :class:`~.Operator` leaves inside that argument are appended to the end
            in pytree traversal order.
 
         Duplicate wires are removed while preserving the first occurrence, so the
@@ -643,8 +643,8 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
     # -------------- Legacy Operator compatibility views ----------------------
     # ------------------------------------------------------------------------
     # The following properties provide backwards-compatible read-only views
-    # matching the legacy ``Operator`` API (data, parameters, hyperparameters).
-    # They are *not* the canonical Operator2 API — prefer ``arguments``,
+    # matching the legacy ``LegacyOperator`` API (data, parameters, hyperparameters).
+    # They are *not* the canonical Operator API — prefer ``arguments``,
     # ``dynamic_args``, ``static_args``, etc. for new code.
 
     _grad_recipe = None
@@ -704,7 +704,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         }
 
     # ------------------------------------------------------------------------
-    # --------------------------- Operator actions ---------------------------
+    # --------------------------- LegacyOperator actions ---------------------------
     # ------------------------------------------------------------------------
 
     def label(
@@ -740,7 +740,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         'my_label\n(1.23)'
 
         Note that by default, operator wires and static inputs are not included in the label.
-        To override this behaviour, ``Operator2`` subclasses must override the ``label`` method.
+        To override this behaviour, ``Operator`` subclasses must override the ``label`` method.
 
         If the operation has a matrix-valued parameter and a cache dictionary is provided,
         unique matrices will be cached in the ``'matrices'`` key list. The label will contain
@@ -781,22 +781,22 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
             return f"{op_label}"
         return f"{op_label}\n({inner_string})"
 
-    def pow(self, z: float) -> list["Operator2"]:
+    def pow(self, z: float) -> list["Operator"]:
         """A list of new operators equal to this one raised to the given power. This method is used to simplify
         :class:`~.Pow` instances created by :func:`~.pow` or ``op ** power``.
         TODO: [sc-120843] Fix docstring after Pow is added
 
-        ``Operator2.pow`` can be optionally defined by Operator developers, while :func:`~.pow` or ``op ** power``
+        ``Operator.pow`` can be optionally defined by LegacyOperator developers, while :func:`~.pow` or ``op ** power``
         are the entry point for constructing generic powers to exponents.
 
         Args:
             z (float): exponent for the operator
 
         Returns:
-            list[:class:`~.core.operator.Operator2`]
+            list[:class:`~.core.operator.Operator`]
 
-        >>> from pennylane.core.operator import Operator2
-        >>> class MyClass(Operator2):
+        >>> from pennylane.core.operator import Operator
+        >>> class MyClass(Operator):
         ...     dynamic_argnames = ("phi",)
         ...
         ...     def __init__(self, phi, wires):
@@ -823,7 +823,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         """Append the operator to the Operator queue."""
         for h in self.hybrid_args.values():
             leaves, _ = flatten(h, is_leaf=_is_op)
-            _ = [context.remove(l) for l in leaves if isinstance(l, Operator)]
+            _ = [context.remove(l) for l in leaves if isinstance(l, LegacyOperator)]
 
         context.append(self)
         # return self so pre-constructed Observables can be queued and returned in
@@ -837,9 +837,9 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
-        return cls.adjoint != Operator2.adjoint
+        return cls.adjoint != Operator.adjoint
 
-    def adjoint(self) -> "Operator2":
+    def adjoint(self) -> "Operator":
         """Create an operation that is the adjoint of this one. Used to simplify
         :class:`~.Adjoint` operators constructed by :func:`~.adjoint`.
         TODO: [sc-120844] Fix docstring after Adjoint is added
@@ -848,14 +848,14 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         original operation. Adjointed ops are equivalent to the inverted operation for unitary
         gates.
 
-        ``Operator2.adjoint`` can be optionally defined by Operator developers, while :func:`~.adjoint`
+        ``Operator.adjoint`` can be optionally defined by LegacyOperator developers, while :func:`~.adjoint`
         is the entry point for constructing generic adjoint representations.
 
         Returns:
             The adjointed operation.
 
-        >>> from pennylane.core.operator import Operator2
-        >>> class MyClass(Operator2):
+        >>> from pennylane.core.operator import Operator
+        >>> class MyClass(Operator):
         ...     dynamic_argnames = ("phi",)
         ...
         ...     def __init__(self, phi, wires):
@@ -870,7 +870,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         """
         raise AdjointUndefinedError
 
-    def map_wires(self, wire_map: dict[Hashable, Hashable]) -> "Operator2":
+    def map_wires(self, wire_map: dict[Hashable, Hashable]) -> "Operator":
         """Returns a new operator with its wires changed according to the given
         wire map.
 
@@ -878,7 +878,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
             wire_map (dict): dictionary containing the old wires as keys and the new wires as values
 
         Returns:
-            .Operator2: new operator
+            .Operator: new operator
         """
         new_args = dict(self.arguments)
 
@@ -892,21 +892,21 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
             if n in self.wire_argnames:
                 continue
             leaves, tree = flatten(arg, is_leaf=_is_op)
-            leaves = [l.map_wires(wire_map) if isinstance(l, Operator) else l for l in leaves]
+            leaves = [l.map_wires(wire_map) if isinstance(l, LegacyOperator) else l for l in leaves]
             new_args[n] = unflatten(leaves, tree)
 
         return type(self)(**new_args)
 
-    def simplify(self) -> "Operator2":
+    def simplify(self) -> "Operator":
         """Reduce the depth of nested operators to the minimum.
 
         Returns:
-            .Operator2: simplified operator
+            .Operator: simplified operator
         """
         return self
 
     # ------------------------------------------------------------------------
-    # ----------------------- Operator representations -----------------------
+    # ----------------------- LegacyOperator representations -----------------------
     # ------------------------------------------------------------------------
 
     @staticmethod
@@ -916,7 +916,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`.Operator2.matrix` and :func:`qp.matrix() <pennylane.matrix>`
+        .. seealso:: :meth:`.Operator.matrix` and :func:`qp.matrix() <pennylane.matrix>`
 
         Args:
             *args (tuple): Positional arguments of the operator
@@ -934,7 +934,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
-        return cls.compute_matrix != Operator2.compute_matrix or cls.matrix != Operator2.matrix
+        return cls.compute_matrix != Operator.compute_matrix or cls.matrix != Operator.matrix
 
     def matrix(self, wire_order: WiresLike | None = None) -> TensorLike:
         """Representation of the operator as a matrix in the computational basis.
@@ -948,7 +948,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
 
         A ``MatrixUndefinedError`` is raised if the matrix representation has not been defined.
 
-        .. seealso:: :meth:`~.Operator2.compute_matrix`
+        .. seealso:: :meth:`~.Operator.compute_matrix`
 
         Args:
             wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires
@@ -979,7 +979,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`~.Operator2.sparse_matrix`
+        .. seealso:: :meth:`~.Operator.sparse_matrix`
 
         Args:
             *args (tuple): Positional arguments of the operator
@@ -999,8 +999,8 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         Note: Child classes may have this as an instance property instead of as a class property.
         """
         return (
-            cls.compute_sparse_matrix != Operator2.compute_sparse_matrix
-            or cls.sparse_matrix != Operator2.sparse_matrix
+            cls.compute_sparse_matrix != Operator.compute_sparse_matrix
+            or cls.sparse_matrix != Operator.sparse_matrix
         )
 
     def sparse_matrix(self, wire_order: WiresLike | None = None, format="csr") -> spmatrix:
@@ -1012,7 +1012,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
 
         A ``SparseMatrixUndefinedError`` is raised if the sparse matrix representation has not been defined.
 
-        .. seealso:: :meth:`~.Operator2.compute_sparse_matrix`
+        .. seealso:: :meth:`~.Operator.compute_sparse_matrix`
 
         Args:
             wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires
@@ -1025,7 +1025,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         return self._expand_canonical_matrix(canonical_sparse_matrix, wire_order).asformat(format)
 
     @classmethod
-    def compute_decomposition(cls, *args, **kwargs) -> list["Operator2"]:
+    def compute_decomposition(cls, *args, **kwargs) -> list["Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1035,14 +1035,14 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
             Operations making up the decomposition should be queued within the
             ``compute_decomposition`` method.
 
-        .. seealso:: :meth:`~.Operator2.decomposition`.
+        .. seealso:: :meth:`~.Operator.decomposition`.
 
         Args:
             *args (tuple): Positional arguments of the operator
             **kwargs (dict): Keyword arguments of the operator
 
         Returns:
-            list[Operator2]: decomposition of the operator
+            list[Operator]: decomposition of the operator
         """
         with pause(), QueuingManager.stop_recording():
             # creating dummy op means this works for adjoint and ctrl too.
@@ -1065,10 +1065,10 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         This is a class-level check (no per-instance dispatch): ``True`` if
         ``compute_decomposition`` or ``decomposition`` is overridden, or if graph decomposition
         rules are registered for the operator type. Per-instance rule applicability is resolved
-        in :meth:`~.Operator2.decomposition`, not here.
+        in :meth:`~.Operator.decomposition`, not here.
         """
 
-        # cant do cls.compute_decompsition != Operator2.compute_decomposition
+        # cant do cls.compute_decompsition != Operator.compute_decomposition
         # because default is now a classmethod
         # classmethod is always different, even if not overwritten
         # cant do getattr(cls.compute_decomposition "__func__", cls.compute_decomposition)
@@ -1080,31 +1080,31 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
 
         def defines_compute_decomposition(op_type):
             for klass in op_type.__mro__:
-                if klass is Operator2:
+                if klass is Operator:
                     return False
                 if "compute_decomposition" in vars(klass):
                     return True
-            # should always find Operator2 in the mro
+            # should always find Operator in the mro
             msg = "This line should be impossible to hit. Something is wrong."  # pragma: no cover
             raise TypeError(msg)  # pragma: no cover
 
         return (
             defines_compute_decomposition(cls)
-            or cls.decomposition != Operator2.decomposition
+            or cls.decomposition != Operator.decomposition
             or qp.decomposition.has_decomp(cls)
         )
 
-    def decomposition(self) -> list["Operator2"]:
+    def decomposition(self) -> list["Operator"]:
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n
 
         A ``DecompositionUndefinedError`` is raised if no representation by decomposition is defined.
 
-        .. seealso:: :meth:`~.Operator2.compute_decomposition`.
+        .. seealso:: :meth:`~.Operator.compute_decomposition`.
 
         Returns:
-            list[Operator2]: decomposition of the operator
+            list[Operator]: decomposition of the operator
         """
         return self.compute_decomposition(**self.arguments)
 
@@ -1121,7 +1121,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
-        .. seealso:: :meth:`Operator2.eigvals() <.eigvals>` and :func:`qp.eigvals() <pennylane.eigvals>`
+        .. seealso:: :meth:`Operator.eigvals() <.eigvals>` and :func:`qp.eigvals() <pennylane.eigvals>`
 
         Args:
             *args (tuple): Positional arguments of the operator
@@ -1151,7 +1151,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         A ``EigvalsUndefinedError`` is raised if the eigenvalues have not been defined and cannot be
         inferred from the matrix representation.
 
-        .. seealso:: :meth:`~.Operator2.compute_eigvals` and :func:`qp.eigvals() <pennylane.eigvals>`
+        .. seealso:: :meth:`~.Operator.compute_eigvals` and :func:`qp.eigvals() <pennylane.eigvals>`
 
         Returns:
             tensor_like: eigenvalues
@@ -1166,7 +1166,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
             raise EigvalsUndefinedError from e
 
     @staticmethod
-    def compute_diagonalizing_gates(*args, **kwargs) -> list["Operator2"]:
+    def compute_diagonalizing_gates(*args, **kwargs) -> list["Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -1176,14 +1176,14 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
 
-        .. seealso:: :meth:`~.Operator2.diagonalizing_gates`.
+        .. seealso:: :meth:`~.Operator.diagonalizing_gates`.
 
         Args:
             *args (tuple): Positional arguments of the operator
             **kwargs (dict): Keyword arguments of the operator
 
         Returns:
-            list[.Operator2]: list of diagonalizing gates
+            list[.Operator]: list of diagonalizing gates
         """
         raise DiagGatesUndefinedError
 
@@ -1197,11 +1197,11 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         # Operators may overwrite `diagonalizing_gates` instead of `compute_diagonalizing_gates`
         # Currently, those are mostly classes from the operator arithmetic module.
         return (
-            cls.compute_diagonalizing_gates != Operator2.compute_diagonalizing_gates
-            or cls.diagonalizing_gates != Operator2.diagonalizing_gates
+            cls.compute_diagonalizing_gates != Operator.compute_diagonalizing_gates
+            or cls.diagonalizing_gates != Operator.diagonalizing_gates
         )
 
-    def diagonalizing_gates(self) -> list["Operator2"]:
+    def diagonalizing_gates(self) -> list["Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -1213,14 +1213,14 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
 
         A ``DiagGatesUndefinedError`` is raised if no representation by decomposition is defined.
 
-        .. seealso:: :meth:`~.Operator2.compute_diagonalizing_gates`.
+        .. seealso:: :meth:`~.Operator.compute_diagonalizing_gates`.
 
         Returns:
-            list[.Operator2] or None: a list of operators
+            list[.Operator] or None: a list of operators
         """
         return self.compute_diagonalizing_gates(**self.arguments)
 
-    def terms(self) -> tuple[list[TensorLike], list["Operator2"]]:
+    def terms(self) -> tuple[list[TensorLike], list["Operator"]]:
         r"""Representation of the operator as a linear combination of other operators.
 
         .. math:: O = \sum_i c_i O_i
@@ -1228,7 +1228,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         A ``TermsUndefinedError`` is raised if no representation by terms is defined.
 
         Returns:
-            tuple[list[tensor_like or float], list[.Operator2]]: list of coefficients :math:`c_i`
+            tuple[list[tensor_like or float], list[.Operator]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
         """
         raise TermsUndefinedError
@@ -1240,9 +1240,9 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
-        return cls.generator != Operator2.generator
+        return cls.generator != Operator.generator
 
-    def generator(self) -> "Operator2":
+    def generator(self) -> "Operator":
         r"""Generator of an operator that is in single-parameter-form.
 
         For example, for operator
@@ -1318,7 +1318,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
             # pylint: disable-next=import-outside-toplevel
             from pennylane.decomposition.resources import CompressedResourceOp
 
-            hashable_leaf_types = (AbstractWires, Operator, Wires, CompressedResourceOp)
+            hashable_leaf_types = (AbstractWires, LegacyOperator, Wires, CompressedResourceOp)
             for h in self.hybrid_argnames:
                 leaves, tree = flatten(self.arguments[h], is_leaf=_is_hash_leaf)
                 ser_leaves = tuple(
@@ -1341,14 +1341,14 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
     def __eq__(self, other) -> bool:
         return qp.equal(self, other)
 
-    def __copy__(self) -> "Operator2":
+    def __copy__(self) -> "Operator":
         cls = type(self)
         copied_op = cls.__new__(cls)
         for attr, value in vars(self).items():
             setattr(copied_op, attr, value)
         return copied_op
 
-    def __deepcopy__(self, memo) -> "Operator2":
+    def __deepcopy__(self, memo) -> "Operator":
         cls = type(self)
         copied_op = cls.__new__(cls)
 
@@ -1375,12 +1375,12 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
     # ------------------------------------------------------------------------
-    # ------------------ Operator arithmetic dunder methods ------------------
+    # ------------------ LegacyOperator arithmetic dunder methods ------------------
     # ------------------------------------------------------------------------
 
-    def __add__(self, other: Operator | TensorLike) -> Operator:
+    def __add__(self, other: LegacyOperator | TensorLike) -> LegacyOperator:
         """The addition operation of Operator-Operator objects and Operator-scalar."""
-        if isinstance(other, Operator):
+        if isinstance(other, LegacyOperator):
             return qp.sum(self, other, lazy=False)
         if isinstance(other, TensorLike):
             if not qp.math.is_tracer(other) and qp.math.allequal(other, 0):
@@ -1394,7 +1394,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
 
     __radd__ = __add__
 
-    def __mul__(self, other: TensorLike) -> Operator:
+    def __mul__(self, other: TensorLike) -> LegacyOperator:
         """The scalar multiplication between scalars and Operators."""
         if isinstance(other, TensorLike):
             return qp.s_prod(scalar=other, operator=self, lazy=False)
@@ -1408,27 +1408,31 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
 
     __rmul__ = __mul__
 
-    def __matmul__(self, other: Operator) -> Operator:
+    def __matmul__(self, other: LegacyOperator) -> LegacyOperator:
         """The product operation between Operator objects."""
-        return qp.prod(self, other, lazy=False) if isinstance(other, Operator) else NotImplemented
+        return (
+            qp.prod(self, other, lazy=False)
+            if isinstance(other, LegacyOperator)
+            else NotImplemented
+        )
 
-    def __sub__(self, other: Operator | TensorLike) -> Operator:
+    def __sub__(self, other: LegacyOperator | TensorLike) -> LegacyOperator:
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
-        if isinstance(other, Operator):
+        if isinstance(other, LegacyOperator):
             return self + qp.s_prod(-1, other, lazy=False)
         if isinstance(other, TensorLike):
             return self + (qp.math.multiply(-1, other))
         return NotImplemented
 
-    def __rsub__(self, other: Operator | TensorLike) -> Operator:
+    def __rsub__(self, other: LegacyOperator | TensorLike) -> LegacyOperator:
         """The reverse subtraction operation of Operator-Operator objects and Operator-scalar."""
         return -self + other
 
-    def __neg__(self) -> Operator:
+    def __neg__(self) -> LegacyOperator:
         """The negation operation of an Operator object."""
         return qp.s_prod(scalar=-1, operator=self, lazy=False)
 
-    def __pow__(self, other: TensorLike) -> Operator:
+    def __pow__(self, other: TensorLike) -> LegacyOperator:
         r"""The power operation of an Operator object."""
         if isinstance(other, TensorLike):
             return qp.pow(self, z=other)
@@ -1444,12 +1448,12 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         Returns:
             data, metadata: The dynamic and static components.
 
-        See ``Operator2._unflatten``.
+        See ``Operator._unflatten``.
 
         The dynamic component can be recursive and include other operators.
 
         The metadata **must** be hashable. If the static data contains a non-hashable component, then this
-        method and ``Operator2._unflatten`` should be overridden to provide a hashable version of the static data.
+        method and ``Operator._unflatten`` should be overridden to provide a hashable version of the static data.
 
         **Example:**
 
@@ -1482,8 +1486,8 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
             data: the dynamic component of the operation
             metadata: the static component of the operation.
 
-        The output of ``Operator2._flatten`` and the class type must be sufficient to reconstruct the original
-        operation with ``Operator2._unflatten``.
+        The output of ``Operator._flatten`` and the class type must be sufficient to reconstruct the original
+        operation with ``Operator._unflatten``.
 
         **Example:**
 
@@ -1529,7 +1533,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         ones received and sets the ``_batch_size`` attribute.
 
         The check always passes and sets the ``_batch_size`` to ``None`` for the default
-        ``Operator.ndim_params`` property but subclasses may overwrite it to define fixed
+        ``LegacyOperator.ndim_params`` property but subclasses may overwrite it to define fixed
         expected numbers of dimensions, allowing to infer a batch size.
         """
         self._batch_size = None
@@ -1626,7 +1630,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         if math.is_tracer(res):
             self.tracer = res
 
-    def __init_subclass__(cls: type["Operator2"], is_baseclass=False) -> None:
+    def __init_subclass__(cls: type["Operator"], is_baseclass=False) -> None:
         cls._sig = signature(cls)
 
         OperatorRegistry()[cls.__name__] = cls
@@ -1654,11 +1658,11 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
 
 
 # ---------------------------------------------------------------------------------
-# ------------------------- Operator registry helper ------------------------------
+# ------------------------- LegacyOperator registry helper ------------------------------
 # ---------------------------------------------------------------------------------
 
 
-def get_op_class_by_name(name: str) -> type[Operator2]:
+def get_op_class_by_name(name: str) -> type[Operator]:
     """
     Helper to get an operator class by name using a function call.
 
@@ -1672,9 +1676,9 @@ def get_op_class_by_name(name: str) -> type[Operator2]:
 
     .. code-block:: python
 
-        from pennylane.core.operator import Operator2
+        from pennylane.core.operator import Operator
 
-        class MyNamedOp(Operator2):
+        class MyNamedOp(Operator):
             static_argnames = ("label",)
 
             def __init__(self, label, wires):
@@ -1692,7 +1696,7 @@ def get_op_class_by_name(name: str) -> type[Operator2]:
 # ---------------------------------------------------------------------------------
 
 
-def _init_wires(op: Operator2):
+def _init_wires(op: Operator):
     """Initialize operator wires.
 
     * Union of all wire_argnames into _wires
@@ -1743,12 +1747,12 @@ def _init_wires(op: Operator2):
         all_algorithmic_wires.extend(op.wires for op in ops)
 
     if any(isinstance(w, AbstractWires) and not w.shape_fixed for w in all_algorithmic_wires):
-        raise ValueError("Operator2 instances must be constructed with wires of fixed length.")
+        raise ValueError("Operator instances must be constructed with wires of fixed length.")
 
     op._wires = Wires.all_wires(all_algorithmic_wires)
 
 
-def _init_arg_types(op: Operator2) -> None:
+def _init_arg_types(op: Operator) -> None:
     """Validate the provided arguments against their expected type. This method
     only performs validation on operators if ``op.arg_specs`` is defined.
     """
@@ -1814,7 +1818,7 @@ def _init_arg_types(op: Operator2) -> None:
 # -------------------------------------------------------------------------------
 
 
-def _init_subclass_validate_argnames(cls: type[Operator2]) -> None:
+def _init_subclass_validate_argnames(cls: type[Operator]) -> None:
     """Validate the values inside all ``**_argnames`` for an operator class."""
     if (cls.hybrid_argnames or cls.static_argnames) and cls.compilable_argnames:
         raise TypeError(
@@ -1856,8 +1860,8 @@ def _init_subclass_validate_argnames(cls: type[Operator2]) -> None:
         )
 
 
-def _init_subclass_arg_specs_setup(cls: type[Operator2]) -> None:
-    """Set up ``arg_specs`` for ``Operator2`` subclasses."""
+def _init_subclass_arg_specs_setup(cls: type[Operator]) -> None:
+    """Set up ``arg_specs`` for ``Operator`` subclasses."""
 
     arg_specs = cls.arg_specs or {}
     argnames_in_specs = set(arg_specs.keys())
@@ -1886,7 +1890,7 @@ def _init_subclass_arg_specs_setup(cls: type[Operator2]) -> None:
             cls.has_fixed_sig = False
 
 
-def _init_subclass_add_dynamic_properties(cls: type[Operator2]) -> None:
+def _init_subclass_add_dynamic_properties(cls: type[Operator]) -> None:
     """Create dynamic properties for an operator using its signature."""
     for name in cls._sig.parameters:  # pylint: disable=protected-access
         if not hasattr(cls, name):
@@ -1894,7 +1898,7 @@ def _init_subclass_add_dynamic_properties(cls: type[Operator2]) -> None:
             setattr(cls, name, property(dyn_property))
 
 
-def _init_subclass_dynamic_property(self: Operator2, name: str) -> Any:
+def _init_subclass_dynamic_property(self: Operator, name: str) -> Any:
     """Dynamic property for an argument called ``name``."""
     # pylint: disable=protected-access
     if "_bound_args" in vars(self) and name in self._bound_args.arguments:
@@ -1995,7 +1999,7 @@ def _is_pytree_placeholder(obj) -> bool:
     return cls.__name__ == "ArgInfo" and cls.__module__.partition(".")[0] == "jax"
 
 
-def _create_hollow_operator(cls, args) -> Operator2:
+def _create_hollow_operator(cls, args) -> Operator:
     """Create an operator instance with hollow values. This is needed if there is any sentinel
     placeholder that JAX substitutes for real pytree leaves. The values can be hollow because
     these placeholders are used temporarily and discarded.
@@ -2011,7 +2015,7 @@ def _create_hollow_operator(cls, args) -> Operator2:
     return op
 
 
-def _op_arg_forward_mask(op: Operator2) -> list[bool]:
+def _op_arg_forward_mask(op: Operator) -> list[bool]:
     """Build ``forward_mask`` entries for an operator argument."""
     op_leaves, _ = flatten(op, is_leaf=_is_wires)
     hybrid_mask = []
@@ -2060,7 +2064,7 @@ def _process_bind_hybrid_arg(hybrid_val, is_wire_arg: bool) -> tuple[list, Any, 
 
     # We don't use is_leaf=_is_op because we're deliberately not supporting program
     # capture with legacy operators mixed with new operators
-    partial_leaves, _ = flatten(hybrid_val, is_leaf=lambda h: isinstance(h, Operator2))
+    partial_leaves, _ = flatten(hybrid_val, is_leaf=lambda h: isinstance(h, Operator))
     _ = pop_op_eqns(filter(_is_op, partial_leaves))
 
     leaves, tree = flatten(hybrid_val)
@@ -2070,7 +2074,7 @@ def _process_bind_hybrid_arg(hybrid_val, is_wire_arg: bool) -> tuple[list, Any, 
 
     hybrid_mask: list[bool] = []
     for partial_leaf in partial_leaves:
-        if isinstance(partial_leaf, Operator2):
+        if isinstance(partial_leaf, Operator):
             hybrid_mask.extend(_op_arg_forward_mask(partial_leaf))
         else:
             hybrid_mask.append(False)
@@ -2116,7 +2120,7 @@ def _is_wires(val: Any) -> bool:
 
 def _is_op(val: Any) -> bool:
     """Check whether a value is an Operator (legacy or new)."""
-    return isinstance(val, Operator)
+    return isinstance(val, LegacyOperator)
 
 
 def _canonicalize_dynamic(d, op_name=None) -> Hashable:
@@ -2250,7 +2254,7 @@ def _is_abstract_specifier(val):
 
 @abstractify.register(OperatorMeta)
 @QueuingManager.stop_recording()
-def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
+def _abstractify_operator_type(op_type: type[Operator]) -> Operator:
     """Abstractify a subclass of operator."""
     if op_type.has_fixed_sig:
         return op_type(**op_type.arg_specs)
@@ -2261,9 +2265,9 @@ def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
     )
 
 
-@abstractify.register(Operator2)
+@abstractify.register(Operator)
 @QueuingManager.stop_recording()
-def _abstractify_operator(op: Operator2) -> Operator2:
+def _abstractify_operator(op: Operator) -> Operator:
     """Abstractify an operator."""
     if op.is_fully_abstract:
         return op
@@ -2276,7 +2280,7 @@ def _abstractify_operator(op: Operator2) -> Operator2:
     return op_cls(**new_args)
 
 
-class StatePrepBase2(Operator2, is_baseclass=True):
+class StatePrepBase2(Operator, is_baseclass=True):
     """An interface for state-prep operations."""
 
     @abstractmethod

@@ -27,12 +27,12 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
     """Apply an instantiated operator or measurement to the active program.
 
     Args:
-        op (.Operator or .MeasurementProcess): the operator or measurement to apply
+        op (.LegacyOperator or .MeasurementProcess): the operator or measurement to apply
         context (type[.QueuingManager] | AnnotatedQueue): The queuing context to queue the operator
             to when queuing is active. Note that if no context is specified, the operator is
             applied to the currently active queuing context.
     Returns:
-        .Operator or .MeasurementProcess: the input operator is returned for convenience
+        .LegacyOperator or .MeasurementProcess: the input operator is returned for convenience
     Raises:
         RuntimeError: if we try to use apply in a non-queuing/non-tracing context.
 
@@ -121,7 +121,7 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
         raise RuntimeError("No queuing context available to append operation to.")
 
     # Always make a copy since we don't want the provided op to be dequeued by a subsequent
-    # PennyLane Operator/Function.
+    # PennyLane LegacyOperator/Function.
     # Note that queuing contexts can only contain unique objects.
     with QueuingManager.stop_recording():
         op = copy.copy(op)
@@ -150,7 +150,7 @@ def _capture_apply(op):
         return op
 
     # Capture is active but the op has no _bind_primitive (e.g. minimal
-    # legacy Operator subclass). Reconstruct via the constructor so the
+    # legacy LegacyOperator subclass). Reconstruct via the constructor so the
     # new instance auto-binds its primitive.
     return pytrees.unflatten(*pytrees.flatten(op))
 

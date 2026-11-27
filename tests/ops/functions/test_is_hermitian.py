@@ -18,7 +18,7 @@ Unit tests for the qp.is_hermitian function
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 
 hermitian_ops = (
     qp.Identity(0),
@@ -75,19 +75,19 @@ class TestIsHermitian:
     """Tests for the qp.is_hermitian function."""
 
     @pytest.mark.parametrize("op", hermitian_ops)
-    def test_hermitian_ops(self, op: Operator):
+    def test_hermitian_ops(self, op: LegacyOperator):
         """Test that all the non-parametric ops are hermitian."""
         assert qp.is_hermitian(op)
         assert op.is_verified_hermitian
 
     @pytest.mark.parametrize("op", non_hermitian_ops)
-    def test_non_hermitian_ops(self, op: Operator):
+    def test_non_hermitian_ops(self, op: LegacyOperator):
         """Test that all the non-parametric ops are hermitian."""
         assert not qp.is_hermitian(op)
         assert not op.is_verified_hermitian
 
     @pytest.mark.parametrize("arithmetic_ops", ops)
-    def test_arithmetic_ops(self, arithmetic_ops: list[Operator]):
+    def test_arithmetic_ops(self, arithmetic_ops: list[LegacyOperator]):
         """Test that provided arithmetic op cases are non-hermitian."""
         assert not qp.is_hermitian(qp.prod(*arithmetic_ops))
         assert not qp.is_hermitian(qp.sum(*arithmetic_ops))

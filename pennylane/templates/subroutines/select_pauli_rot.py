@@ -16,7 +16,7 @@ Contains the SelectPauliRot template.
 """
 
 from pennylane import capture, math
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
@@ -30,7 +30,7 @@ from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 
-class SelectPauliRot(Operator2):
+class SelectPauliRot(Operator):
     r"""Applies individual single-qubit Pauli rotations depending on the state of
     designated control qubits.
 

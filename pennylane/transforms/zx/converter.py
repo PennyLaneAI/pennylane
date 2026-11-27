@@ -20,7 +20,7 @@ from functools import partial
 import numpy as np
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.qscript import QuantumScript
 from pennylane.decomposition import gate_sets
 from pennylane.exceptions import QuantumFunctionError
@@ -438,7 +438,7 @@ def to_zx(tape, expand_measurements=False):
 
 
 @to_zx.register
-def _op_to_zx(op: Operator, expand_measurements=False):
+def _op_to_zx(op: LegacyOperator, expand_measurements=False):
     return to_zx(QuantumScript([op]), expand_measurements=expand_measurements)
 
 

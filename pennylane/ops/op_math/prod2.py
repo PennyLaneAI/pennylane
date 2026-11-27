@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This file contains the implementation of the ``Prod2`` class, an :class:`~.Operator2`-based
+This file contains the implementation of the ``Prod2`` class, an :class:`~.Operator`-based
 symbolic operator representing the product of operators.
 """
 
@@ -27,7 +27,7 @@ from scipy.sparse import kron as sparse_kron
 import pennylane as qp
 from pennylane import capture, compiler, control_flow, math
 from pennylane.core.apply import apply
-from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.core.operator import LegacyOperator, Operator, abstractify
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -58,8 +58,8 @@ def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
     should be swapped when sorting them by wire values.
 
     Args:
-        op1 (.Operator): First operator.
-        op2 (.Operator): Second operator.
+        op1 (.LegacyOperator): First operator.
+        op2 (.LegacyOperator): Second operator.
         wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
             Defaults to None.
 
@@ -101,7 +101,7 @@ class Prod2(CompositeOp2):
     r"""Symbolic operator representing the product of operators, built on :class:`~.CompositeOp2`.
 
     Args:
-        operands (Sequence[~.operation.Operator]): the operators to be multiplied together.
+        operands (Sequence[~.operation.LegacyOperator]): the operators to be multiplied together.
 
     .. seealso:: :class:`~.ops.op_math.Prod`
 
@@ -125,7 +125,7 @@ class Prod2(CompositeOp2):
     _math_op = staticmethod(math.prod)
 
     @classmethod
-    def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
+    def _sort(cls, op_list, wire_map: dict = None) -> list[LegacyOperator]:
         """Insertion sort of product factors by wire indices, respecting commutativity.
 
         Sorting relies on concrete wires; for abstract or compressed operands (which appear as
@@ -251,11 +251,11 @@ class Prod2(CompositeOp2):
         """The legacy 'Prod' name, so name-keyed dispatch keeps recognizing products."""
         return "Prod"
 
-    def _simplify_factors(self, factors: tuple[Operator2]) -> tuple[complex, Operator2]:
+    def _simplify_factors(self, factors: tuple[Operator]) -> tuple[complex, Operator]:
         """Reduces the depth of nested factors and groups identical factors.
 
         Returns:
-            Tuple[complex, List[~.operation.Operator]: tuple containing the global phase and a list
+            Tuple[complex, List[~.operation.LegacyOperator]: tuple containing the global phase and a list
             of the simplified factors
         """
         new_factors = _ProductFactorsGrouping()
@@ -417,7 +417,7 @@ def _multi_temporary_and_all_ones(
 def _controlled_prod2_with_work_wires(base, control_wires, control_values, work_wires, **_):
     """Decomposition of ``C(Prod2)`` with at least ``num_control_wires - 1`` zeroed work wires.
 
-    ``Operator2`` port of :func:`~._controlled_product_with_work_wires`. Assumes all
+    ``Operator`` port of :func:`~._controlled_product_with_work_wires`. Assumes all
     ``control_values`` are 1; zero-control flipping is handled by ``flip_zero_control``.
     """
     target_wire = _multi_temporary_and_all_ones(control_wires, work_wires)
@@ -449,7 +449,7 @@ def _controlled_prod2_with_one_work_wire_resources(base, control_wires, work_wir
 def _controlled_prod2_with_one_work_wire(base, control_wires, control_values, work_wires, **_):
     """Decomposition of ``C(Prod2)`` with a single zeroed work wire.
 
-    ``Operator2`` port of :func:`~._controlled_product_with_one_work_wire`. Assumes all
+    ``Operator`` port of :func:`~._controlled_product_with_one_work_wire`. Assumes all
     ``control_values`` are 1; zero-control flipping is handled by ``flip_zero_control``.
     """
     qp.MultiControlledX([*control_wires, work_wires[0]])
@@ -508,11 +508,11 @@ class _ProductFactorsGrouping:
         self._factors = []
         self.global_phase = 1
 
-    def add(self, factor: Operator):
+    def add(self, factor: LegacyOperator):
         """Add factor.
 
         Args:
-            factor (Operator): Factor to add.
+            factor (LegacyOperator): Factor to add.
         """
         wires = factor.wires
         if isinstance(factor, (qp.ops.Prod, Prod2)):
@@ -533,13 +533,13 @@ class _ProductFactorsGrouping:
                 self._add_non_pauli_factor(factor=factor, wires=wires)
                 self._remove_pauli_factors(wires=wires)
 
-    def _add_pauli_factor(self, factor: Operator, wires: list[int]):
+    def _add_pauli_factor(self, factor: LegacyOperator, wires: list[int]):
         """Adds the given Pauli operator to the temporary ``self._pauli_factors`` dictionary. If
         there was another Pauli operator acting on the same wire, the two operators are grouped
         together using the ``self._pauli_mult`` dictionary.
 
         Args:
-            factor (Operator): Factor to be added.
+            factor (LegacyOperator): Factor to be added.
             wires (List[int]): Factor wires. This argument is added to avoid calling
                 ``factor.wires`` several times.
         """
@@ -549,7 +549,7 @@ class _ProductFactorsGrouping:
         coeff, new_word = self._pauli_mult[old_word][op2_name]
         self._pauli_factors[wire] = old_coeff * coeff, new_word
 
-    def _add_non_pauli_factor(self, factor: Operator, wires: list[int]):
+    def _add_non_pauli_factor(self, factor: LegacyOperator, wires: list[int]):
         """Adds the given non-Pauli factor to the temporary ``self._non_pauli_factors`` dictionary.
         If there alerady exists an identical operator in the dictionary, the two are grouped
         together.
@@ -558,7 +558,7 @@ class _ProductFactorsGrouping:
         the same wires are removed and added to the ``self._factors`` tuple.
 
         Args:
-            factor (Operator): Factor to be added.
+            factor (LegacyOperator): Factor to be added.
             wires (List[int]): Factor wires. This argument is added to avoid calling
                 ``factor.wires`` several times.
         """
@@ -597,7 +597,7 @@ class _ProductFactorsGrouping:
                     if exponent == 0:
                         continue
                     if exponent != 1:
-                        pow_cls = Pow2 if isinstance(op, Operator2) else Pow
+                        pow_cls = Pow2 if isinstance(op, Operator) else Pow
                         op = pow_cls(base=op, z=exponent).simplify()
                     if not isinstance(op, qp.Identity):
                         self._factors += ((op,),)

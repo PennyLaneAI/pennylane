@@ -19,7 +19,7 @@ import numpy as np
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import register_condition
 from pennylane.ops import PauliZ, PhaseShift, SingleExcitation, cond
@@ -59,7 +59,7 @@ def _adjust_determinant(matrix):
     return was_negative, mat
 
 
-class BasisRotation(Operator2):
+class BasisRotation(Operator):
     r"""Implements a circuit that performs an exact single-body basis rotation using Givens
     rotations and phase shifts.
 

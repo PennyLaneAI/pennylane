@@ -162,7 +162,7 @@ class GroverOperator(Operation):
                 in the decomposition of :class:`~.MultiControlledX`.
 
         Returns:
-            list[.Operator]: decomposition of the operator
+            list[.LegacyOperator]: decomposition of the operator
         """
         ctrl_values = [0] * (len(wires) - 1)
 

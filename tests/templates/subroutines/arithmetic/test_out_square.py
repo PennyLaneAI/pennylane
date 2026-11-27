@@ -93,7 +93,7 @@ def test_isinstance_relationship():
     out_square = OutSquare([0, 1], [2, 3, 4], [5, 6, 7])
 
     assert not isinstance(out_square, SignedOutSquare)
-    assert isinstance(out_square, qp.core.operator.Operator2)
+    assert isinstance(out_square, qp.core.operator.Operator)
 
 
 @pytest.mark.parametrize("cls", [OutSquare, SignedOutSquare])

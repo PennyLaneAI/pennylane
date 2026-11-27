@@ -27,7 +27,7 @@ import numpy as np
 import scipy as sp
 
 import pennylane as qp
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.identity import I
 from pennylane.typing import Float, TensorLike, Wire
@@ -46,7 +46,7 @@ def _can_replace(x, y):
     return not qp.math.is_tracer(x) and not qp.math.requires_grad(x) and qp.math.allclose(x, y)
 
 
-class RX(Operator2):
+class RX(Operator):
     r"""
     The single qubit X rotation
 
@@ -204,7 +204,7 @@ class RX(Operator2):
         return RX(-self.phi, wires=self.wires)
 
     @override
-    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qp.operation.LegacyOperator"]:
         return [RX(self.phi * z, wires=self.wires)]
 
     @override
@@ -217,7 +217,7 @@ class RX(Operator2):
         return RX(phi, wires=self.wires)
 
 
-class RY(Operator2):
+class RY(Operator):
     r"""
     The single qubit Y rotation
 
@@ -377,7 +377,7 @@ class RY(Operator2):
         return RY(-self.phi, wires=self.wires)
 
     @override
-    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qp.operation.LegacyOperator"]:
         return [RY(self.phi * z, wires=self.wires)]
 
     @override
@@ -390,7 +390,7 @@ class RY(Operator2):
         return RY(theta, wires=self.wires)
 
 
-class RZ(Operator2):
+class RZ(Operator):
     r"""
     The single qubit Z rotation
 
@@ -579,7 +579,7 @@ class RZ(Operator2):
     def adjoint(self) -> "RZ":
         return RZ(-self.arguments["phi"], wires=self.wires)
 
-    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qp.operation.LegacyOperator"]:
         return [RZ(self.arguments["phi"] * z, wires=self.wires)]
 
     def simplify(self) -> "RZ":
@@ -591,7 +591,7 @@ class RZ(Operator2):
         return RZ(phi, wires=self.wires)
 
 
-class PhaseShift(Operator2):
+class PhaseShift(Operator):
     r"""
     Arbitrary single qubit local phase shift
 
@@ -772,7 +772,7 @@ class PhaseShift(Operator2):
     def adjoint(self) -> "PhaseShift":
         return PhaseShift(-self.phi, wires=self.wires)
 
-    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qp.operation.LegacyOperator"]:
         return [PhaseShift(self.phi * z, wires=self.wires)]
 
     def simplify(self) -> "PhaseShift":
@@ -784,7 +784,7 @@ class PhaseShift(Operator2):
         return PhaseShift(phi, wires=self.wires)
 
 
-class Rot(Operator2):
+class Rot(Operator):
     r"""
     Arbitrary single qubit rotation
 
@@ -937,7 +937,7 @@ class Rot(Operator2):
         return Rot(p0, p1, p2, wires=self.wires)
 
 
-class U1(Operator2):
+class U1(Operator):
     r"""
     U1 gate.
 
@@ -1039,7 +1039,7 @@ class U1(Operator2):
     def adjoint(self) -> "U1":
         return U1(-self.phi, wires=self.wires)
 
-    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qp.operation.LegacyOperator"]:
         return [U1(self.phi * z, wires=self.wires)]
 
     def simplify(self) -> "U1":
@@ -1051,7 +1051,7 @@ class U1(Operator2):
         return U1(phi, wires=self.wires)
 
 
-class U2(Operator2):
+class U2(Operator):
     r"""
     U2 gate.
 
@@ -1171,7 +1171,7 @@ class U2(Operator2):
         return U2(phi, delta, wires=wires)
 
 
-class U3(Operator2):
+class U3(Operator):
     r"""
     Arbitrary single qubit unitary.
 

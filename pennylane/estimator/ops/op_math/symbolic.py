@@ -114,7 +114,7 @@ class Adjoint(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, base_cmpr_op: CompressedResourceOp) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the LegacyOperator that are needed to compute a resource estimation.
 
         Args:
             base_cmpr_op (:class:`~.pennylane.estimator.ResourceOperator`): The operator
@@ -300,7 +300,7 @@ class Controlled(ResourceOperator):
         num_zero_ctrl: int,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the LegacyOperator that are needed to compute a resource estimation.
 
         Args:
             base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The base

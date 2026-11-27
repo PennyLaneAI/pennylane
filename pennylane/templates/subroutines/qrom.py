@@ -23,7 +23,7 @@ from pennylane import capture, compiler, math
 from pennylane import ops as qp_ops
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -77,7 +77,7 @@ def preprocess_qrom_inputs(bitstrings, control_wires, target_wires, work_wires):
     return bitstrings, control_wires, target_wires, work_wires
 
 
-class QROM(Operator2):
+class QROM(Operator):
     r"""Flip bits of a target register, depending on the index stored in a control register.
 
     For :math:`L` classical bitstrings :math:`b_0,\dots,b_{L-1}`, ``QROM`` reads the index

@@ -37,7 +37,7 @@ control_base_map_data = [
 ]
 
 
-class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+class DummyOp(qp.operation.LegacyOperator):  # pylint: disable=too-few-public-methods
     """An operator that hasn't been seen before."""
 
 

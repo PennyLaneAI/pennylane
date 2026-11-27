@@ -19,7 +19,7 @@ import numpy as np
 
 from pennylane import capture, compiler, math, ops
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import Operator, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract, _validate_work_wire_type
@@ -28,7 +28,7 @@ from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 
-class GQSP(Operator2):
+class GQSP(Operator):
     r"""
     Implements the generalized quantum signal processing (GQSP) circuit.
 
@@ -50,7 +50,7 @@ class GQSP(Operator2):
 
     Args:
 
-        unitary (Operator): the operator to be encoded by the GQSP circuit
+        unitary (LegacyOperator): the operator to be encoded by the GQSP circuit
         angles (tensor[float]): array of angles defining the polynomial transformation. The
             shape of the array must be `(3, d+1)`, where `d` is the degree of the polynomial.
         control (Wires or int): control qubit used to encode the polynomial

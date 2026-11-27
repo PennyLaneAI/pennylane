@@ -85,20 +85,20 @@ array([[ 0. +0.j,  0. +0.j,  0.5+0.j,  0. +0.j],
     :class:`~pennylane.pauli.PauliWord` and :class:`~pennylane.pauli.PauliSentence`
     store algebraic representations of Pauli operators. Use
     :func:`~pennylane.pauli.to_operator` to construct PennyLane
-    :class:`~pennylane.core.operator.Operator` instances:
+    :class:`~pennylane.core.operator.LegacyOperator` instances:
 
     .. code-block:: pycon
 
-        >>> from pennylane.core.operator import Operator
+        >>> from pennylane.core.operator import LegacyOperator
         >>> word = qp.pauli.PauliWord({0: "X", 1: "Z"})
         >>> word_op = qp.pauli.to_operator(word)
-        >>> isinstance(word_op, Operator)
+        >>> isinstance(word_op, LegacyOperator)
         True
         >>> word_op
         X(0) @ Z(1)
         >>> sentence = qp.pauli.PauliSentence({word: 2.0})
         >>> sentence_op = qp.pauli.to_operator(sentence)
-        >>> isinstance(sentence_op, Operator)
+        >>> isinstance(sentence_op, LegacyOperator)
         True
         >>> sentence_op
         2.0 * (X(0) @ Z(1))

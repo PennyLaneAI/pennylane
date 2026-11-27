@@ -26,8 +26,8 @@ import pytest
 import scipy.sparse
 
 import pennylane as qp
-from pennylane.core import Operator2
-from pennylane.core.operator import Operator
+from pennylane.core import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.testing.operators import (
     _check_bind_new_parameters,
     _check_eigendecomposition,
@@ -44,7 +44,7 @@ class TestDecompositionErrors:
     def test_bad_decomposition_output(self):
         """Test that an error is raised if decomposition output is not a list."""
 
-        class BadDecomp(Operator):
+        class BadDecomp(LegacyOperator):
             @staticmethod
             def compute_decomposition(wires):
                 qp.RX(1.2, wires=0)
@@ -56,7 +56,7 @@ class TestDecompositionErrors:
         """Test that an error is raised if decomposition, compute_decomposition and queuing
         do not have the same number of ops."""
 
-        class BadDecompLength(Operator):
+        class BadDecompLength(LegacyOperator):
             @staticmethod
             def compute_decomposition(wires):
                 return [qp.X(wires[0]), qp.Y(wires[1])]
@@ -67,7 +67,7 @@ class TestDecompositionErrors:
         with pytest.raises(AssertionError, match="decomposition must match compute_decomposition"):
             assert_valid(BadDecompLength(wires=[0, 1]), skip_pickle=True)
 
-        class BadDecompQueueLength(Operator):
+        class BadDecompQueueLength(LegacyOperator):
             @staticmethod
             def compute_decomposition(wires):
                 qp.X(wires[0])
@@ -79,7 +79,7 @@ class TestDecompositionErrors:
     def test_bad_decomposition_queuing(self):
         """Test that an error is raised if decomposition and queuing do not have the same op."""
 
-        class BadDecomp(Operator):
+        class BadDecomp(LegacyOperator):
             @staticmethod
             def compute_decomposition(wires):
                 qp.RX(1.2, wires=0)
@@ -94,7 +94,7 @@ class TestDecompositionErrors:
         """Test that an error is raised if decomposition and compute_decomposition involve
         mid-circuit measurements and return different ops."""
 
-        class BadDecomp(Operator):
+        class BadDecomp(LegacyOperator):
             @staticmethod
             def compute_decomposition(wires):
                 mcm0 = qp.measure(wires[0])
@@ -109,7 +109,7 @@ class TestDecompositionErrors:
         with pytest.raises(AssertionError, match="decomposition must match compute_decomposition"):
             assert_valid(BadDecomp(wires=[0, 1]), skip_pickle=True)
 
-        class BadDecompQueue(Operator):
+        class BadDecompQueue(LegacyOperator):
             @staticmethod
             def compute_decomposition(wires):
                 """Return other ops than are queued, but the same number of ops."""
@@ -127,7 +127,7 @@ class TestDecompositionErrors:
         """Test that an error is raised if the operators in decomposition do not have mapped
         wires after mapping the op."""
 
-        class BadDecompositionWireMap(Operator):
+        class BadDecompositionWireMap(LegacyOperator):
 
             @staticmethod
             def compute_decomposition(*args, **kwargs):
@@ -143,10 +143,10 @@ class TestDecompositionErrors:
         """Test that the wire-mapped decompositions are not compared if ``map_wires`` returns
         an operator that has no decomposition."""
 
-        class NoDecompOp(Operator):
+        class NoDecompOp(LegacyOperator):
             pass
 
-        class MapsToNoDecompOp(Operator):
+        class MapsToNoDecompOp(LegacyOperator):
 
             @staticmethod
             def compute_decomposition(wires):
@@ -161,7 +161,7 @@ class TestDecompositionErrors:
         """Test that an error is raised if has_decomposition is False but a decomposition is
         defined."""
 
-        class BadDecomp(Operator):
+        class BadDecomp(LegacyOperator):
             @staticmethod
             def compute_decomposition(wires):
                 return [qp.RY(2.3, 0)]
@@ -174,7 +174,7 @@ class TestDecompositionErrors:
     def test_decomposition_must_contain_operators(self):
         """A non-operator in ``decomposition`` or ``compute_decomposition`` raises AssertionError."""
 
-        class BadDecomp(Operator):
+        class BadDecomp(LegacyOperator):
             @staticmethod
             def compute_decomposition(wires):
                 return ["RX"]
@@ -182,7 +182,7 @@ class TestDecompositionErrors:
         with pytest.raises(AssertionError, match="decomposition must contain operators"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
-        class BadComputeDecomp(Operator):
+        class BadComputeDecomp(LegacyOperator):
             @staticmethod
             def compute_decomposition(wires):
                 return ["RX"]
@@ -197,7 +197,7 @@ class TestDecompositionErrors:
         """Test that an error is raised if the decomposition of an operator includes
         the operator itself"""
 
-        class BadDecomp(Operator):
+        class BadDecomp(LegacyOperator):
             @staticmethod
             def compute_decomposition(wires):
                 return [BadDecomp(wires)]
@@ -209,7 +209,7 @@ class TestDecompositionErrors:
     def test_mcms_can_be_compared(self):
         """Tests that decompositions with mid-circuit measurements can be compared correctly."""
 
-        class ValidMCMDecomp(Operator):
+        class ValidMCMDecomp(LegacyOperator):
             @staticmethod
             def compute_decomposition(wires):
                 mcm = qp.measure(wires[0])
@@ -221,7 +221,7 @@ class TestDecompositionErrors:
     def test_pauli_measures_can_be_compared(self):
         """Tests that decompositions with Pauli measurements can be compared correctly."""
 
-        class ValidPauliMeasureDecomp(Operator):
+        class ValidPauliMeasureDecomp(LegacyOperator):
             @staticmethod
             def compute_decomposition(wires):
                 mcm = qp.pauli_measure("XY", wires=wires)
@@ -236,7 +236,7 @@ class TestBadMatrix:
     def test_error_not_raised(self):
         """Test that if has_matrix if False, then an error must be raised."""
 
-        class BadMat(Operator):
+        class BadMat(LegacyOperator):
             has_matrix = False
 
             def matrix(self):
@@ -250,7 +250,7 @@ class TestBadMatrix:
     def test_bad_matrix_shape(self):
         """Test an error if the matrix is of the wrong shape."""
 
-        class BadMat(Operator):
+        class BadMat(LegacyOperator):
             @staticmethod
             def compute_matrix():
                 return np.eye(2)
@@ -263,7 +263,7 @@ class TestBadMatrix:
     def test_matrix_not_tensorlike(self):
         """Test an error is raised if the matrix is not a TensorLike"""
 
-        class BadMat(Operator):
+        class BadMat(LegacyOperator):
             @staticmethod
             def compute_matrix():
                 return "a"
@@ -278,14 +278,14 @@ class TestBadCopyComparison:
     def test_copy_must_not_be_alias(self):
         """A copy or deepcopy that returns the original instance fails validation."""
 
-        class BadCopy(Operator):
+        class BadCopy(LegacyOperator):
             def __copy__(self):
                 return self
 
         with pytest.raises(AssertionError, match=r"copied op must not be an alias"):
             assert_valid(BadCopy(0), skip_pickle=True)
 
-        class BadDeepCopy(Operator):
+        class BadDeepCopy(LegacyOperator):
             def __deepcopy__(self, memo):
                 return self
 
@@ -295,14 +295,14 @@ class TestBadCopyComparison:
     def test_copy_must_equal_original(self):
         """A copy or deepcopy that is not equal to the original fails validation."""
 
-        class BadCopy(Operator):
+        class BadCopy(LegacyOperator):
             def __copy__(self):
                 return BadCopy(1)
 
         with pytest.raises(AssertionError, match=r"copied op must be equal to the original"):
             assert_valid(BadCopy(0), skip_pickle=True)
 
-        class BadDeepCopy(Operator):
+        class BadDeepCopy(LegacyOperator):
             def __deepcopy__(self, memo):
                 return BadDeepCopy(1)
 
@@ -313,7 +313,7 @@ class TestBadCopyComparison:
 def test_mismatched_mat_decomp():
     """Test that an error is raised if the matrix does not match the decomposition if both are defined."""
 
-    class MisMatchedMatDecomp(Operator):
+    class MisMatchedMatDecomp(LegacyOperator):
         @staticmethod
         def compute_matrix():
             return np.eye(2)
@@ -354,7 +354,7 @@ def test_mismatched_diagonalizing_gates():
 def test_eigendecomposition_with_different_wire_order():
     """A valid eigendecomposition is compared using the operator's wire order."""
 
-    class ReorderedDiagonalizingGates(Operator):
+    class ReorderedDiagonalizingGates(LegacyOperator):
         num_wires = 2
 
         @staticmethod
@@ -374,7 +374,7 @@ def test_eigendecomposition_with_different_wire_order():
     _check_eigendecomposition(ReorderedDiagonalizingGates([0, 1]))
 
 
-class BadPickling0(Operator):
+class BadPickling0(LegacyOperator):
     def __init__(self, f, wires):
         super().__init__(wires)
 
@@ -391,7 +391,7 @@ def test_bad_pickling():
 def test_bad_bind_new_parameters():
     """Test that validation fails when rebinding cannot update an operator's data."""
 
-    class NoBindNewParameters(Operator):
+    class NoBindNewParameters(LegacyOperator):
         num_params = 1
 
         @property
@@ -407,7 +407,7 @@ def test_bad_bind_new_parameters():
 def test_bad_wire_mapping():
     """Test that an error is raised if the wires cant be mapped with map_wires."""
 
-    class BadWireMap(Operator):
+    class BadWireMap(LegacyOperator):
         def __init__(self, wires):
             super().__init__(wires=wires)
 
@@ -425,7 +425,7 @@ class TestPytree:
     def test_not_hashable_metadata(self):
         """Assert that an error is raised if metadata is not hashable."""
 
-        class BadMetadata(Operator):
+        class BadMetadata(LegacyOperator):
             def __init__(self, wires):
                 super().__init__(wires)
                 self.hyperparameters["test"] = ["a"]
@@ -437,7 +437,7 @@ class TestPytree:
     def test_bad_pytree(self):
         """Check an operation that errors out of the _unflatten call."""
 
-        class BadPytree(qp.operation.Operator):
+        class BadPytree(qp.operation.LegacyOperator):
             def __init__(self, wires1, wires2):
                 super().__init__(wires=wires1 + wires2)
 
@@ -449,7 +449,7 @@ class TestPytree:
     def test_badpytree_incomplete_info(self):
         """Assert that an unpacking and repacking a pytree reproduces the original operation."""
 
-        class BadPytree(Operator):
+        class BadPytree(LegacyOperator):
             def _flatten(self):
                 return tuple(), (self.wires, tuple())
 
@@ -468,7 +468,7 @@ class TestPytree:
     def test_nested_bad_pytree(self):
         """Test that an operator with a bad leaf will raise an error."""
 
-        class BadPytree(Operator):
+        class BadPytree(LegacyOperator):
             def _flatten(self):
                 return tuple(), (self.wires, tuple())
 
@@ -486,7 +486,7 @@ class TestPytree:
     def test_bad_pytree_pennylane_unflatten(self, mocker):
         """An operator that jax can unflatten but ``qp.pytrees`` cannot still fails validation."""
 
-        class GoodPytree(Operator):
+        class GoodPytree(LegacyOperator):
             pass
 
         op = GoodPytree(wires=0)
@@ -513,7 +513,7 @@ class TestPytree:
 
     @pytest.mark.jax
     def test_nested_operator2_data_check(self):
-        """A nested Operator2 does not disable validation of the outer Operator1 data order."""
+        """A nested Operator does not disable validation of the outer Operator1 data order."""
 
         class BadLeavesOrdering(qp.ops.op_math.SProd):
             def _flatten(self):
@@ -536,7 +536,7 @@ class TestPytree:
 def test_data_is_tuple():
     """Check that the data property is a tuple."""
 
-    class BadData(Operator):
+    class BadData(LegacyOperator):
         num_params = 1
 
         @property
@@ -547,8 +547,8 @@ def test_data_is_tuple():
         assert_valid(BadData(2.0, wires=0))
 
 
-class SingleRZ(Operator2):
-    """A fully-featured ``Operator2`` defining a matrix, a decomposition,
+class SingleRZ(Operator):
+    """A fully-featured ``Operator`` defining a matrix, a decomposition,
     eigenvalues, diagonalizing gates, and a generator.
     """
 
@@ -583,24 +583,24 @@ class SingleRZ(Operator2):
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
 class TestOperator2AssertValid:
-    """Tests showing that ``assert_valid`` works on :class:`~.core.Operator2` instances thanks to
+    """Tests showing that ``assert_valid`` works on :class:`~.core.Operator` instances thanks to
     the backwards-compatible ``data``/``parameters``/``num_params``/``hyperparameters`` attributes.
 
-    The first test validates a fully-featured ``Operator2``. The remaining tests each violate the
+    The first test validates a fully-featured ``Operator``. The remaining tests each violate the
     criteria of a single internal ``assert_valid`` check and confirm the corresponding failure.
     """
 
     def test_full_featured_operator_is_valid(self):
-        """A fully-featured, self-consistent ``Operator2`` passes ``assert_valid``."""
+        """A fully-featured, self-consistent ``Operator`` passes ``assert_valid``."""
         op = SingleRZ(np.array(0.5), wires=0)
 
-        # differentiation is skipped: the Operator2 pytree leaves include its wires
+        # differentiation is skipped: the Operator pytree leaves include its wires
         assert_valid(op, skip_differentiation=True)
 
     def test_invalid_dyn_arg_dimension(self):
         """``_assert_valid_operator2`` fails if a dynamic argument has the wrong shape."""
 
-        class BadDims(Operator2):
+        class BadDims(Operator):
             dynamic_argnames = ("angles",)
             wire_argnames = ("wires",)
             ndim_params = (2,)
@@ -617,7 +617,7 @@ class TestOperator2AssertValid:
         if qp.capture.enabled():
             pytest.skip("this is not expected to work when capture is enabled.")
 
-        class BadDecomp(Operator2):
+        class BadDecomp(Operator):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires",)
 
@@ -634,7 +634,7 @@ class TestOperator2AssertValid:
     def test_check_matrix(self):
         """``_check_matrix`` fails if the matrix does not have the expected shape."""
 
-        class BadMatrix(Operator2):
+        class BadMatrix(Operator):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires",)
 
@@ -656,7 +656,7 @@ class TestOperator2AssertValid:
         if qp.capture.enabled():
             pytest.skip("this is not expected to work when capture is enabled.")
 
-        class MatDecompMismatch(Operator2):
+        class MatDecompMismatch(Operator):
             wire_argnames = ("wires",)
             static_argnames = ("phi",)
 
@@ -677,7 +677,7 @@ class TestOperator2AssertValid:
     def test_check_sparse_matrix(self):
         """``_check_sparse_matrix`` fails if the sparse matrix does not have the expected shape."""
 
-        class BadSparse(Operator2):
+        class BadSparse(Operator):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires",)
 
@@ -697,7 +697,7 @@ class TestOperator2AssertValid:
         """``_check_eigendecomposition`` fails if the eigenvalues and diagonalizing gates cannot
         reproduce the operator."""
 
-        class BadEigen(Operator2):
+        class BadEigen(Operator):
             wire_argnames = ("wires",)
             static_argnames = ("phi",)
             hybrid_argnames = ("tree",)
@@ -725,7 +725,7 @@ class TestOperator2AssertValid:
     def test_check_generator(self):
         """``_check_generator`` fails if the generator does not reproduce the operator."""
 
-        class BadGen(Operator2):
+        class BadGen(Operator):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires",)
 
@@ -745,7 +745,7 @@ class TestOperator2AssertValid:
     def test_check_pickle(self):
         """``_check_pickle`` fails if the operator cannot be pickled (e.g. a local class)."""
 
-        class LocalOp(Operator2):
+        class LocalOp(Operator):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires",)
 
@@ -758,7 +758,7 @@ class TestOperator2AssertValid:
     def test_check_bind_new_parameters(self):
         """``_check_bind_new_parameters`` fails if ``bind_new_parameters`` cannot update the data."""
 
-        class IgnoresParams(Operator2):
+        class IgnoresParams(Operator):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires",)
 
@@ -772,7 +772,7 @@ class TestOperator2AssertValid:
     def test_cant_handle_abstract_inputs(self):
         """Test an Operator that can't handle AbstractArray inputs."""
 
-        class NoAAOp(qp.core.Operator2):
+        class NoAAOp(qp.core.Operator):
 
             dynamic_argnames = "x"
 
@@ -788,7 +788,7 @@ class TestOperator2AssertValid:
     def test_improperly_abstractified(self):
         """Test an error will be raised in an operator isn't properly abstractified."""
 
-        class BadAAOp(qp.core.Operator2):
+        class BadAAOp(qp.core.Operator):
 
             dynamic_argnames = "x"
 
@@ -804,7 +804,7 @@ class TestOperator2AssertValid:
 def test_op1_assert_valid_capture():
     """Tests calling assert_valid on Operator1 with capture enabled."""
 
-    class CustomOp(Operator):
+    class CustomOp(LegacyOperator):
         pass
 
     assert_valid(CustomOp(0.5, wires=[0, 1]), skip_pickle=True)
@@ -846,17 +846,17 @@ def test_generated_list_of_ops(class_to_validate):
     if class_to_validate.__module__[10:14] == "ftqc":
         pytest.skip(reason="skip tests for ftqc ops")
 
-    # If you defined a new Operator and this call to `create_op_instance` failed, it might
-    # be the fault of the test and not your Operator. Please do one of the following things:
-    #   1. Update your Operator to meet PL standards so it passes
+    # If you defined a new LegacyOperator and this call to `create_op_instance` failed, it might
+    # be the fault of the test and not your LegacyOperator. Please do one of the following things:
+    #   1. Update your LegacyOperator to meet PL standards so it passes
     #   2. Improve `create_op_instance` so it can create an instance of your op (it is quite hacky)
     #   3. Add an instance of your class to `_INSTANCES_TO_TEST` in ./conftest.py
     #       Note: if it then fails validation, move it to `_INSTANCES_TO_FAIL` as described below.
     op = create_op_instance(class_to_validate)
 
-    # If you defined a new Operator and this call to `assert_valid` failed, the Operator doesn't
+    # If you defined a new LegacyOperator and this call to `assert_valid` failed, the LegacyOperator doesn't
     # follow PL standards. Please do one of the following things:
-    #   1. Preferred action: Update your Operator to meet PL standards so it passes
+    #   1. Preferred action: Update your LegacyOperator to meet PL standards so it passes
     #   2. Add an instance of your class to `_INSTANCES_TO_FAIL` in ./conftest.py, along with the
     #       exception type raised by the assertion and a comment explaining the assumption your
     #       operator makes.

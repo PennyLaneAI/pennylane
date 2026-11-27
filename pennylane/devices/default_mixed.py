@@ -137,7 +137,7 @@ operations = {
 DEFAULT_MIXED_GATES = operations | {"Snapshot"} | channels
 
 
-def observable_stopping_condition(obs: qp.operation.Operator) -> bool:
+def observable_stopping_condition(obs: qp.operation.LegacyOperator) -> bool:
     """Specifies whether an observable is accepted by DefaultQubitMixed."""
     if obs.name in {"Prod", "Sum"}:
         return all(observable_stopping_condition(observable) for observable in obs.operands)
@@ -149,7 +149,7 @@ def observable_stopping_condition(obs: qp.operation.Operator) -> bool:
     return obs.name in observables
 
 
-def stopping_condition(op: qp.operation.Operator) -> bool:
+def stopping_condition(op: qp.operation.LegacyOperator) -> bool:
     """Specify whether an Operator object is supported by the device."""
     return op.name in DEFAULT_MIXED_GATES
 

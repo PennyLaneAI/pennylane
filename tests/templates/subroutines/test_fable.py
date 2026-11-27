@@ -40,7 +40,7 @@ class TestFable:
 
     @pytest.mark.xfail_if_capture(reason="come back to this after we migrate Fable [sc-129901]")
     @pytest.mark.pl2do(
-        reason="FABLE resources require concrete parameters; pending Operator2 migration (sc-129901)"
+        reason="FABLE resources require concrete parameters; pending Operator migration (sc-129901)"
     )
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self, input_matrix):
@@ -180,7 +180,7 @@ class TestFable:
 
     @pytest.mark.jax
     @pytest.mark.pl2do(
-        reason="FABLE resources require concrete parameters; pending Operator2 migration (sc-129901)"
+        reason="FABLE resources require concrete parameters; pending Operator migration (sc-129901)"
     )
     def test_fable_grad_jax(self, input_matrix):
         """Test that FABLE is differentiable when using jax."""
@@ -232,7 +232,7 @@ class TestFable:
 
     @pytest.mark.jax
     @pytest.mark.pl2do(
-        reason="FABLE resources require concrete parameters; pending Operator2 migration (sc-129901)"
+        reason="FABLE resources require concrete parameters; pending Operator migration (sc-129901)"
     )
     def test_fable_jax_jit(self, input_matrix):
         """Test that FABLE is differentiable when using jax."""
@@ -289,7 +289,7 @@ class TestFable:
 
     @pytest.mark.jax
     @pytest.mark.pl2do(
-        reason="FABLE resources require concrete parameters; pending Operator2 migration (sc-129901)"
+        reason="FABLE resources require concrete parameters; pending Operator migration (sc-129901)"
     )
     def test_fable_grad_jax_jit_error(self, input_matrix):
         """Test that FABLE is differentiable when using jax."""
@@ -312,7 +312,7 @@ class TestFable:
 
     @pytest.mark.autograd
     @pytest.mark.pl2do(
-        reason="FABLE resources require concrete parameters; pending Operator2 migration (sc-129901)"
+        reason="FABLE resources require concrete parameters; pending Operator migration (sc-129901)"
     )
     def test_fable_autograd(self, input_matrix):
         """Test that FABLE is differentiable when using autograd."""

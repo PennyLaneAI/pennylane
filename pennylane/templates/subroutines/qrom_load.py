@@ -23,7 +23,7 @@ from pennylane import capture, compiler, math
 from pennylane import ops as qp_ops
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
@@ -44,7 +44,7 @@ from .qrom import (
 )
 
 
-class QROMLoad(Operator2):
+class QROMLoad(Operator):
     r"""Load bitstrings into a zeroed target register, depending on the index stored in a control
     register.
 

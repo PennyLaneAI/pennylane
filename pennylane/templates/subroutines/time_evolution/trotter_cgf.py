@@ -19,7 +19,7 @@ import numpy as np
 
 from pennylane import math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -36,7 +36,7 @@ from pennylane.wires import WiresLike
 from ._trotter_utils import _emit_one_body_rz, _run_trotter_steps
 
 
-class TrotterCGF(Operator2):
+class TrotterCGF(Operator):
     r"""Second-order Trotter time evolution for a Christiansen Greedy Fragmentation (CGF) Hamiltonian.
 
     This template realizes :math:`U \approx e^{-iHt}` for a vibrational Hamiltonian in the

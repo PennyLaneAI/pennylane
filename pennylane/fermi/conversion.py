@@ -26,7 +26,7 @@ from pennylane.pauli import PauliSentence, PauliWord, to_operator
 from .fermionic import FermiSentence, FermiWord
 
 if TYPE_CHECKING:
-    from pennylane.core.operator import Operator
+    from pennylane.core.operator import LegacyOperator
 
 
 def jordan_wigner(
@@ -34,7 +34,7 @@ def jordan_wigner(
     ps: bool = False,
     wire_map: dict = None,
     tol: float = None,
-) -> Operator | PauliSentence:
+) -> LegacyOperator | PauliSentence:
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
     The fermionic creation and annihilation operators are mapped to the Pauli operators as
@@ -56,14 +56,14 @@ def jordan_wigner(
     Args:
         fermi_operator(FermiWord, FermiSentence): the fermionic operator
         ps (bool): whether to return the result as a PauliSentence instead of an
-            Operator. Defaults to False.
+            LegacyOperator. Defaults to False.
         wire_map (dict): a dictionary defining how to map the orbitals of
             the Fermi operator to qubit wires. If None, the integers used to
             order the orbitals will be used as wire labels. Defaults to None.
         tol (float): tolerance for discarding the imaginary part of the coefficients
 
     Returns:
-        Union[PauliSentence, Operator]: a linear combination of qubit operators
+        Union[PauliSentence, LegacyOperator]: a linear combination of qubit operators
 
     **Example**
 
@@ -167,7 +167,7 @@ def parity_transform(
     ps: bool = False,
     wire_map: dict = None,
     tol: float = None,
-) -> Operator | PauliSentence:
+) -> LegacyOperator | PauliSentence:
     r"""Convert a fermionic operator to a qubit operator using the parity mapping.
 
     .. note::
@@ -199,14 +199,14 @@ def parity_transform(
         fermi_operator(FermiWord, FermiSentence): the fermionic operator
         n (int): number of qubits, i.e., spin orbitals in the system
         ps (bool): whether to return the result as a :class:`~.PauliSentence` instead of an
-            :class:`~.Operator`. Defaults to ``False``.
+            :class:`~.LegacyOperator`. Defaults to ``False``.
         wire_map (dict): a dictionary defining how to map the orbitals of
             the Fermi operator to qubit wires. If ``None``, the integers used to
             order the orbitals will be used as wire labels. Defaults to ``None``.
         tol (float): tolerance for discarding the imaginary part of the coefficients
 
     Returns:
-        Union[PauliSentence, Operator]: a linear combination of qubit operators
+        Union[PauliSentence, LegacyOperator]: a linear combination of qubit operators
 
     **Example**
 
@@ -313,7 +313,7 @@ def bravyi_kitaev(
     ps: bool = False,
     wire_map: dict = None,
     tol: float = None,
-) -> Operator | PauliSentence:
+) -> LegacyOperator | PauliSentence:
     r"""Convert a fermionic operator to a qubit operator using the Bravyi-Kitaev mapping.
 
     .. note::
@@ -362,14 +362,14 @@ def bravyi_kitaev(
         fermi_operator(FermiWord, FermiSentence): the fermionic operator
         n (int): number of qubits, i.e., spin orbitals in the system
         ps (bool): whether to return the result as a PauliSentence instead of an
-            Operator. Defaults to False.
+            LegacyOperator. Defaults to False.
         wire_map (dict): a dictionary defining how to map the orbitals of
             the Fermi operator to qubit wires. If None, the integers used to
             order the orbitals will be used as wire labels. Defaults to None.
         tol (float): tolerance for discarding the imaginary part of the coefficients
 
     Returns:
-        Union[PauliSentence, Operator]: a linear combination of qubit operators
+        Union[PauliSentence, LegacyOperator]: a linear combination of qubit operators
 
     **Example**
 

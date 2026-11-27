@@ -50,7 +50,7 @@ class TestMapToResourceOp:
 
                 if (
                     isinstance(qp_val, type)
-                    and issubclass(qp_val, qp.operation.Operator)
+                    and issubclass(qp_val, qp.operation.LegacyOperator)
                     and qp_val not in _map_to_resource_op.registry
                 ):
                     raise ValueError(

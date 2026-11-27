@@ -18,7 +18,7 @@ and lists all operators satisfying those criteria.
 
 from inspect import isclass
 
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 
 
 class Attribute(set):
@@ -56,11 +56,11 @@ class Attribute(set):
             return super().add(obj)
 
         try:
-            if isinstance(obj, Operator):
+            if isinstance(obj, LegacyOperator):
                 return super().add(obj.name)
 
             if isclass(obj):
-                if issubclass(obj, Operator):
+                if issubclass(obj, LegacyOperator):
                     return super().add(obj.__name__)
 
             raise TypeError
@@ -75,11 +75,11 @@ class Attribute(set):
         if isinstance(obj, str):
             return super().__contains__(obj)
 
-        if isinstance(obj, Operator):
+        if isinstance(obj, LegacyOperator):
             return super().__contains__(obj.name)
 
         if isclass(obj):
-            if issubclass(obj, Operator):
+            if issubclass(obj, LegacyOperator):
                 return super().__contains__(obj.__name__)
 
         return False

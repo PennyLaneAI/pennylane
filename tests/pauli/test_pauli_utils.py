@@ -353,7 +353,7 @@ class TestGroupingUtils:  # pylint: disable=too-many-public-methods
     def test_is_pauli_word_non_observable(self):
         """Test that non-observables are not Pauli Words."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             num_wires = 1
 
         assert not is_pauli_word(DummyOp(1))

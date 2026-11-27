@@ -25,7 +25,7 @@ from pennylane.capture import enabled as capture_enabled
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.compiler import compiler
 from pennylane.core import QueuingManager
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import Operator, abstractify
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
@@ -86,7 +86,7 @@ def get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[MeasurementV
     return new_conds
 
 
-class MidMeasure(Operator2):
+class MidMeasure(Operator):
     """Mid-circuit measurement.
 
     This class additionally stores information about unknown measurement outcomes in the qubit model.

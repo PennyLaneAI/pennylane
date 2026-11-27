@@ -55,7 +55,7 @@ class TestUniformPrep:
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("n_states", [4, 5])
     def test_assert_valid_and_decomposition(self, n_states):
-        """Test that UniformPrep is a valid Operator2 and decomposes, with and without capture."""
+        """Test that UniformPrep is a valid Operator and decomposes, with and without capture."""
         target_wires, work_wires, _ = _wire_layout(n_states)
         op = qp.UniformPrep(n_states, target_wires, work_wires)
         assert_valid(op, skip_differentiation=True)
@@ -242,7 +242,7 @@ class TestAliasSampling:
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_assert_valid_and_decomposition(self):
-        """Test that AliasSampling is a valid Operator2 and decomposes, with and without capture."""
+        """Test that AliasSampling is a valid Operator and decomposes, with and without capture."""
         w, wires, temp, work, _ = _alias_registers(4, 3)
         op = qp.AliasSampling(_as_probs(w), 3, wires, temp, work)
         assert_valid(op, skip_differentiation=True)

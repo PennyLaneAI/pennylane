@@ -365,7 +365,7 @@ A DAG can be used to represent which operator in a circuit is causally related t
 options to construct such a DAG:
 
 The :class:`~pennylane.CircuitGraph` class takes a list of gates or channels and hermitian observables
-as well as a set of wire labels and constructs a DAG in which the :class:`~.Operator`
+as well as a set of wire labels and constructs a DAG in which the :class:`~.LegacyOperator`
 instances are the nodes, and each directed edge corresponds to a wire
 (or a group of wires) on which the "nodes" act subsequently.
 

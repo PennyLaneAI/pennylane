@@ -35,7 +35,7 @@ import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
 import pennylane as qp
-from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.core.operator import LegacyOperator, Operator, abstractify
 from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 
@@ -69,7 +69,7 @@ IGNORED_UNSOLVED_OPS = {"Allocate", "Deallocate", "Barrier", "Snapshot"}
 
 
 def _get_kwargs(op: AbstractOperatorLike):
-    if isinstance(op, Operator2):
+    if isinstance(op, Operator):
         return op.arguments
     return op.params
 
@@ -231,7 +231,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     of the target gate set on the target hardware i.e. a ``T`` gate.
 
     Args:
-        operations (list[Operator or CompressedResourceOp]): The list of operations to decompose.
+        operations (list[LegacyOperator or CompressedResourceOp]): The list of operations to decompose.
         gate_set (Set | Mapping | GateSet): A set of gates in the target gate set or a dictionary
             mapping gates in the target gate set to their respective weights. All weights must be positive.
         fixed_decomps (dict): A dictionary mapping operator types or names to fixed decompositions.
@@ -269,7 +269,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
     def __init__(
         self,
-        operations: Iterable[Operator | AbstractOperatorLike],
+        operations: Iterable[LegacyOperator | AbstractOperatorLike],
         gate_set: Set[type | str] | Mapping[type | str, float] | GateSet,
         fixed_decomps: dict | None = None,
         alt_decomps: dict | None = None,
@@ -341,12 +341,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
             self._construct_graph(operations)
 
-    def _construct_graph(self, operations: Iterable[Operator | AbstractOperatorLike]):
+    def _construct_graph(self, operations: Iterable[LegacyOperator | AbstractOperatorLike]):
         """Constructs the decomposition graph."""
         for op in operations:
             if isinstance(op, qp.ops.Conditional):
                 op = op.base  # decompose the base of a classically controlled operator.
-            if isinstance(op, Operator):
+            if isinstance(op, LegacyOperator):
                 op = abstractify(op)
             idx = self._add_op_node(op, 0)
             self._original_ops_indices.add(idx)
@@ -604,10 +604,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         decomps = list_decomps(op)
 
-        # Symbolic decomposition rules of Operator2 are handled differently, i.e., they
+        # Symbolic decomposition rules of Operator are handled differently, i.e., they
         # are integrated into list_decomps so that the graph would not be responsible
         # for populating these symbolic decomposition rules.
-        if isinstance(op, Operator2):
+        if isinstance(op, Operator):
             return decomps
 
         if to_name(op) in self._fixed_decomps:
@@ -777,7 +777,7 @@ def _get_base_and_n_ctrls(op: AbstractOperatorLike) -> tuple[AbstractOperatorLik
     if isinstance(op, CompressedResourceOp) and op.op_type is qp.ops.Controlled:
         base_class, base_params = op.params["base_class"], op.params["base_params"]
         return resource_rep(base_class, **base_params), op.params["num_control_wires"]
-    if isinstance(op, Operator2) and isinstance(op, qp.ops.ControlledOp2):
+    if isinstance(op, Operator) and isinstance(op, qp.ops.ControlledOp2):
         return abstractify(op.base), len(op.control_wires)
     return None
 
@@ -839,7 +839,7 @@ class DecompGraphSolution:
         self.num_work_wires = num_work_wires
 
     def _all_solutions(
-        self, visitor: DecompositionSearchVisitor, op: Operator, num_work_wires: int | None
+        self, visitor: DecompositionSearchVisitor, op: LegacyOperator, num_work_wires: int | None
     ) -> Iterable[_OperatorNode]:
         """Returns all valid solutions for an operator and a work wire constraint."""
 
@@ -861,18 +861,18 @@ class DecompGraphSolution:
 
         return filter(_is_feasible, filter(_is_solved, self._op_to_op_nodes[op_rep]))
 
-    def is_solved_for(self, op: Operator, num_work_wires: int | None = 0):
+    def is_solved_for(self, op: LegacyOperator, num_work_wires: int | None = 0):
         """Tests whether the decomposition graph is solved for a given operator.
 
         Args:
-            op (Operator): The operator to check.
+            op (LegacyOperator): The operator to check.
             num_work_wires (int): The number of available work wires to decompose this operator.
 
         """
         return any(self._all_solutions(self._visitor, op, num_work_wires))
 
     def _get_best_solution(
-        self, visitor: DecompositionSearchVisitor, op: Operator, num_work_wires: int | None
+        self, visitor: DecompositionSearchVisitor, op: LegacyOperator, num_work_wires: int | None
     ) -> int:
         """Finds the best solution for an operator in terms of resource efficiency."""
 
@@ -892,11 +892,11 @@ class DecompGraphSolution:
         op_node_idx = self._all_op_indices[solution]
         return op_node_idx
 
-    def resource_estimate(self, op: Operator, num_work_wires: int | None = 0) -> Resources:
+    def resource_estimate(self, op: LegacyOperator, num_work_wires: int | None = 0) -> Resources:
         """Returns the resource estimate for a given operator.
 
         Args:
-            op (Operator): The operator for which to return the resource estimates.
+            op (LegacyOperator): The operator for which to return the resource estimates.
             num_work_wires (int): The number of work wires available to decompose this operator.
 
         Returns:
@@ -932,11 +932,13 @@ class DecompGraphSolution:
         op_node_idx = self._get_best_solution(self._visitor, op, num_work_wires)
         return self._visitor.distances[op_node_idx]
 
-    def decomposition(self, op: Operator, num_work_wires: int | None = 0) -> DecompositionRule:
+    def decomposition(
+        self, op: LegacyOperator, num_work_wires: int | None = 0
+    ) -> DecompositionRule:
         """Returns the optimal decomposition rule for a given operator.
 
         Args:
-            op (Operator): The operator for which to return the optimal decomposition.
+            op (LegacyOperator): The operator for which to return the optimal decomposition.
             num_work_wires (int): The number of work wires available to decompose this operator.
 
         Returns:

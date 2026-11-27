@@ -22,7 +22,7 @@ import pytest
 import pennylane as qp
 import pennylane.numpy as qnp
 from pennylane import X, Y, Z, math
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.exceptions import MatrixUndefinedError
 from pennylane.ops.op_math import Prod, Sum
 from pennylane.wires import Wires
@@ -335,8 +335,8 @@ class TestMatrix:
     @pytest.mark.parametrize("op_and_mat2", non_param_ops)
     def test_non_parametric_ops_two_terms(
         self,
-        op_and_mat1: tuple[Operator, np.ndarray],
-        op_and_mat2: tuple[Operator, np.ndarray],
+        op_and_mat1: tuple[LegacyOperator, np.ndarray],
+        op_and_mat2: tuple[LegacyOperator, np.ndarray],
     ):
         """Test matrix method for a sum of non_parametric ops"""
         op1, mat1 = op_and_mat1
@@ -355,7 +355,7 @@ class TestMatrix:
     @pytest.mark.parametrize("op_mat1", param_ops)
     @pytest.mark.parametrize("op_mat2", param_ops)
     def test_parametric_ops_two_terms(
-        self, op_mat1: tuple[Operator, np.ndarray], op_mat2: tuple[Operator, np.ndarray]
+        self, op_mat1: tuple[LegacyOperator, np.ndarray], op_mat2: tuple[LegacyOperator, np.ndarray]
     ):
         """Test matrix method for a sum of parametric ops"""
         op1, mat1 = op_mat1
@@ -371,7 +371,7 @@ class TestMatrix:
         assert np.allclose(sum_mat, true_mat)
 
     @pytest.mark.parametrize("op", no_mat_ops)
-    def test_error_no_mat(self, op: Operator):
+    def test_error_no_mat(self, op: LegacyOperator):
         """Test that an error is raised if one of the summands doesn't
         have its matrix method defined."""
         sum_op = Sum(op(wires=0), qp.PauliX(wires=2), qp.PauliZ(wires=1))

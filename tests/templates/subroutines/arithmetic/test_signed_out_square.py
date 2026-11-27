@@ -91,7 +91,7 @@ def test_isinstance_relationship():
     signed_out_square = SignedOutSquare([0, 1], [2, 3, 4], [5, 6, 7])
 
     assert not isinstance(signed_out_square, OutSquare)
-    assert isinstance(signed_out_square, qp.core.operator.Operator2)
+    assert isinstance(signed_out_square, qp.core.operator.Operator)
 
 
 @pytest.mark.parametrize("output_wires_zeroed", [False, True])

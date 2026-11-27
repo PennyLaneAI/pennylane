@@ -16,7 +16,7 @@
 import numpy as np
 
 from pennylane import capture
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import Operator, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import GlobalPhase, Hadamard, Z, change_op_basis
 from pennylane.ops.subcircuit import subcircuit
@@ -220,7 +220,7 @@ def _prepare_registers(M, N, aleph, index_wires, prep_garbage_wires, work_wires)
     }
 
 
-class QubitizationTHC(Operator2):
+class QubitizationTHC(Operator):
     r"""Apply the qubitization walk operator of a tensor hypercontracted (THC) Hamiltonian.
 
     This composes the three THC oracles into

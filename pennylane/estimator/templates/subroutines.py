@@ -83,7 +83,7 @@ class OutOfPlaceSquare(ResourceOperator):
     @classmethod
     def resource_rep(cls, register_size: int):  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the LegacyOperator that are needed to compute a resource estimation.
 
         Args:
             register_size (int): the size of the input register
@@ -180,7 +180,7 @@ class IQP(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_wires, pattern, spin_sym) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             num_wires (int): the number of qubits the operation acts upon
@@ -342,7 +342,7 @@ class SelectOnlyQRAM(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, data, num_wires, select_value, num_select_wires, num_control_wires):
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             data (TensorLike | Sequence[str]): the classical memory array to retrieve values from
@@ -497,7 +497,7 @@ class PhaseGradient(ResourceOperator):
     @classmethod
     def resource_rep(cls, num_wires) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             num_wires (int): the number of qubits to prepare in the phase gradient state
@@ -599,7 +599,7 @@ class OutMultiplier(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, a_num_wires, b_num_wires) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the LegacyOperator that are needed to compute a resource estimation.
 
         Args:
             a_num_wires (int): the size of the first input register
@@ -698,7 +698,7 @@ class SemiAdder(ResourceOperator):
     @classmethod
     def resource_rep(cls, max_register_size):  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             max_register_size (int): the size of the larger of the two registers being added together
@@ -911,7 +911,7 @@ class ControlledSequence(ResourceOperator):
         cls, base_cmpr_op: CompressedResourceOp, num_ctrl_wires: int
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
@@ -1113,7 +1113,7 @@ class QPE(ResourceOperator):
         adj_qft_cmpr_op: CompressedResourceOp = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
@@ -1247,7 +1247,7 @@ class IterativeQPE(ResourceOperator):
         cls, base_cmpr_op: CompressedResourceOp, num_iter: int
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
@@ -1436,7 +1436,7 @@ class UnaryIterationQPE(ResourceOperator):
         adj_qft_cmpr_op: CompressedResourceOp | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             cmpr_walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
@@ -1628,7 +1628,7 @@ class QFT(ResourceOperator):
     @classmethod
     def resource_rep(cls, num_wires) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             num_wires (int): the number of qubits the operation acts upon
@@ -1796,7 +1796,7 @@ class AQFT(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, order, num_wires) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             order (int): the maximum number of controlled phase shifts to truncate
@@ -1982,7 +1982,7 @@ class BasisRotation(ResourceOperator):
     @classmethod
     def resource_rep(cls, dim) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the LegacyOperator that are needed to compute a resource estimation.
 
         Args:
             dim (int): The dimensions of the input :code:`unitary_matrix`. This is computed
@@ -2088,7 +2088,7 @@ class HybridQRAM(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, data, num_wires, num_select_wires, num_tree_control_wires):
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             data (TensorLike | Sequence[str]): the classical memory to retrieve values from
@@ -2269,7 +2269,7 @@ class BBQRAM(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_bitstrings, size_bitstring, num_bit_flips, num_wires):
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             num_bitstrings (int): the size of the classical memory array to retrieve values from
@@ -2514,7 +2514,7 @@ class Select(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, cmpr_ops, num_wires: WiresLike = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the LegacyOperator that are needed to compute a resource estimation.
 
         Args:
             cmpr_ops (list[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`]): The list of operators, in the compressed
@@ -3112,7 +3112,7 @@ class QROM(ResourceOperator):
         select_swap_depth: int | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the LegacyOperator that are needed to compute a resource estimation.
 
         Args:
             num_bitstrings (int): the number of bitstrings that are to be encoded
@@ -3235,7 +3235,7 @@ class SelectPauliRot(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_ctrl_wires, rot_axis, precision=None):
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             rot_axis (str): the rotation axis used in the multiplexer
@@ -3622,7 +3622,7 @@ class Reflection(ResourceOperator):
         cmpr_U: CompressedResourceOp | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the LegacyOperator that are needed to compute a resource estimation.
 
         Args:
             num_wires (int): number of wires the operator acts on
@@ -3824,7 +3824,7 @@ class Qubitization(ResourceOperator):
         cls, prep_op: CompressedResourceOp, select_op: CompressedResourceOp
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             prep_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed representation for the operator that prepares

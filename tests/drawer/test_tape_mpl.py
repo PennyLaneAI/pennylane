@@ -667,7 +667,7 @@ class TestControlledGates:
         when they are provided as a list of bools."""
 
         # ControlledOp2 is constructed directly because qp.ctrl flattens nested
-        # controlled operations of an Operator2 base eagerly.
+        # controlled operations of an Operator base eagerly.
         with qp.queuing.AnnotatedQueue() as q_tape:
             ControlledOp2(
                 ControlledOp2(qp.PauliY(wires=4), control_wires=[2, 3], control_values=[1, 0]),

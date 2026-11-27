@@ -90,7 +90,7 @@ class TestInitialization:
 @pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("angle, wires, work_wires", SMALL_CASES)
 def test_assert_valid(angle, wires, work_wires):
-    """Run the standard Operator2 validity checks, which include those of the decomposition rules
+    """Run the standard Operator validity checks, which include those of the decomposition rules
     of RZLayer and its adjoint."""
     qp.testing.assert_valid(qp.RZLayer(angle, wires, work_wires))
 

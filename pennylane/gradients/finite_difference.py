@@ -27,7 +27,7 @@ from scipy.linalg import solve as linalg_solve
 from scipy.special import factorial
 
 from pennylane import math, pytrees
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import gate_sets
 from pennylane.devices.preprocess import decompose
@@ -271,7 +271,7 @@ def _finite_diff_stopping_condition(op) -> bool:
         # error will happen when calculating shifted tapes for finite diff
 
         return True
-    if isinstance(op, Operator) and any(math.requires_grad(p) for p in op.data):
+    if isinstance(op, LegacyOperator) and any(math.requires_grad(p) for p in op.data):
         return op.grad_method is not None
     return True
 

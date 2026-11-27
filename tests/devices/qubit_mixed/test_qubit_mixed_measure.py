@@ -143,7 +143,7 @@ class TestMeasurementDispatch:
     def test_no_sparse_matrix(self):
         """Tests Hamiltonians/Sums containing observables that do not have a sparse matrix."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             num_wires = 1
 
         S1 = qp.Hamiltonian([0.5, 0.5], [qp.X(0), DummyOp(wires=1)])
@@ -162,7 +162,7 @@ class TestMeasurementDispatch:
     def test_hamiltonian_no_sparse_matrix_in_second_term(self):
         """Tests when not all terms of a Hamiltonian have sparse matrices, excluding the first term."""
 
-        class DummyOp(qp.operation.Operator):  # Custom observable with no sparse matrix
+        class DummyOp(qp.operation.LegacyOperator):  # Custom observable with no sparse matrix
             num_wires = 1
 
         H = qp.Hamiltonian([0.5, 0.5, 0.5], [qp.PauliX(0), DummyOp(wires=1), qp.PauliZ(2)])
@@ -172,7 +172,7 @@ class TestMeasurementDispatch:
     def test_sum_no_sparse_matrix(self):
         """Tests when not all terms in a Sum observable have sparse matrices."""
 
-        class DummyOp(qp.operation.Operator):  # Custom observable with no sparse matrix
+        class DummyOp(qp.operation.LegacyOperator):  # Custom observable with no sparse matrix
             num_wires = 1
 
         S = qp.sum(qp.PauliX(0), DummyOp(wires=1))

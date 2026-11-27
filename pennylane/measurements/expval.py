@@ -19,7 +19,7 @@ from collections.abc import Sequence
 
 from pennylane import math
 from pennylane.core.measurements import SampleMeasurement, StateMeasurement
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.queuing import QueuingManager
 from pennylane.ops import I, MeasurementValue
 from pennylane.wires import Wires
@@ -34,7 +34,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
     Please refer to :func:`pennylane.expval` for detailed documentation.
 
     Args:
-        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
+        obs (Union[.LegacyOperator, .MeasurementValue]): The observable that is to be measured
             as part of the measurement process. Not all measurement processes require observables
             (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
@@ -119,7 +119,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
 
 
 def expval(
-    op: Operator | MeasurementValue,
+    op: LegacyOperator | MeasurementValue,
 ) -> ExpectationMP:
     r"""Expectation value of the supplied observable.
 
@@ -142,7 +142,7 @@ def expval(
     np.float64(-0.479...)
 
     Args:
-        op (Union[Operator, MeasurementValue]): a quantum observable object. To
+        op (Union[LegacyOperator, MeasurementValue]): a quantum observable object. To
             get expectation values for mid-circuit measurements, ``op`` should be
             a ``MeasurementValue``.
 

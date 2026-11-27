@@ -22,7 +22,7 @@ import numpy as np
 from pennylane import capture, math
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import FermionicSWAP, PauliZ, pow
 from pennylane.ops.op_math.pow2 import _pow_abstract
@@ -31,7 +31,7 @@ from pennylane.wires import WiresLike
 INV_SQRT2 = 1 / math.sqrt(2)
 
 
-class TwoWireFFT(Operator):
+class TwoWireFFT(LegacyOperator):
     r"""
     The two-qubit unitary operator that corresponds to a Fourier transform on fermions, encoded
     using a Jordan-Wigner transformation.
@@ -75,7 +75,7 @@ class TwoWireFFT(Operator):
         )
 
 
-class FFFT(Operator):
+class FFFT(LegacyOperator):
     r"""Performs a Fast Fermionic Fourier Transform (FFFT) operation based on
     `arXiv:1310.7605 <https://arxiv.org/pdf/1310.7605>`_. This assumes that fermions are encoded
     using the Jordan-Wigner transformation, where the supplied ordering of the ``wires`` passed to
@@ -217,7 +217,7 @@ def _permute_and_apply_parallel(wires, operator):
 
     Args:
         wires (WiresLike): The wires to permute.
-        operator (Type[Operator]): The operator to apply once the Fermions are adjacent in the encoding.
+        operator (Type[LegacyOperator]): The operator to apply once the Fermions are adjacent in the encoding.
     """
     # pylint: disable=no-value-for-parameter
 

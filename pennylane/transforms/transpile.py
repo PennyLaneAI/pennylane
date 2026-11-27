@@ -155,7 +155,7 @@ def transpile(
     with QueuingManager.stop_recording():
         # this unrolls everything in the current tape (in particular templates)
         def stop_at(obj):
-            if not isinstance(obj, qp.operation.Operator):
+            if not isinstance(obj, qp.operation.LegacyOperator):
                 return True
             if not obj.has_decomposition:
                 return True

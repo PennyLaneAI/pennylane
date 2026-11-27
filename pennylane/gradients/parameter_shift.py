@@ -22,7 +22,7 @@ from functools import partial, singledispatch
 import numpy as np
 
 from pennylane import math
-from pennylane.core.operator import Operation, Operator, Operator2
+from pennylane.core.operator import LegacyOperator, Operation, Operator
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import gate_sets
 from pennylane.exceptions import (
@@ -789,7 +789,7 @@ def _param_shift_stopping_condition(op) -> bool:
         # let things without decompositions through without error
         # error will happen when calculating parameter shift tapes
         return True
-    if isinstance(op, Operator) and any(math.requires_grad(p) for p in op.data):
+    if isinstance(op, LegacyOperator) and any(math.requires_grad(p) for p in op.data):
         return op.grad_method is not None
     return True
 
@@ -1247,7 +1247,7 @@ def param_shift(  # pylint: disable=too-many-arguments
 
 
 @singledispatch
-def parameter_frequencies(op: Operation | Operator2) -> list[tuple[int | float, ...]]:
+def parameter_frequencies(op: Operation | Operator) -> list[tuple[int | float, ...]]:
     r"""
     Returns the frequencies for each operator parameter with respect
     to an expectation value of the form
@@ -1282,16 +1282,16 @@ def parameter_frequencies(op: Operation | Operator2) -> list[tuple[int | float, 
     **Registering Handlers**
 
     Parameter frequencies are defined on an ``Operation`` or calculated in a dispatch handler
-    for an ``Operator2``. To register parameter frequencies for a new ``Operator2`` subclass,
+    for an ``Operator``. To register parameter frequencies for a new ``Operator`` subclass,
     please register a new handler like:
 
     .. code-block:: python
 
-        from pennylane.core.operator import Operator2
+        from pennylane.core.operator import Operator
         from pennylane.wires import WiresLike
         from pennylane.gradients import parameter_frequencies
 
-        class MultiArgOpNoGenParamFreqs(Operator2):
+        class MultiArgOpNoGenParamFreqs(Operator):
             num_params = 2
             num_wires = 1
             dynamic_argnames = ("phi", "theta")
@@ -1317,8 +1317,8 @@ def _handle_operation(op: Operation):
 
 
 @parameter_frequencies.register
-def _handle_operator2(op: Operator2):
-    """Calculates the parameter frequencies for a given Operator2 if they are not defined explicitly."""
+def _handle_operator2(op: Operator):
+    """Calculates the parameter frequencies for a given Operator if they are not defined explicitly."""
     if len(op.dynamic_argnames) == 1:
         # if the operator has a single parameter, we can query the
         # generator, and if defined, use its eigenvalues.

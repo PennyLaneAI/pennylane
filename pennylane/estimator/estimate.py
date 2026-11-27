@@ -18,7 +18,7 @@ from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
 
 from pennylane.core.measurements import MeasurementProcess
-from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator import LegacyOperator, Operation
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.estimator.ops import X
 from pennylane.estimator.ops.op_math.symbolic import (
@@ -315,7 +315,7 @@ def _resources_from_qfunc(  # pylint: disable=too-many-arguments
         num_algo_qubits = 0
         circuit_wires = []
         for op in q.queue:
-            if isinstance(op, (ResourceOperator, Operator, MeasurementProcess)):
+            if isinstance(op, (ResourceOperator, LegacyOperator, MeasurementProcess)):
                 if hasattr(op, "wires") and op.wires:
                     circuit_wires.append(op.wires)
                 elif hasattr(op, "num_wires") and op.num_wires:
@@ -578,12 +578,12 @@ def _sum_allocated_wires(decomp):
 
 @QueuingManager.stop_recording()
 def _ops_to_compressed_reps(
-    ops: Iterable[Operator | ResourceOperator],
+    ops: Iterable[LegacyOperator | ResourceOperator],
 ) -> list[CompressedResourceOp]:
     """Convert the sequence of operators to a list of compressed resource ops.
 
     Args:
-        ops (Iterable[Union[Operator, :class:`~.pennylane.estimator.resource_operator.ResourceOperator`]]): set of operators to convert
+        ops (Iterable[Union[LegacyOperator, :class:`~.pennylane.estimator.resource_operator.ResourceOperator`]]): set of operators to convert
 
     Returns:
         List[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`]: set of converted compressed resource ops
@@ -592,7 +592,7 @@ def _ops_to_compressed_reps(
     for op in ops:  # Skipping measurement processes here
         if isinstance(op, ResourceOperator):
             cmp_rep_ops.append(op.resource_rep_from_op())
-        elif isinstance(op, Operator):
+        elif isinstance(op, LegacyOperator):
             cmp_rep_ops.append(_map_to_resource_op(op).resource_rep_from_op())
 
     return cmp_rep_ops

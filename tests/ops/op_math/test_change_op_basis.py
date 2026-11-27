@@ -26,7 +26,7 @@ import pytest
 import pennylane as qp
 import pennylane.numpy as qnp
 from pennylane.core.operator import abstractify
-from pennylane.core.operator.base import Operator, Operator1
+from pennylane.core.operator.base import LegacyOperator, Operator1
 from pennylane.exceptions import DeviceError
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
 from pennylane.ops.op_math.change_op_basis import _convert_to_prod, _validate_callable
@@ -248,16 +248,16 @@ def test_change_op_basis_with_mixed_types():
     "compute_op, target_op, uncompute_op",
     (
         (X1, Z1, X1),  # Operator1 only
-        (NonParametricOp, NonParametricOp, NonParametricOp),  # Operator2 only
-        (X1, NonParametricOp, X1),  # Operator1 compute and Operator2 target
-        (NonParametricOp, X1, NonParametricOp),  # Operator2 compute and Operator1 target
+        (NonParametricOp, NonParametricOp, NonParametricOp),  # Operator only
+        (X1, NonParametricOp, X1),  # Operator1 compute and Operator target
+        (NonParametricOp, X1, NonParametricOp),  # Operator compute and Operator1 target
         (X1, Z1, None),  # Operator1 default uncompute
         (NonParametricOp, X1, None),  # Mixed default uncompute
     ),
 )
 @pytest.mark.capture
 def test_change_op_basis_capture(compute_op, target_op, uncompute_op):
-    """Test that legacy and Operator2 remain inside one captured basis-change operator."""
+    """Test that legacy and Operator remain inside one captured basis-change operator."""
 
     def circuit():
         uncompute = uncompute_op(0) if uncompute_op else None
@@ -418,10 +418,10 @@ class TestWrapperFunc:
         """Test that the top level function constructs an identical instance to one
         created using the class."""
 
-        class DummyOp1(Operator):
+        class DummyOp1(LegacyOperator):
             pass
 
-        class DummyOp2(Operator):
+        class DummyOp2(LegacyOperator):
             pass
 
         factors = (DummyOp1(0), DummyOp2(1))

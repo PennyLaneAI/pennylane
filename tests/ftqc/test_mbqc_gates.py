@@ -23,7 +23,7 @@ import pennylane as qp
 from pennylane.ftqc import generate_lattice
 
 PARAMETRIC_MCM_XFAIL = pytest.mark.pl2do(
-    reason="Parametric mid-circuit measurements have not yet been migrated to Operator2 [sc-130033]."
+    reason="Parametric mid-circuit measurements have not yet been migrated to Operator [sc-130033]."
 )
 
 

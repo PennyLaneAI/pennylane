@@ -21,7 +21,7 @@ from pennylane.core.qscript import QuantumScript
 from pennylane.devices.qubit import adjoint_jacobian, adjoint_jvp, adjoint_vjp
 
 
-def adjoint_ops(op: qp.operation.Operator) -> bool:
+def adjoint_ops(op: qp.operation.LegacyOperator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
     return op.num_params == 0 or op.num_params == 1 and op.has_generator
 

@@ -26,7 +26,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import numpy as npp
-from pennylane.core.operator import Operator1, Operator2
+from pennylane.core.operator import Operator, Operator1
 from pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit import controlled_ising_zz
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.qubit import RX as old_loc_RX
@@ -244,9 +244,9 @@ class TestOperations:
         op_unflattened = jax.tree_util.tree_unflatten(tree_def, leaves)
         qp.assert_equal(op_unflattened, op)
 
-        if isinstance(op, Operator2):
+        if isinstance(op, Operator):
             # The test below assumes that `op.data` are numerical, which is not necessarily
-            # the case anymore for `Operator2` where `op.data` is anything that is dynamic
+            # the case anymore for `Operator` where `op.data` is anything that is dynamic
             # and traceable, which could include things like `control_values`
             return
 
@@ -923,7 +923,7 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         decomp_mat = qp.matrix(decomp_op, wire_order=wires)
         assert np.allclose(expected_mat, decomp_mat)
 
-    @pytest.mark.pl2do(reason="Broadcasting support not implemented yet for Operator2")
+    @pytest.mark.pl2do(reason="Broadcasting support not implemented yet for Operator")
     @pytest.mark.parametrize("dim, wires", two_wire_pcphases + other_pcphases)
     def test_pcphase_decomposition_broadcasted(self, dim, wires):
         """Test that the broadcasted PCPhase decomposition produces the same unitary"""
@@ -982,12 +982,12 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
 
 @pytest.mark.parametrize("cphase_op", [qp.CPhaseShift00, qp.CPhaseShift01, qp.CPhaseShift10])
 class TestCPhaseShift:
-    """Test the Operator2 interface of the controlled phase shifts."""
+    """Test the Operator interface of the controlled phase shifts."""
 
     def test_abstract_operator(self, cphase_op):
         """Test that the concrete operator has the expected abstract representation."""
         op = cphase_op(0.371, wires=[2, 0])
-        assert isinstance(op, Operator2)
+        assert isinstance(op, Operator)
         assert qp.core.abstractify(op) == cphase_op(Float, wires=Wire[2])
 
     @pytest.mark.capture
@@ -1285,7 +1285,7 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
         assert qp.math.get_interface(mat1) == "jax"
 
     @pytest.mark.pl2do(
-        reason="Broadcasted parameters with Operator2 will be revisited in the future"
+        reason="Broadcasted parameters with Operator will be revisited in the future"
     )
     def test_pcphase_broadcasted(self):
         """Test that the PCPhase matrix works with broadcasted parameters"""

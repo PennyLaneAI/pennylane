@@ -51,7 +51,7 @@ def _layer1(weight, s, r, q, p, set_cnot_wires):
         set_cnot_wires (list[Wires]): list of CNOT wires
 
     Returns:
-          list[.Operator]: sequence of operators defined by this function
+          list[.LegacyOperator]: sequence of operators defined by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     op_list = [Hadamard(wires=s), Hadamard(wires=r), RX(-np.pi / 2, wires=q), Hadamard(wires=p)]
@@ -94,7 +94,7 @@ def _layer2(weight, s, r, q, p, set_cnot_wires):
         set_cnot_wires (list[Wires]): list of CNOT wires
 
     Returns:
-        list[.Operator]: sequence of operators defined by this function
+        list[.LegacyOperator]: sequence of operators defined by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     op_list = [
@@ -142,7 +142,7 @@ def _layer3(weight, s, r, q, p, set_cnot_wires):
         set_cnot_wires (list[Wires]): list of CNOT wires
 
     Returns:
-        list[.Operator]: sequence of operators defined by this function
+        list[.LegacyOperator]: sequence of operators defined by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     op_list = [
@@ -190,7 +190,7 @@ def _layer4(weight, s, r, q, p, set_cnot_wires):
         set_cnot_wires (list[Wires]): list of CNOT wires
 
     Returns:
-        list[.Operator]: sequence of operators defined by this function
+        list[.LegacyOperator]: sequence of operators defined by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     op_list = [Hadamard(wires=s), Hadamard(wires=r), Hadamard(wires=q), RX(-np.pi / 2, wires=p)]
@@ -233,7 +233,7 @@ def _layer5(weight, s, r, q, p, set_cnot_wires):
         set_cnot_wires (list[Wires]): list of CNOT wires
 
     Returns:
-        list[.Operator]: sequence of operators defined by this function
+        list[.LegacyOperator]: sequence of operators defined by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     op_list = [RX(-np.pi / 2, wires=s), Hadamard(wires=r), Hadamard(wires=q), Hadamard(wires=p)]
@@ -276,7 +276,7 @@ def _layer6(weight, s, r, q, p, set_cnot_wires):
         set_cnot_wires (list[Wires]): list of CNOT wires
 
     Returns:
-        list[.Operator]: sequence of operators defined by this function
+        list[.LegacyOperator]: sequence of operators defined by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     op_list = [Hadamard(wires=s), RX(-np.pi / 2, wires=r), Hadamard(wires=q), Hadamard(wires=p)]
@@ -319,7 +319,7 @@ def _layer7(weight, s, r, q, p, set_cnot_wires):
         set_cnot_wires (list[Wires]): list of CNOT wires
 
     Returns:
-        list[.Operator]: sequence of operators defined by this function
+        list[.LegacyOperator]: sequence of operators defined by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     op_list = [
@@ -367,7 +367,7 @@ def _layer8(weight, s, r, q, p, set_cnot_wires):
         set_cnot_wires (list[Wires]): list of CNOT wires
 
     Returns:
-        list[.Operator]: sequence of operators defined by this function
+        list[.LegacyOperator]: sequence of operators defined by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     op_list = [
@@ -589,7 +589,7 @@ class FermionicDoubleExcitation(Operation):
                 orbitals in the interval ``[q, p]``.
 
         Returns:
-            list[.Operator]: decomposition of the operator
+            list[.LegacyOperator]: decomposition of the operator
         """
         s = wires1[0]
         r = wires1[-1]
@@ -641,7 +641,7 @@ def _layer_qfunc1(weight, s, r, q, p, set_cnot_wires):
         set_cnot_wires (list[Wires]): list of CNOT wires
 
     Returns:
-          list[.Operator]: sequence of operators defined by this function
+          list[.LegacyOperator]: sequence of operators defined by this function
     """
     if capture.enabled():
         set_cnot_wires = jnp.array(set_cnot_wires)
@@ -695,7 +695,7 @@ def _layer_qfunc2(weight, s, r, q, p, set_cnot_wires):
         set_cnot_wires (list[Wires]): list of CNOT wires
 
     Returns:
-        list[.Operator]: sequence of operators defined by this function
+        list[.LegacyOperator]: sequence of operators defined by this function
     """
     if capture.enabled():
         set_cnot_wires = jnp.array(set_cnot_wires)
@@ -749,7 +749,7 @@ def _layer_qfunc3(weight, s, r, q, p, set_cnot_wires):
         set_cnot_wires (list[Wires]): list of CNOT wires
 
     Returns:
-        list[.Operator]: sequence of operators defined by this function
+        list[.LegacyOperator]: sequence of operators defined by this function
     """
     if capture.enabled():
         set_cnot_wires = jnp.array(set_cnot_wires)
@@ -803,7 +803,7 @@ def _layer_qfunc4(weight, s, r, q, p, set_cnot_wires):
         set_cnot_wires (list[Wires]): list of CNOT wires
 
     Returns:
-        list[.Operator]: sequence of operators defined by this function
+        list[.LegacyOperator]: sequence of operators defined by this function
     """
     if capture.enabled():
         set_cnot_wires = jnp.array(set_cnot_wires)
@@ -857,7 +857,7 @@ def _layer_qfunc5(weight, s, r, q, p, set_cnot_wires):
         set_cnot_wires (list[Wires]): list of CNOT wires
 
     Returns:
-        list[.Operator]: sequence of operators defined by this function
+        list[.LegacyOperator]: sequence of operators defined by this function
     """
     if capture.enabled():
         set_cnot_wires = jnp.array(set_cnot_wires)
@@ -911,7 +911,7 @@ def _layer_qfunc6(weight, s, r, q, p, set_cnot_wires):
         set_cnot_wires (list[Wires]): list of CNOT wires
 
     Returns:
-        list[.Operator]: sequence of operators defined by this function
+        list[.LegacyOperator]: sequence of operators defined by this function
     """
     if capture.enabled():
         set_cnot_wires = jnp.array(set_cnot_wires)
@@ -965,7 +965,7 @@ def _layer_qfunc7(weight, s, r, q, p, set_cnot_wires):
         set_cnot_wires (list[Wires]): list of CNOT wires
 
     Returns:
-        list[.Operator]: sequence of operators defined by this function
+        list[.LegacyOperator]: sequence of operators defined by this function
     """
     if capture.enabled():
         set_cnot_wires = jnp.array(set_cnot_wires)
@@ -1019,7 +1019,7 @@ def _layer_qfunc8(weight, s, r, q, p, set_cnot_wires):
         set_cnot_wires (list[Wires]): list of CNOT wires
 
     Returns:
-        list[.Operator]: sequence of operators defined by this function
+        list[.LegacyOperator]: sequence of operators defined by this function
     """
     if capture.enabled():
         set_cnot_wires = jnp.array(set_cnot_wires)

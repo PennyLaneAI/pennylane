@@ -87,7 +87,7 @@ class TestValidation:
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_checks(self):
-        """Runs the standard Operator2 validity checks for MultiX."""
+        """Runs the standard Operator validity checks for MultiX."""
         op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
         qp.testing.assert_valid(op, skip_differentiation=True)
 

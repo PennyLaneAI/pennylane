@@ -133,7 +133,7 @@ def _openfermion_to_pennylane(qubit_operator, wires=None, tol=1.0e-16):
             than the provided tolerance.
 
     Returns:
-        tuple[array[float], Iterable[pennylane.operation.Operator]]: coefficients and their
+        tuple[array[float], Iterable[pennylane.operation.LegacyOperator]]: coefficients and their
         corresponding PennyLane observables in the Pauli basis
 
     **Example**
@@ -325,7 +325,7 @@ def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e01
             Coefficients with imaginary part less than :math:`(2.22 \cdot 10^{-16}) \cdot \text{tol}` are considered to be real.
 
     Returns:
-        (.Operator): PennyLane operator representing any operator expressed as linear combinations of
+        (.LegacyOperator): PennyLane operator representing any operator expressed as linear combinations of
         Pauli words, e.g.,
         :math:`\sum_{k=0}^{N-1} c_k O_k`
 

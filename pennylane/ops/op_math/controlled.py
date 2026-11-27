@@ -38,8 +38,8 @@ from pennylane.capture.autograph import wraps
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.compiler import compiler
-from pennylane.core import Operator2, queuing
-from pennylane.core.operator import Operation, Operator
+from pennylane.core import Operator, queuing
+from pennylane.core.operator import LegacyOperator, Operation
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.exceptions import (
     GeneratorUndefinedError,
@@ -56,12 +56,12 @@ from .symbolicop import SymbolicOp
 
 @overload
 def ctrl(
-    op: Operator,
+    op: LegacyOperator,
     control: Any,
     control_values: Sequence[bool | int] | None = None,
     work_wires: Any | None = None,
     work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
-) -> Operator: ...
+) -> LegacyOperator: ...
 @overload
 def ctrl(
     op: Callable,
@@ -86,7 +86,7 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
         page for an overview of the differences between Catalyst and PennyLane.
 
     Args:
-        op (function or :class:`~.operation.Operator`): A single operator or a function that applies pennylane operators.
+        op (function or :class:`~.operation.LegacyOperator`): A single operator or a function that applies pennylane operators.
         control (Wires): The control wire(s).
         control_values (bool or int or list[bool or int]): The value(s) the control wire(s)
             should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
@@ -96,7 +96,7 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
             work wires can be in any arbitrary state. Defaults to ``"borrowed"``.
 
     Returns:
-        function or :class:`~.operation.Operator`: If an Operator is provided, returns a Controlled version of the Operator.
+        function or :class:`~.operation.LegacyOperator`: If an Operator is provided, returns a Controlled version of the LegacyOperator.
         If a function is provided, returns a function with the same call signature that creates a controlled version of the
         provided function.
 
@@ -124,7 +124,7 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
     tensor(-0.932..., requires_grad=True)
 
     :func:`~.ctrl` works on both callables like ``qp.RX`` or a quantum function
-    and individual :class:`~.operation.Operator`'s.
+    and individual :class:`~.operation.LegacyOperator`'s.
 
     >>> qp.ctrl(qp.Hadamard(0), (1,2))
     Controlled(H(0), control_wires=[1, 2])
@@ -165,13 +165,13 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
 
     control = Wires(control)
     if len(control) == 0:
-        if isinstance(op, Operator):
+        if isinstance(op, LegacyOperator):
             queuing.remove_from_program(op)
             return _apply_if_recording(op)
         if callable(op) or math.is_tracer(op):
             return op
 
-    if (active_jit := compiler.active_compiler()) and not isinstance(op, Operator2):
+    if (active_jit := compiler.active_compiler()) and not isinstance(op, Operator):
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.ctrl(
@@ -181,7 +181,7 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )
-    if isinstance(op, Operator2):
+    if isinstance(op, Operator):
         return create_controlled_op2(
             op,
             control_wires=control,
@@ -207,7 +207,7 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
 
 
 def create_controlled_op2(op, control_wires, control_values, work_wires, work_wire_type):
-    """New implementation of qp.ctrl that works better with Operator2."""
+    """New implementation of qp.ctrl that works better with Operator."""
 
     if not isinstance(control_wires, AbstractWires):
         control_wires = Wires(control_wires)
@@ -305,7 +305,7 @@ def create_controlled_op(op, control, control_values, work_wires, work_wire_type
             work_wire_type=work_wire_type,
         )
 
-    if isinstance(op, Operator):
+    if isinstance(op, LegacyOperator):
         return Controlled(
             op,
             control_wires=control,
@@ -347,8 +347,8 @@ def _ctrl_transform(op, control, control_values, work_wires, work_wire_type, one
 
         qscript = qp.tape.make_qscript(op)(*args, **kwargs)
 
-        leaves, _ = qp.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
-        _ = [qp.QueuingManager.remove(l) for l in leaves if isinstance(l, Operator)]
+        leaves, _ = qp.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, LegacyOperator))
+        _ = [qp.QueuingManager.remove(l) for l in leaves if isinstance(l, LegacyOperator)]
 
         # flip control_values == 0 wires here, so we don't have to do it for each individual op.
         flip_control_on_zero = len(qscript) > 1 and not one_controlled
@@ -468,7 +468,7 @@ class Controlled(SymbolicOp):  # pylint: disable=too-many-public-methods
     r"""Symbolic operator denoting a controlled operator.
 
     Args:
-        base (~.operation.Operator): the operator that is controlled
+        base (~.operation.LegacyOperator): the operator that is controlled
         control_wires (Sequence[int] or int): The wires to control on.
 
     Keyword Args:
@@ -496,7 +496,7 @@ class Controlled(SymbolicOp):  # pylint: disable=too-many-public-methods
     >>> op
     Controlled(RX(1.234, wires=[1]), control_wires=[0], control_values=[False])
 
-    The operation has both standard :class:`~.operation.Operator` properties
+    The operation has both standard :class:`~.operation.LegacyOperator` properties
     and ``Controlled`` specific properties:
 
     >>> op.base
@@ -627,7 +627,7 @@ class Controlled(SymbolicOp):  # pylint: disable=too-many-public-methods
         work_wires=None,
         work_wire_type="borrowed",
     ):
-        if isinstance(base, Operator):
+        if isinstance(base, LegacyOperator):
             qp.QueuingManager.remove(base)
             base = pytrees.unflatten(*pytrees.flatten(base))
         control_wires = Wires(control_wires)
@@ -825,7 +825,7 @@ class Controlled(SymbolicOp):  # pylint: disable=too-many-public-methods
         return math.block_diag([left_pad, base_matrix, right_pad])
 
     def matrix(self, wire_order=None):
-        if self.compute_matrix is not Operator.compute_matrix:
+        if self.compute_matrix is not LegacyOperator.compute_matrix:
             canonical_matrix = self.compute_matrix(*self.data)
         else:
             canonical_matrix = self._compute_matrix_from_base()
@@ -882,7 +882,7 @@ class Controlled(SymbolicOp):  # pylint: disable=too-many-public-methods
 
     @property
     def has_decomposition(self):
-        if self.compute_decomposition is not Operator.compute_decomposition:
+        if self.compute_decomposition is not LegacyOperator.compute_decomposition:
             return True
         if not all(self.control_values):
             return True
@@ -902,7 +902,7 @@ class Controlled(SymbolicOp):  # pylint: disable=too-many-public-methods
         return False
 
     def decomposition(self):
-        if self.compute_decomposition is not Operator.compute_decomposition:
+        if self.compute_decomposition is not LegacyOperator.compute_decomposition:
             return self.compute_decomposition(*self.data, self.wires)
 
         if all(self.control_values):
@@ -973,7 +973,7 @@ class Controlled(SymbolicOp):  # pylint: disable=too-many-public-methods
             for op in base_pow
         ]
 
-    def simplify(self) -> Operator:
+    def simplify(self) -> LegacyOperator:
         if isinstance(self.base, Controlled):
             base = self.base.base.simplify()
             return ctrl(
@@ -1010,7 +1010,7 @@ def _is_single_qubit_special_unitary(op):
     return math.allclose(det, 1)
 
 
-def _decompose_custom_ops(op: Controlled) -> list[Operator] | None:
+def _decompose_custom_ops(op: Controlled) -> list[LegacyOperator] | None:
     """Custom handling for decomposing a controlled operation"""
 
     ops_with_custom_ctrl_ops = base_to_custom_ctrl_op()
@@ -1049,7 +1049,7 @@ def _decompose_custom_ops(op: Controlled) -> list[Operator] | None:
     return None
 
 
-def _decompose_no_control_values(op: Controlled) -> list[Operator] | None:
+def _decompose_no_control_values(op: Controlled) -> list[LegacyOperator] | None:
     """Decompose without considering control values. Returns None if no decomposition."""
 
     decomp = _decompose_custom_ops(op)

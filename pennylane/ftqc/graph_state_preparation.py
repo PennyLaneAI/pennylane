@@ -59,9 +59,9 @@ class GraphStatePrep(Operation):
     Args:
         graph (Union[QubitGraph, networkx.Graph]): QubitGraph or networkx.Graph object mapping qubit
             to wires. The node labels of ``graph`` must be sortable.
-        one_qubit_ops (Operation): Operator to prepare the initial state of each qubit. Defaults to
+        one_qubit_ops (Operation): LegacyOperator to prepare the initial state of each qubit. Defaults to
             :class:`~.pennylane.Hadamard`.
-        two_qubit_ops (Operation): Operator to entangle nearest qubits. Defaults to
+        two_qubit_ops (Operation): LegacyOperator to entangle nearest qubits. Defaults to
             :class:`~.pennylane.CZ`.
         wires (Optional[Wires]): Wires the operator applies on. Wires are be mapped 1:1 to the graph
             nodes sorted in ascending order. Optional only `graph` is a QubitGraph. If no wires are
@@ -235,16 +235,16 @@ class GraphStatePrep(Operation):
             Operations making up the decomposition should be queued within the
             ``compute_decomposition`` method.
 
-        .. seealso:: :meth:`~.Operator.decomposition`.
+        .. seealso:: :meth:`~.LegacyOperator.decomposition`.
 
         Args:
             wires (Wires): Wires the decomposition applies on. Wires will be mapped 1:1 to graph nodes.
             graph (Union[nx.Graph, QubitGraph]): QubitGraph or nx.Graph object mapping qubit to wires.
-            one_qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default to :class:`~.pennylane.H`.
-            two_qubit_ops (Operation): Operator to entangle nearest qubits. Default to :class:`~.pennylane.CZ`.
+            one_qubit_ops (Operation): LegacyOperator to prepare the initial state of each qubit. Default to :class:`~.pennylane.H`.
+            two_qubit_ops (Operation): LegacyOperator to entangle nearest qubits. Default to :class:`~.pennylane.CZ`.
 
         Returns:
-            list[Operator]: decomposition of the operator
+            list[LegacyOperator]: decomposition of the operator
         """
 
         op_list = []

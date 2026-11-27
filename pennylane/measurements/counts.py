@@ -23,7 +23,7 @@ import numpy as np
 from pennylane import math
 from pennylane.core._capture_measurements import AbstractMeasurement  # tach-ignore
 from pennylane.core.measurements import SampleMeasurement
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import MeasurementValue
 from pennylane.typing import TensorLike
@@ -39,7 +39,7 @@ class CountsMP(SampleMeasurement):
     Please refer to :func:`pennylane.counts` for detailed documentation.
 
     Args:
-        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
+        obs (Union[.LegacyOperator, .MeasurementValue]): The observable that is to be measured
             as part of the measurement process. Not all measurement processes require observables
             (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
@@ -54,7 +54,7 @@ class CountsMP(SampleMeasurement):
 
     def __init__(
         self,
-        obs: Operator | None = None,
+        obs: LegacyOperator | None = None,
         wires=None,
         eigvals=None,
         all_outcomes: bool = False,
@@ -371,7 +371,7 @@ def counts(
     specified on the device.
 
     Args:
-        op (Operator or MeasurementValue or None): a quantum observable object. To get counts
+        op (LegacyOperator or MeasurementValue or None): a quantum observable object. To get counts
             for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
             op is None

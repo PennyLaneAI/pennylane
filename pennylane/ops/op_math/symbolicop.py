@@ -23,7 +23,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import math as pl_math
-from pennylane.core.operator import Operator, Operator2
+from pennylane.core.operator import LegacyOperator, Operator
 from pennylane.core.operator.base import _UNSET_BATCH_SIZE  # tach-ignore
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import PennyLaneDeprecationWarning
@@ -32,11 +32,11 @@ from pennylane.pytrees import flatten, unflatten
 from .composite import handle_recursion_error
 
 
-class SymbolicOp(Operator):
+class SymbolicOp(LegacyOperator):
     """Developer-facing base class for single-operator symbolic operators.
 
     Args:
-        base (~.operation.Operator): the base operation that is modified symbolically
+        base (~.operation.LegacyOperator): the base operation that is modified symbolically
 
     This *developer-facing* class can serve as a parent to single base symbolic operators, such as
     :class:`~.ops.op_math.Adjoint`.
@@ -46,20 +46,20 @@ class SymbolicOp(Operator):
     updating the metadata of the base operator during queueing.
 
     The child symbolic operator should define the `_name` property during initialization and define
-    any relevant representations, such as :meth:`~.operation.Operator.matrix`,
-    :meth:`~.operation.Operator.diagonalizing_gates`, :meth:`~.operation.Operator.eigvals`, and
-    :meth:`~.operation.Operator.decomposition`.
+    any relevant representations, such as :meth:`~.operation.LegacyOperator.matrix`,
+    :meth:`~.operation.LegacyOperator.diagonalizing_gates`, :meth:`~.operation.LegacyOperator.eigvals`, and
+    :meth:`~.operation.LegacyOperator.decomposition`.
     """
 
     _name = "Symbolic"
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
-        leaves, structure = flatten((args, kwargs), is_leaf=lambda x: isinstance(x, Operator))
+        leaves, structure = flatten((args, kwargs), is_leaf=lambda x: isinstance(x, LegacyOperator))
 
         new_leaves = []
         for leaf in leaves:
-            if isinstance(leaf, Operator2):
+            if isinstance(leaf, Operator):
                 if leaf.tracer is None:
                     leaf._bind_primitive()  # pylint: disable=protected-access
                 new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
@@ -99,7 +99,7 @@ class SymbolicOp(Operator):
         return self.base.batch_size
 
     @property
-    def base(self) -> Operator:
+    def base(self) -> LegacyOperator:
         """The base operator."""
         return self.hyperparameters["base"]
 
@@ -170,7 +170,7 @@ class ScalarSymbolicOp(SymbolicOp):
     scalar coefficient.
 
     Args:
-        base (~.operation.Operator): the base operation that is modified symbolically
+        base (~.operation.LegacyOperator): the base operation that is modified symbolically
         scalar (float): the scalar coefficient
 
     This *developer-facing* class can serve as a parent to single base symbolic operators, such as
@@ -249,7 +249,7 @@ class ScalarSymbolicOp(SymbolicOp):
 
         A ``MatrixUndefinedError`` is raised if the base matrix representation has not been defined.
 
-        .. seealso:: :meth:`~.Operator.compute_matrix`
+        .. seealso:: :meth:`~.LegacyOperator.compute_matrix`
 
         Args:
             wire_order (Iterable): global wire order, must contain all wire labels from the

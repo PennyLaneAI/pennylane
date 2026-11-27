@@ -21,7 +21,7 @@ import itertools
 import numpy as np
 
 from pennylane import math
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.qscript import QuantumScript
 from pennylane.ops import CNOT, RZ, H, I, S, X, Y, Z
 
@@ -49,7 +49,7 @@ _CLIFFORD_GATES_SUPPORTED = (H, S, CNOT)
 _NON_CLIFFORD_GATES_SUPPORTED = (RZ, RotXZX)
 
 
-def pauli_to_xz(op: Operator) -> tuple[int, int]:
+def pauli_to_xz(op: LegacyOperator) -> tuple[int, int]:
     r"""
     Convert a `Pauli` operator to its `xz` representation up to a global phase, i.e., :math:`encode_{xz}(Pauli)=(x,z)=X^xZ^z`, where
     :math:`x` is the exponent of the :class:`~pennylane.X` and :math:`z` is the exponent of
@@ -57,7 +57,7 @@ def pauli_to_xz(op: Operator) -> tuple[int, int]:
     :math:`encode_{xz}(Y) = (1, 1)` and :math:`encode_{xz}(Z) = (0, 1)`.
 
     Args:
-        op (qp.operation.Operator): A Pauli operator.
+        op (qp.operation.LegacyOperator): A Pauli operator.
 
     Return:
         A tuple of xz encoding data, :math:`x` is the exponent of the :class:`~pennylane.X`, :math:`z` is the exponent of
@@ -83,7 +83,7 @@ def pauli_to_xz(op: Operator) -> tuple[int, int]:
     raise NotImplementedError(f"{type(op)} gate does not support xz encoding.")
 
 
-def xz_to_pauli(x: int, z: int) -> Operator:
+def xz_to_pauli(x: int, z: int) -> LegacyOperator:
     """
     Convert x, z to a Pauli operator class.
 
@@ -108,13 +108,13 @@ def xz_to_pauli(x: int, z: int) -> Operator:
     raise ValueError("x and z should either 0 or 1.")
 
 
-def pauli_prod(ops: list[Operator]) -> tuple[int, int]:
+def pauli_prod(ops: list[LegacyOperator]) -> tuple[int, int]:
     r"""
     Get the result of a product of a list of Pauli operators. The result is a new Pauli operator up to a global phase.
     Mathematically, this function returns :math:`\prod_{i=0}^{n} ops[i]`.
 
     Args:
-        ops (List[qp.operation.Operator]): A list of Pauli operators with the same target wire.
+        ops (List[qp.operation.LegacyOperator]): A list of Pauli operators with the same target wire.
 
     Return:
         A xz tuple representing a new Pauli operator.
@@ -185,14 +185,16 @@ def _commute_cnot(xc: int, zc: int, xt: int, zt: int):
     return [(xc, zc ^ zt), (xc ^ xt, zt)]
 
 
-def commute_clifford_op(clifford_op: Operator, xz: list[tuple[int, int]]) -> list[tuple[int, int]]:
+def commute_clifford_op(
+    clifford_op: LegacyOperator, xz: list[tuple[int, int]]
+) -> list[tuple[int, int]]:
     r"""Gets the list of xz-encoded bits representing the list of input Pauli ops after being commuted through the given Clifford op.
     Mathematically, this function applies the following equation: :math:`new\_xz \cdot clifford\_op = clifford\_op \cdot xz`
     up to a global phase to move the :math:`xz` through the :math:`clifford\_op` and returns the :math:`new\_xz`. Note that :math:`xz` and
     :math:`new\_xz` represent a list of Pauli operations.
 
     Args:
-        clifford_op (Operator): A Clifford operator class. Supported operators are: :class:`qp.S`, :class:`qp.H`, :class:`qp.CNOT`.
+        clifford_op (LegacyOperator): A Clifford operator class. Supported operators are: :class:`qp.S`, :class:`qp.H`, :class:`qp.CNOT`.
         xz (list(tuple)): A list of xz tuples which map to Pauli operators
 
     Return:

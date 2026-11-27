@@ -23,29 +23,29 @@ from inspect import signature
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operator, Operator2
+from pennylane.core.operator import LegacyOperator, Operator
 from pennylane.core.queuing import remove_from_program
 from pennylane.typing import AbstractWires
 
 from .composite import handle_recursion_error
 
 
-class CompositeOp2(Operator2, is_baseclass=True):
+class CompositeOp2(Operator, is_baseclass=True):
     """A base class for operators that are composed of other operators.
 
     Args:
-        operands: (tuple[~.operation.Operator]): a tuple of operators which will be combined.
+        operands: (tuple[~.operation.LegacyOperator]): a tuple of operators which will be combined.
 
     The child composite operator should define the `_op_symbol` property
     during initialization and define any relevant representations, such as
-    :meth:`~.operation.Operator.matrix` and :meth:`~.operation.Operator.decomposition`.
+    :meth:`~.operation.LegacyOperator.matrix` and :meth:`~.operation.LegacyOperator.decomposition`.
     """
 
     wire_argnames = ()
 
     _eigs = {}  # cache eigen vectors and values like in qp.Hermitian
 
-    def __init__(self, operands: Sequence[Operator], _init_pauli_rep=None):
+    def __init__(self, operands: Sequence[LegacyOperator], _init_pauli_rep=None):
         if any(isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)) for op in operands):
             raise ValueError("Composite operators of mid-circuit measurements are not supported.")
 
@@ -78,7 +78,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
         return (dyn_args, wires, hybrid_args), metadata
 
     @property
-    def operands(self) -> Sequence[Operator]:
+    def operands(self) -> Sequence[LegacyOperator]:
         """The operands of the composite operator."""
         return self._operands
 
@@ -93,7 +93,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
 
         # The purpose of this function here is to intercept the argument passed to the
         # constructor of the subclass and store it on the operator, so that in __init__,
-        # we can pass that along to the base Operator2.__init__, which expects the
+        # we can pass that along to the base Operator.__init__, which expects the
         # arguments to match the pre-defined signature of the subclass.
         sig = signature(cls)
         bound_args = sig.bind(*args, **kwargs)
@@ -119,10 +119,10 @@ class CompositeOp2(Operator2, is_baseclass=True):
 
                 A ``DiagGatesUndefinedError`` is raised if no representation by decomposition is defined.
 
-                .. seealso:: :meth:`~.Operator.compute_diagonalizing_gates`.
+                .. seealso:: :meth:`~.LegacyOperator.compute_diagonalizing_gates`.
 
                 Returns:
-                    list[.Operator] or None: a list of operators
+                    list[.LegacyOperator] or None: a list of operators
                 """
                 op = cls(operands, _init_pauli_rep)
                 remove_from_program(op)
@@ -247,11 +247,11 @@ class CompositeOp2(Operator2, is_baseclass=True):
         return tuple(d for op in self for d in op.data)
 
     @cached_property
-    def overlapping_ops(self) -> list[list[Operator]]:
+    def overlapping_ops(self) -> list[list[LegacyOperator]]:
         """Groups all operands of the composite operator that act on overlapping wires.
 
         Returns:
-            List[List[Operator]]: List of lists of operators that act on overlapping wires. All the
+            List[List[LegacyOperator]]: List of lists of operators that act on overlapping wires. All the
             inner lists commute with each other.
         """
 
@@ -357,7 +357,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
 
     @classmethod
     @abc.abstractmethod
-    def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
+    def _sort(cls, op_list, wire_map: dict = None) -> list[LegacyOperator]:
         """Sort composite operands by their wire indices."""
 
     @handle_recursion_error

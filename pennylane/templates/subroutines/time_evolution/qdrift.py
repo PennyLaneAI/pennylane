@@ -56,13 +56,13 @@ def _sample_decomposition(coeffs, ops, time, n=1, seed=None):
 
     Args:
         coeffs (array): the coefficients of the operations from each term in the Hamiltonian
-        ops (list[~.Operator]): the normalized operations from each term in the Hamiltonian
+        ops (list[~.LegacyOperator]): the normalized operations from each term in the Hamiltonian
         time (float): time to evolve under the target Hamiltonian
         n (int): number of samples in the product, defaults to 1
         seed (int): random seed. defaults to None
 
     Returns:
-        list[~.Operator]: the decomposition of operations as per the approximation
+        list[~.LegacyOperator]: the decomposition of operations as per the approximation
     """
     normalization_factor = math.sum(math.abs(coeffs))
     probs = math.abs(coeffs) / normalization_factor
@@ -240,7 +240,7 @@ class QDrift(Operation):
             Operations making up the decomposition should be queued within the
             ``compute_decomposition`` method.
 
-        .. seealso:: :meth:`~.Operator.decomposition`.
+        .. seealso:: :meth:`~.LegacyOperator.decomposition`.
 
         Args:
             *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -248,7 +248,7 @@ class QDrift(Operation):
             **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
 
         Returns:
-            list[Operator]: decomposition of the operator
+            list[LegacyOperator]: decomposition of the operator
         """
         time = args[-1]
         hamiltonian = kwargs["base"]

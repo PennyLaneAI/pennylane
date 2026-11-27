@@ -31,7 +31,7 @@ from scipy.linalg import block_diag
 import pennylane as qp
 from pennylane import math
 from pennylane.allocation import allocate
-from pennylane.core.operator import Operator, abstractify
+from pennylane.core.operator import LegacyOperator, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
@@ -273,7 +273,7 @@ class ControlledQubitUnitary(Controlled2):
         # ``QubitUnitary`` base cannot be decomposed (mirrors ``QubitUnitary.has_decomposition``).
         return self.base.has_decomposition and super().has_decomposition
 
-    def decomposition(self) -> list[Operator]:
+    def decomposition(self) -> list[LegacyOperator]:
         # Guard against decomposition rules (selected purely by wire counts) being run on a sparse
         # base matrix they cannot handle, e.g. a controlled two-qubit sparse ``QubitUnitary``.
         if not self.has_decomposition:

@@ -19,7 +19,7 @@ from math import pi
 import numpy as np
 
 from pennylane import capture, math
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import Operator, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import (
     CNOT,
@@ -625,7 +625,7 @@ def _index_swaps(mu_wires, nu_wires, edge, spin1, spin2, work_wires):
     )
 
 
-class SelectTHC(Operator2):
+class SelectTHC(Operator):
     r"""Self-inverse Hamiltonian selection oracle for tensor hypercontraction (THC).
 
     Implements the ``SELECT`` of Fig. 5 of `Lee et al. (2021)

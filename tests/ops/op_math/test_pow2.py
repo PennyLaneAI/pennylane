@@ -23,7 +23,7 @@ import pytest
 from scipy.linalg import fractional_matrix_power
 
 import pennylane as qp
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition.resources import Resources
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -46,7 +46,7 @@ def pow_using_dunder_method(base, z):
     return base**z
 
 
-class NoPowOp(Operator2):
+class NoPowOp(Operator):
     """A base operator whose ``pow`` always raises ``PowUndefinedError``."""
 
     arg_specs = {"wires": Wire[1]}
@@ -58,7 +58,7 @@ class NoPowOp(Operator2):
         raise PowUndefinedError
 
 
-class BadPowOp(Operator2):
+class BadPowOp(Operator):
     """A base operator whose ``pow`` raises a generic (non-``Pow``) error."""
 
     arg_specs = {"wires": Wire[1]}
@@ -70,7 +70,7 @@ class BadPowOp(Operator2):
         raise ValueError("bad pow")
 
 
-class RealPowOp(Operator2):
+class RealPowOp(Operator):
     """A base operator with a well-defined ``pow`` for any exponent."""
 
     dynamic_argnames = ("phi",)
@@ -328,7 +328,7 @@ def test_label(exp, sup):
 
 
 def test_pow_rotation2():
-    """Tests the _pow_scale_angle decomposition with an ``Operator2`` base."""
+    """Tests the _pow_scale_angle decomposition with an ``Operator`` base."""
 
     op = pow(OneWireDynOp(0.3, wires=[0]), 2.5)
     assert isinstance(op, Pow2)

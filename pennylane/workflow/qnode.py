@@ -331,7 +331,7 @@ class QNode:  # pylint: disable=too-many-instance-attributes
         We start with a simple example and briefly look at the scenarios in which broadcasting is
         possible and useful. Finally we give rules and conventions regarding the usage of
         broadcasting, together with some more complex examples.
-        Also see the :class:`~.pennylane.operation.Operator` documentation for implementation
+        Also see the :class:`~.pennylane.operation.LegacyOperator` documentation for implementation
         details.
 
         **Example**

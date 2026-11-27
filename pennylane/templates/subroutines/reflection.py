@@ -22,7 +22,7 @@ import numpy as np
 
 from pennylane import ops
 from pennylane.core.apply import apply
-from pennylane.core.operator import Operation, Operator2, abstractify
+from pennylane.core.operator import Operation, Operator, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
@@ -45,7 +45,7 @@ class Reflection(Operation):
     and oblivious amplitude amplification [`arXiv:1312.1414 <https://arxiv.org/abs/1312.1414>`__].
 
     Args:
-        U (Operator): the operator that prepares the state :math:`|\Psi\rangle`
+        U (LegacyOperator): the operator that prepares the state :math:`|\Psi\rangle`
         alpha (float): the angle of the operator, default is :math:`\pi`
         reflection_wires (int or Iterable[int]): subsystem of wires on which to reflect, the
             default is ``None`` and the reflection will be applied on the ``U`` wires.
@@ -121,7 +121,7 @@ class Reflection(Operation):
     # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, U, alpha, reflection_wires, **kwargs):
         def _get_tracer(op):
-            if isinstance(op, Operator2):
+            if isinstance(op, Operator):
                 if op.tracer is None:
                     op._bind_primitive()  # pragma: no cover  # pylint: disable=protected-access
                 return op.tracer if op.tracer is not None else op

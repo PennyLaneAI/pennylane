@@ -99,7 +99,7 @@ class LabsPhaseAdder(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_x_wires: int, mod: int | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             num_x_wires (int): the number of wires used to represent, in binary, the value of :math:`x`
@@ -273,7 +273,7 @@ class LabsAdder(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_x_wires: int, mod: int | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             num_x_wires (int): the number of wires used to represent, in binary, the value of :math:`x`
@@ -496,7 +496,7 @@ class LabsOutAdder(ResourceOperator):
         cls, num_x_wires: int, num_y_wires: int, num_output_wires: int, mod: int | None = None
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             num_x_wires (int): the number of wires used to represent, in binary, the value of :math:`x`
@@ -654,7 +654,7 @@ class ClassicalOutMultiplier(ResourceOperator):
         cls, num_x_wires: int, num_output_wires: int, mod: int | None = None
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             num_x_wires (int): the number of wires used to represent, in binary, the value of :math:`x`
@@ -794,7 +794,7 @@ class LabsMultiplier(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_x_wires: int, mod: int | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             num_x_wires (int): the number of wires used to represent, in binary, the value of :math:`x`
@@ -962,7 +962,7 @@ class LabsModExp(ResourceOperator):
         cls, num_x_wires: int, num_output_wires: int, mod: int | None = None
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             num_x_wires (int): the number of wires used to represent, in binary, the value of :math:`x`

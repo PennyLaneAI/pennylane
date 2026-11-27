@@ -325,7 +325,7 @@ See the :class:`~.pennylane.QNode` documentation for usage details.
 
 Many standard quantum operators support broadcasting; see the corresponding attribute
 :obj:`~.pennylane.ops.qubit.attributes.supports_broadcasting` for a list. The
-:class:`~.pennylane.operation.Operator` documentation contains implementation details
+:class:`~.pennylane.operation.LegacyOperator` documentation contains implementation details
 and a guide to make custom operators compatible with broadcasting.
 Broadcasting can be used with any device, but will usually only yield performance upgrades for
 devices like ``"default.qubit"`` that indicate that they support it:

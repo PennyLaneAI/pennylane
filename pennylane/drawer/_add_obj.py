@@ -29,7 +29,7 @@ from functools import singledispatch
 
 from pennylane.allocation import Allocate, Deallocate, DynamicWire
 from pennylane.core.measurements import MeasurementProcess
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.qscript import QuantumScript
 from pennylane.measurements import (
     CountsMP,
@@ -316,7 +316,7 @@ def _add_adjoint(obj: Adjoint, layer_str, config, tape_cache=None, skip_grouping
 
 
 @_add_obj.register
-def _add_op(obj: Operator, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
+def _add_op(obj: LegacyOperator, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
     """Updates ``layer_str`` with ``op`` operation."""
     if not skip_grouping_symbols:
         layer_str = _add_grouping_symbols(obj.wires, layer_str, config)

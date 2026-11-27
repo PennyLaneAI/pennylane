@@ -18,7 +18,7 @@ from functools import singledispatch
 
 import numpy as np
 
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.math.decomposition import zyz_rotation_angles
 from pennylane.ops.op_math.adjoint import AdjointOperation
 from pennylane.ops.qubit import (
@@ -39,14 +39,16 @@ from pennylane.typing import TensorLike
 
 
 @singledispatch
-def single_qubit_zyz_angles(op: Operator) -> tuple[TensorLike, TensorLike, TensorLike, TensorLike]:
+def single_qubit_zyz_angles(
+    op: LegacyOperator,
+) -> tuple[TensorLike, TensorLike, TensorLike, TensorLike]:
     r"""Returns the equivalent ZYZ rotation angles of a single-qubit operator.
 
     A single-qubit unitary operator is equivalent to a product of Z and Y rotations in the form
     :math:`e^{i\alpha} RZ(\omega) RY(\theta) RZ(\phi)`.
 
     Args:
-        op (Operator): the operator to obtain rotation angles for.
+        op (LegacyOperator): the operator to obtain rotation angles for.
 
     Returns:
         A tuple of (:math:`\phi`, :math:`\theta`, :math:`\omega`, :math:`\alpha`) where the first

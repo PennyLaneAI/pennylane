@@ -18,7 +18,7 @@ Contains the MPSPrep template.
 import numpy as np
 
 import pennylane as qp
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.typing import Complex, Wire
 
@@ -219,7 +219,7 @@ def right_canonicalize_mps(mps):
     return output_mps
 
 
-class MPSPrep(Operator2):
+class MPSPrep(Operator):
     r"""Prepares an initial state from a matrix product state (MPS) representation.
 
     .. note::

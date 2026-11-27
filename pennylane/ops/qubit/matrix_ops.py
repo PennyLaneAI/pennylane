@@ -28,7 +28,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.typing import AbstractArray, Complex, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
@@ -77,7 +77,7 @@ def _walsh_hadamard_transform(D: TensorLike, n: int | None = None):
     return math.reshape(math.transpose(D), orig_shape)
 
 
-class QubitUnitary(Operator2):
+class QubitUnitary(Operator):
     r"""QubitUnitary(U, wires)
     Apply an arbitrary unitary matrix with a dimension that is a power of two.
 
@@ -347,7 +347,7 @@ class QubitUnitary(Operator2):
             wires (Iterable[int] or Wires): the wire(s) the operation acts on
 
         Returns:
-            list[Operator]: decomposition of the operator
+            list[LegacyOperator]: decomposition of the operator
 
         **Example:**
 
@@ -439,7 +439,7 @@ class QubitUnitary(Operator2):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
-class DiagonalQubitUnitary(Operator2):
+class DiagonalQubitUnitary(Operator):
     r"""DiagonalQubitUnitary(D, wires)
     Apply an arbitrary diagonal unitary matrix with a dimension that is a power of two.
 
@@ -592,7 +592,7 @@ class DiagonalQubitUnitary(Operator2):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
-class BlockEncode(Operator2):
+class BlockEncode(Operator):
     r"""BlockEncode(A, wires)
     Construct a unitary :math:`U(A)` such that an arbitrary matrix :math:`A`
     is encoded in the top-left block.

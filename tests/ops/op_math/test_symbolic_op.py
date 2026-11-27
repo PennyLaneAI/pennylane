@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.ops.op_math import ScalarSymbolicOp, SymbolicOp
 from pennylane.wires import Wires
 
@@ -48,7 +48,7 @@ class TempScalarCopy(ScalarSymbolicOp):
 
 def test_initialization():
     """Test initialization for a SymbolicOp"""
-    base = Operator("a")
+    base = LegacyOperator("a")
 
     op = SymbolicOp(base)
 
@@ -60,7 +60,7 @@ def test_initialization():
 def test_copy():
     """Test that a copy can be rebound independently of the original."""
     param1 = 1.234
-    base = Operator(param1, "a")
+    base = LegacyOperator(param1, "a")
     op = SymbolicOp(base)
 
     copied_op = copy(op)
@@ -77,7 +77,7 @@ def test_copy():
 
 def test_map_wires():
     """Test the map_wires method."""
-    base = Operator(6)
+    base = LegacyOperator(6)
     op = SymbolicOp(base)
     # pylint: disable-next=protected-access
     op._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({6: "X"}): 1})
@@ -98,7 +98,7 @@ class TestProperties:
         """Test that the data property for symbolic ops is read-only."""
         x = np.array(1.234)
 
-        base = Operator(x, "a")
+        base = LegacyOperator(x, "a")
         op = SymbolicOp(base)
 
         assert op.data == (x,)
@@ -111,13 +111,13 @@ class TestProperties:
     def test_parameters(self):
         """Test parameter property is a list of the base's trainable parameters."""
         x = np.array(9.876)
-        base = Operator(x, "b")
+        base = LegacyOperator(x, "b")
         op = SymbolicOp(base)
         assert op.parameters == [x]
 
     def test_num_params(self):
         """Test symbolic ops defer num-params to those of the base operator."""
-        base = Operator(1.234, 3.432, 0.5490, 8.789453, wires=7)
+        base = LegacyOperator(1.234, 3.432, 0.5490, 8.789453, wires=7)
         op = SymbolicOp(base)
 
         assert op.num_params == base.num_params == 4
@@ -126,7 +126,7 @@ class TestProperties:
     def test_has_matrix(self, has_mat):
         """Test that a symbolic op has a matrix if its base has a matrix."""
 
-        class DummyOp(Operator):
+        class DummyOp(LegacyOperator):
             has_matrix = has_mat
 
         base = DummyOp("b")
@@ -144,7 +144,7 @@ class TestProperties:
     def test_is_hermitian(self, is_herm):
         """Test that symbolic op is hermitian if the base is hermitian."""
 
-        class DummyOp(Operator):
+        class DummyOp(LegacyOperator):
             is_verified_hermitian = is_herm
 
         base = DummyOp("b")
@@ -154,7 +154,7 @@ class TestProperties:
     def test_map_wires(self):
         """Test that base wires can be set through the operator's private `_wires` property."""
         w = qp.wires.Wires(6)
-        base = Operator(w)
+        base = LegacyOperator(w)
         op = SymbolicOp(base)
 
         new_op = op.map_wires(wire_map={6: 8})
@@ -165,13 +165,13 @@ class TestProperties:
         """Test that the number of wires is the length of the `wires` property, rather
         than the `num_wires` set by the base."""
 
-        t = Operator(wires=(0, 1, 2))
+        t = LegacyOperator(wires=(0, 1, 2))
         op = SymbolicOp(t)
         assert op.num_wires == 3
 
     def test_pauli_rep(self):
         """Test that pauli_rep is None by default"""
-        base = Operator("a")
+        base = LegacyOperator("a")
         op = SymbolicOp(base)
         assert op.pauli_rep is None
 
@@ -191,7 +191,7 @@ class TestQueuing:
     def test_queuing(self):
         """Test symbolic op queues and updates base metadata."""
         with qp.queuing.AnnotatedQueue() as q:
-            base = Operator("a")
+            base = LegacyOperator("a")
             op = SymbolicOp(base)
 
         assert base not in q
@@ -201,7 +201,7 @@ class TestQueuing:
     def test_queuing_base_defined_outside(self):
         """Test symbolic op queues without adding base to the queue if it isn't already in the queue."""
 
-        base = Operator("b")
+        base = LegacyOperator("b")
         with qp.queuing.AnnotatedQueue() as q:
             op = SymbolicOp(base)
 
@@ -213,14 +213,14 @@ class TestScalarSymbolicOp:
     """Tests for the ScalarSymbolicOp class."""
 
     def test_init(self):
-        base = Operator(1.1, wires=[0])
+        base = LegacyOperator(1.1, wires=[0])
         scalar = 2.2
         op = TempScalar(base, scalar)
         assert isinstance(op.scalar, float)
         assert op.scalar == 2.2
         assert op.data == (2.2, 1.1)
 
-        base = Operator(1.1, wires=[0])
+        base = LegacyOperator(1.1, wires=[0])
         scalar = [2.2, 3.3]
         op = TempScalar(base, scalar)
         assert isinstance(op.scalar, np.ndarray)
@@ -230,7 +230,7 @@ class TestScalarSymbolicOp:
 
     def test_data(self):
         """Test that the data property is read-only."""
-        op = TempScalar(Operator(1.1, wires=[0]), 2.2)
+        op = TempScalar(LegacyOperator(1.1, wires=[0]), 2.2)
         assert op.scalar == 2.2
         assert op.data == (2.2, 1.1)
 
@@ -241,11 +241,11 @@ class TestScalarSymbolicOp:
 
     def test_hash(self):
         """Test that a hash correctly identifies ScalarSymbolicOps."""
-        op0 = TempScalar(Operator(1.1, wires=[0]), 0.3)
-        op1 = TempScalar(Operator(1.1, wires=[0]), 0.3)
-        op2 = TempScalar(Operator(1.1, wires=[0]), 0.6)
-        op3 = TempScalar(Operator(1.2, wires=[0]), 0.3)
-        op4 = TempScalarCopy(Operator(1.1, wires=[0]), 0.3)
+        op0 = TempScalar(LegacyOperator(1.1, wires=[0]), 0.3)
+        op1 = TempScalar(LegacyOperator(1.1, wires=[0]), 0.3)
+        op2 = TempScalar(LegacyOperator(1.1, wires=[0]), 0.6)
+        op3 = TempScalar(LegacyOperator(1.2, wires=[0]), 0.3)
+        op4 = TempScalarCopy(LegacyOperator(1.1, wires=[0]), 0.3)
         assert hash(op0) == hash(op1)
         for second_op in [op2, op3, op4]:
             assert hash(op0) != hash(second_op)

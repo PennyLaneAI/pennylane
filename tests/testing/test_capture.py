@@ -349,7 +349,7 @@ class TestAssertEqnMatchesOp:
     """Tests for the assert_eqn_matches_op function."""
 
     def test_operator2(self):
-        """Test matching an equation that creates an Operator2."""
+        """Test matching an equation that creates an Operator."""
         jaxpr = jax.make_jaxpr(lambda x: qp.RX(x, 0))(0.5)
         qp.testing.assert_eqn_matches_op(jaxpr.eqns[0], qp.RX)
 

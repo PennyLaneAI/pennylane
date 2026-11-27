@@ -23,7 +23,7 @@ from jax.random import binomial
 
 import pennylane as qp
 from pennylane import math, ops
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.ops import Conditional, MidMeasure
 
 EINSUM_OP_WIRECOUNT_PERF_THRESHOLD = 3
@@ -147,12 +147,12 @@ def _prepare_batched_params(params, state, state0, state1, axis, n_dim, is_state
     return params, state0, state1, axis
 
 
-def apply_operation_einsum(op: Operator, state, is_state_batched: bool = False):
+def apply_operation_einsum(op: LegacyOperator, state, is_state_batched: bool = False):
     """Apply ``Operator`` to ``state`` using ``einsum``. This is more efficent at lower qubit
     numbers.
 
     Args:
-        op (Operator): Operator to apply to the quantum state
+        op (LegacyOperator): LegacyOperator to apply to the quantum state
         state (array[complex]): Input quantum state
         is_state_batched (bool): Boolean representing whether the state is batched or not
 
@@ -193,12 +193,12 @@ def apply_operation_einsum(op: Operator, state, is_state_batched: bool = False):
     return math.einsum(einsum_indices, reshaped_mat, state)
 
 
-def apply_operation_tensordot(op: Operator, state, is_state_batched: bool = False):
+def apply_operation_tensordot(op: LegacyOperator, state, is_state_batched: bool = False):
     """Apply ``Operator`` to ``state`` using ``math.tensordot``. This is more efficent at higher qubit
     numbers.
 
     Args:
-        op (Operator): Operator to apply to the quantum state
+        op (LegacyOperator): LegacyOperator to apply to the quantum state
         state (array[complex]): Input quantum state
         is_state_batched (bool): Boolean representing whether the state is batched or not
 
@@ -246,7 +246,7 @@ def apply_operation_tensordot(op: Operator, state, is_state_batched: bool = Fals
 
 @singledispatch
 def apply_operation(
-    op: Operator,
+    op: LegacyOperator,
     state,
     is_state_batched: bool = False,
     debugger=None,
@@ -255,7 +255,7 @@ def apply_operation(
     """Apply and operator to a given state.
 
     Args:
-        op (Operator): The operation to apply to ``state``
+        op (LegacyOperator): The operation to apply to ``state``
         state (TensorLike): The starting state.
         is_state_batched (bool): Boolean representing whether the state is batched or not
         debugger (_Debugger): The debugger to use
@@ -352,7 +352,7 @@ def apply_conditional(
     """Applies a conditional operation.
 
     Args:
-        op (Operator): The operation to apply to ``state``
+        op (LegacyOperator): The operation to apply to ``state``
         state (TensorLike): The starting state.
         is_state_batched (bool): Boolean representing whether the state is batched or not
         debugger (_Debugger): The debugger to use
@@ -406,7 +406,7 @@ def apply_mid_measure(
     """Applies a native mid-circuit measurement.
 
     Args:
-        op (Operator): The operation to apply to ``state``
+        op (LegacyOperator): The operation to apply to ``state``
         state (TensorLike): The starting state.
         is_state_batched (bool): Boolean representing whether the state is batched or not
         debugger (_Debugger): The debugger to use
@@ -607,7 +607,7 @@ def _apply_rotation_1q(op, state, is_state_batched, compute_coeffs):
     """Shared implementation for single-qubit parametric rotations (RX, RY, RZ).
 
     Args:
-        op (Operator): The rotation gate
+        op (LegacyOperator): The rotation gate
         state (tensor_like): Input quantum state
         is_state_batched (bool): Whether the state has a leading batch dimension
         compute_coeffs (callable): ``(params, lib) -> (a, b, c, d)`` returning the

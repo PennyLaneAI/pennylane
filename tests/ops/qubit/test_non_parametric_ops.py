@@ -144,7 +144,7 @@ class TestOperations:
 
     @pytest.mark.parametrize("op, str_repr", STRING_REPR)
     def test_string_repr(self, op, str_repr):
-        """Test explicit string representations that overwrite the Operator default"""
+        """Test explicit string representations that overwrite the LegacyOperator default"""
         assert repr(op) == str_repr
 
 
@@ -942,7 +942,7 @@ period_two_ops = (
 
 
 class TestPowMethod:
-    """Test the Operator.pow method."""
+    """Test the LegacyOperator.pow method."""
 
     @pytest.mark.parametrize("op", period_two_ops)
     @pytest.mark.parametrize("n", (1, 5, -1, -5))

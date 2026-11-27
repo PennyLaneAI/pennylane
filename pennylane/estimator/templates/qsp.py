@@ -170,7 +170,7 @@ class GQSP(ResourceOperator):
         rotation_precision: float | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
@@ -382,7 +382,7 @@ class GQSPTimeEvolution(ResourceOperator):
         poly_approx_precision: float | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): the
@@ -632,7 +632,7 @@ class QSVT(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, block_encoding: CompressedResourceOp, encoding_dims: int, poly_deg: int):
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
@@ -846,7 +846,7 @@ class QSP(ResourceOperator):
         rotation_precision: float | None = None,
     ):
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):

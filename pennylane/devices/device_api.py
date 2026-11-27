@@ -292,7 +292,7 @@ class Device(abc.ABC):
 
         Preprocessing program may include:
 
-        * expansion to :class:`~.Operator`'s and :class:`~.MeasurementProcess` objects supported by the device.
+        * expansion to :class:`~.LegacyOperator`'s and :class:`~.MeasurementProcess` objects supported by the device.
         * splitting a circuit with the measurement of non-commuting observables or Hamiltonians into multiple executions
         * splitting circuits with batched parameters into multiple executions
         * gradient specific preprocessing, such as making sure trainable operators have generators

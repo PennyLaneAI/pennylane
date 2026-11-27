@@ -156,7 +156,7 @@ class FermionicSingleExcitation(Operation):
             wires (int or Iterable[int]): wires that the operator acts on
 
         Returns:
-            list[.Operator]: decomposition of the operator
+            list[.LegacyOperator]: decomposition of the operator
         """
 
         # Interpret first and last wire as r and p

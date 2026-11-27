@@ -22,7 +22,7 @@ from scipy.linalg import fractional_matrix_power
 import pennylane as qp
 from pennylane import capture, math
 from pennylane.capture.op_eqns import pop_op_eqns
-from pennylane.core import Operator
+from pennylane.core import LegacyOperator
 from pennylane.core.apply import apply
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.decomposition_rule import (
@@ -61,7 +61,7 @@ class Pow2(SymbolicOp2):
     """Symbolic operator denoting an operator raised to a power.
 
     Args:
-        base (~.operation.Operator): the operator to be raised to a power
+        base (~.operation.LegacyOperator): the operator to be raised to a power
         z=1 (float): the exponent
 
     **Example**
@@ -87,7 +87,7 @@ class Pow2(SymbolicOp2):
     hybrid_argnames = ("base",)
     static_argnames = ("z",)
 
-    def __init__(self, base: Operator, z: float):
+    def __init__(self, base: LegacyOperator, z: float):
         super().__init__(base, z)
 
         if isinstance(z, int) and z > 0:
@@ -228,14 +228,14 @@ class Pow2(SymbolicOp2):
 
         A ``DiagGatesUndefinedError`` is raised if no representation by decomposition is defined.
 
-        .. seealso:: :meth:`~.Operator.compute_diagonalizing_gates`.
+        .. seealso:: :meth:`~.LegacyOperator.compute_diagonalizing_gates`.
 
         Args:
             base (~.Operation): the operator to be raised to a power
             z (int): the exponent
 
         Returns:
-            list[.Operator] or None: a list of operators
+            list[.LegacyOperator] or None: a list of operators
         """
         return base.diagonalizing_gates()
 
@@ -324,7 +324,7 @@ class Pow2(SymbolicOp2):
             return Pow2(base=base, z=self.z)
 
 
-def _pow_abstract(op: AbstractOperatorLike | type[Operator], z: int | float = 1):
+def _pow_abstract(op: AbstractOperatorLike | type[LegacyOperator], z: int | float = 1):
     op = abstractify(op)
     if isinstance(op, CompressedResourceOp):
         return pow_resource_rep(op.op_type, op.params, z)

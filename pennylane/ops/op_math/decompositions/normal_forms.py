@@ -177,7 +177,7 @@ def _ma_normal_form(op: SO3Matrix, compressed=False, upper_bounded_size=None):
             Since JAX arrays are static, we need to specify the maximum size of the output array.
 
     Returns:
-        Tuple[qp.operation.Operator, float] | tuple[tuple[int, tuple[int, ...], int], float]: The decomposition of the SO(3) matrix into Matsumoto-Amano normal forms and acquired global phase.
+        Tuple[qp.operation.LegacyOperator, float] | tuple[tuple[int, tuple[int, ...], int], float]: The decomposition of the SO(3) matrix into Matsumoto-Amano normal forms and acquired global phase.
     """
     parity_transforms = _parity_transforms()
     clifford_so3s = _clifford_group_to_SO3()

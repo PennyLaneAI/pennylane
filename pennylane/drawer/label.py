@@ -16,7 +16,7 @@ Contains the 'label' function for customizing operator labels.
 """
 
 from pennylane.core.apply import apply
-from pennylane.core.operator import Operator, abstractify
+from pennylane.core.operator import LegacyOperator, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.functions.equal import (
     BASE_OPERATION_MISMATCH_ERROR_MESSAGE,
@@ -30,7 +30,7 @@ class LabelledOp(SymbolicOp):
     """Creates a labelled operator.
 
     Args:
-        base (Operator): The operator you wish to label.
+        base (LegacyOperator): The operator you wish to label.
         custom_label (str): The custom label to label your operator with.
 
     **Example:**
@@ -65,7 +65,7 @@ class LabelledOp(SymbolicOp):
         hyperparams_dict = dict(metadata)
         return cls(data[0], **hyperparams_dict)
 
-    def __init__(self, base: Operator, custom_label: str):
+    def __init__(self, base: LegacyOperator, custom_label: str):
         super().__init__(base)
         self.hyperparameters["custom_label"] = custom_label
 
@@ -128,7 +128,7 @@ def _equal_labelled_op(op1: LabelledOp, op2: LabelledOp, **kwargs):
     return True
 
 
-def label(op: Operator, new_label: str) -> LabelledOp:
+def label(op: LegacyOperator, new_label: str) -> LabelledOp:
     """Labels an operator with a custom label.
 
     .. warning::
@@ -136,7 +136,7 @@ def label(op: Operator, new_label: str) -> LabelledOp:
         This function is not currently supported inside :func:`~.qjit`-compiled circuits.
 
     Args:
-        op (Operator): The operator you wish to mark.
+        op (LegacyOperator): The operator you wish to mark.
         new_label (str): The label you wish to give to the operator.
 
     **Example:**

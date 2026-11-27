@@ -253,7 +253,7 @@ def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1
         tol (float): tolerance for discarding the imaginary part of the coefficients
 
     Returns:
-        Operator: the Christiansen Hamiltonian in the qubit basis
+        LegacyOperator: the Christiansen Hamiltonian in the qubit basis
 
     **Example**
 
@@ -354,9 +354,9 @@ def christiansen_dipole(pes, n_states=16):
 
     Returns:
         tuple: a tuple containing:
-            - Operator: the Christiansen dipole operator in the qubit basis for x-displacements
-            - Operator: the Christiansen dipole operator in the qubit basis for y-displacements
-            - Operator: the Christiansen dipole operator in the qubit basis for z-displacements
+            - LegacyOperator: the Christiansen dipole operator in the qubit basis for x-displacements
+            - LegacyOperator: the Christiansen dipole operator in the qubit basis for y-displacements
+            - LegacyOperator: the Christiansen dipole operator in the qubit basis for z-displacements
 
     **Example**
 

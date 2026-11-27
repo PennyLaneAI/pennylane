@@ -320,7 +320,7 @@ class TestAdjvecToOp(TestData):
                 assert all(np.isclose(out_op[k], exp_op[k]) for k in out_op)
 
     def test_with_op(self, op_test_case):
-        """Test ``adjvec_to_op`` with a basis of ``Operator`` operators."""
+        """Test ``adjvec_to_op`` with a basis of ``LegacyOperator`` operators."""
         adj_vecs, basis, expected, is_ortho = op_test_case
 
         out = adjvec_to_op(adj_vecs, basis, is_orthogonal=False)
@@ -390,7 +390,7 @@ class TestOpToAdjvec(TestData):
             assert np.allclose(out, expected)
 
     def test_with_op(self, op_test_case):
-        """Test ``op_to_adjvec`` with a basis of ``Operator`` operators."""
+        """Test ``op_to_adjvec`` with a basis of ``LegacyOperator`` operators."""
         expected, basis, ops, is_ortho = op_test_case
 
         out = op_to_adjvec(ops, basis, is_orthogonal=False)

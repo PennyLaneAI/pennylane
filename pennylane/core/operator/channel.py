@@ -44,7 +44,7 @@ class Channel(Operation, abc.ABC):
         directly without instantiating the channel first.
 
         To return the Kraus matrices of an *instantiated* channel,
-        please use the :meth:`~.Operator.kraus_matrices()` method instead.
+        please use the :meth:`~.LegacyOperator.kraus_matrices()` method instead.
 
         .. note::
             This method gets overwritten by subclasses to define the kraus matrix representation

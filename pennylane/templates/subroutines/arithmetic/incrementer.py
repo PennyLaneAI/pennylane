@@ -16,7 +16,7 @@
 from pennylane import capture, compiler, math
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -34,7 +34,7 @@ from ..qrom import _interleave_controls
 from .temporary_and import TemporaryAND
 
 
-class Incrementer(Operator2):
+class Incrementer(Operator):
     r"""
     Increment the input ``wires`` by one, using zeroed ``work_wires``.
 

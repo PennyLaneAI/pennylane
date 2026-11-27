@@ -19,14 +19,14 @@ from itertools import combinations
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import RZ, H, MultiRZ
 from pennylane.typing import Float, Int, Wire
 from pennylane.wires import WiresLike
 
 
-class IQPEmbedding(Operator2):
+class IQPEmbedding(Operator):
     r"""
     Encodes :math:`n` features into :math:`n` qubits using diagonal gates of an IQP circuit.
 

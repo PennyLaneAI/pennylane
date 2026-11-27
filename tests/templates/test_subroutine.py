@@ -1006,7 +1006,9 @@ class TestGraphDecomposition:
             for i in range(params.shape[0]):
                 qp.RY(params[i], wires[i])
 
-        class SubroutineDemoOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class SubroutineDemoOp(
+            qp.operation.LegacyOperator
+        ):  # pylint: disable=too-few-public-methods
 
             resource_keys = frozenset(())
 

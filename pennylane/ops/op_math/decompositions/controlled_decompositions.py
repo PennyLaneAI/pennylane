@@ -23,14 +23,14 @@ import pennylane as qp
 from pennylane import capture, compiler, control_flow, math, ops
 from pennylane.core import queuing
 from pennylane.core.apply import apply
-from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator import LegacyOperator, Operation
 from pennylane.decomposition import register_condition, register_resources
 from pennylane.decomposition.decomposition_rule import _get_registered_decomps
 from pennylane.typing import Complex, Float, Wire
 from pennylane.wires import Wires, concatenate_wires
 
 
-def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
+def ctrl_decomp_bisect(target_operation: LegacyOperator, control_wires: Wires):
     """Decompose the controlled version of a target single-qubit operation
 
     Not backpropagation compatible (as currently implemented). Use only with numpy.
@@ -44,7 +44,7 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
         belong to the SU(2) group.
 
     Args:
-        target_operation (~.operation.Operator): the target operation to decompose
+        target_operation (~.operation.LegacyOperator): the target operation to decompose
         control_wires (~.wires.Wires): the control wires of the operation
 
     Returns:
@@ -111,7 +111,7 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
 
 
 def ctrl_decomp_zyz(
-    target_operation: Operator,
+    target_operation: LegacyOperator,
     control_wires: Wires,
     work_wires: Wires | None = None,
     work_wire_type: str | None = "borrowed",
@@ -124,7 +124,7 @@ def ctrl_decomp_zyz(
     from `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
 
     Args:
-        target_operation (~.operation.Operator): the target operation or matrix to decompose
+        target_operation (~.operation.LegacyOperator): the target operation or matrix to decompose
         control_wires (~.wires.Wires): the control wires of the operation.
         work_wires (~.wires.Wires): the work wires available for this decomposition
         work_wire_type (str): the type of work wires, either "zeroed" or "borrowed".
@@ -1105,19 +1105,19 @@ def _bisect_compute_b(u):
 def _single_control_zyz(phi, theta, omega, wires):
     """Implements Lemma 5.1 from https://arxiv.org/pdf/quant-ph/9503016"""
 
-    # Operator A
+    # LegacyOperator A
     ops.cond(_not_zero(phi), ops.RZ)(phi, wires=wires[-1])
     ops.cond(_not_zero(theta), ops.RY)(theta / 2, wires=wires[-1])
 
     ops.CNOT(wires)
 
-    # Operator B
+    # LegacyOperator B
     ops.cond(_not_zero(theta), ops.RY)(-theta / 2, wires=wires[-1])
     ops.cond(_not_zero(phi + omega), ops.RZ)(-(phi + omega) / 2, wires=wires[-1])
 
     ops.CNOT(wires)
 
-    # Operator C
+    # LegacyOperator C
     ops.cond(_not_zero(omega - phi), ops.RZ)((omega - phi) / 2, wires=wires[-1])
 
 
@@ -1125,7 +1125,7 @@ def _single_control_zyz(phi, theta, omega, wires):
 def _multi_control_zyz(phi, theta, omega, wires, work_wires, work_wire_type):
     """Implements Lemma 7.9 from https://arxiv.org/pdf/quant-ph/9503016"""
 
-    # Operator A
+    # LegacyOperator A
     ops.cond(_not_zero(phi), ops.CRZ)(phi, wires=wires[-2:])
     ops.cond(_not_zero(theta), ops.CRY)(theta / 2, wires=wires[-2:])
 
@@ -1135,7 +1135,7 @@ def _multi_control_zyz(phi, theta, omega, wires, work_wires, work_wire_type):
         work_wire_type=work_wire_type,
     )
 
-    # Operator B
+    # LegacyOperator B
     ops.cond(_not_zero(theta), ops.CRY)(-theta / 2, wires=wires[-2:])
     ops.cond(_not_zero(phi + omega), ops.CRZ)(-(phi + omega) / 2, wires=wires[-2:])
 
@@ -1145,7 +1145,7 @@ def _multi_control_zyz(phi, theta, omega, wires, work_wires, work_wire_type):
         work_wire_type=work_wire_type,
     )
 
-    # Operator C
+    # LegacyOperator C
     ops.cond(_not_zero(omega - phi), ops.CRZ)((omega - phi) / 2, wires=wires[-2:])
 
 

@@ -20,14 +20,14 @@ import numpy as np
 from pennylane import capture, compiler, math
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import WiresLike
 
 
-class QFT(Operator2):
+class QFT(Operator):
     r"""QFT(wires)
     Apply a quantum Fourier transform (QFT).
 

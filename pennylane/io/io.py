@@ -312,7 +312,7 @@ def from_qiskit(quantum_circuit, measurements=None):
 
 def from_qiskit_op(qiskit_op, params=None, wires=None):
     """Converts a Qiskit `SparsePauliOp <https://docs.quantum.ibm.com/api/qiskit/qiskit.quantum_info.SparsePauliOp>`__
-    into a PennyLane :class:`Operator <pennylane.operation.Operator>`.
+    into a PennyLane :class:`LegacyOperator <pennylane.operation.LegacyOperator>`.
 
     .. note::
 
@@ -331,7 +331,7 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
             sequence of length :math:`N`
 
     Returns:
-        Operator: The PennyLane operator, created based on the input Qiskit
+        LegacyOperator: The PennyLane operator, created based on the input Qiskit
         ``SparsePauliOp`` object.
 
     .. note::
@@ -359,7 +359,7 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
     SparsePauliOp(['II', 'XY'],
                   coeffs=[1.+0.j, 1.+0.j])
 
-    To convert the ``SparsePauliOp`` into a PennyLane :class:`pennylane.operation.Operator`, use:
+    To convert the ``SparsePauliOp`` into a PennyLane :class:`pennylane.operation.LegacyOperator`, use:
 
     >>> import pennylane as qp
     >>> qp.from_qiskit_op(qiskit_op)

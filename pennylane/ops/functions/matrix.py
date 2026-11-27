@@ -20,7 +20,7 @@ from functools import partial
 
 import pennylane as qp
 from pennylane import transform
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.queuing import QueuingManager
@@ -34,15 +34,15 @@ def catalyst_qjit(qnode):
 
 
 def matrix(  # pylint: disable=too-many-branches
-    op: Operator | PauliWord | PauliSentence | Sequence[Operator], wire_order=None
+    op: LegacyOperator | PauliWord | PauliSentence | Sequence[LegacyOperator], wire_order=None
 ) -> TensorLike:
     r"""The dense matrix representation of an operation or quantum circuit.
 
     .. note::
-        This method always returns a dense matrix. For workflows with sparse objects, consider using :func:`~pennylane.operation.Operator.sparse_matrix`.
+        This method always returns a dense matrix. For workflows with sparse objects, consider using :func:`~pennylane.operation.LegacyOperator.sparse_matrix`.
 
     Args:
-        op (Operator or QNode or QuantumTape or Callable or PauliWord or PauliSentence): A quantum operator or quantum circuit.
+        op (LegacyOperator or QNode or QuantumTape or Callable or PauliWord or PauliSentence): A quantum operator or quantum circuit.
         wire_order (Sequence[int], optional): Order of the wires in the quantum circuit.
             The default wire order depends on the type of ``op``:
 
@@ -154,7 +154,7 @@ def matrix(  # pylint: disable=too-many-branches
     if catalyst_qjit(op):
         op = op.user_function
 
-    if not isinstance(op, Operator):
+    if not isinstance(op, LegacyOperator):
 
         if isinstance(op, (PauliWord, PauliSentence)):
             if wire_order is None and len(op.wires) > 1:

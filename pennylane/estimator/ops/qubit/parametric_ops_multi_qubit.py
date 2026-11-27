@@ -132,7 +132,7 @@ class MultiRZ(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_wires: int, precision: float | None = None):
         """Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the LegacyOperator that are needed to compute a resource estimation.
 
         Args:
             num_wires (int): the number of qubits the operation acts upon
@@ -386,7 +386,7 @@ class PauliRot(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, pauli_string: str, precision: float | None = None):
         """Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the LegacyOperator that are needed to compute a resource estimation.
 
         Args:
             pauli_string (str): a string describing the Pauli operators that define the rotation
@@ -710,7 +710,7 @@ class PCPhase(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_wires: int, dim: int, rotation_precision: float | None = None):
         """Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the LegacyOperator that are needed to compute a resource estimation.
 
         Args:
             num_wires (int): the number of wires this operator acts on

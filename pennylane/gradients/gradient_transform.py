@@ -223,7 +223,7 @@ def find_and_validate_gradient_methods(tape, method, trainable_param_indices, us
       parameter (the partial derivative is zero).
 
     In addition, the operator might define its own grad method
-    via :attr:`.Operator.grad_method`.
+    via :attr:`.LegacyOperator.grad_method`.
 
     Args:
         tape (`~.QuantumScript`): the tape to analyze

@@ -19,7 +19,7 @@ Pending deprecations
   - Deprecated in v0.46
   - Will be removed in v0.47
 
-* The ``Operator.hash`` and ``MeasurementProcess.hash`` properties have been deprecated and will be removed
+* The ``LegacyOperator.hash`` and ``MeasurementProcess.hash`` properties have been deprecated and will be removed
   in v0.47. Please use the Python builtin ``hash(obj)`` function instead.
 
   - Deprecated in v0.46
@@ -38,11 +38,11 @@ Pending deprecations
   - Deprecated in v0.46
   - Will be removed in v0.47
 
-* Deactivating queuing of an ``Operator`` by setting its
-  :attr:`~pennylane.operation.Operator._queue_category` to ``None``
+* Deactivating queuing of an ``LegacyOperator`` by setting its
+  :attr:`~pennylane.operation.LegacyOperator._queue_category` to ``None``
   has been deprecated and will be removed in v0.46. If necessary, the
-  :attr:`~pennylane.operation.Operator.queue` method can be overwritten for
-  subclasses of ``Operator``.
+  :attr:`~pennylane.operation.LegacyOperator.queue` method can be overwritten for
+  subclasses of ``LegacyOperator``.
 
   - Deprecated in v0.46
   - Will be removed in v0.47
@@ -91,7 +91,7 @@ for details on how to port your legacy code to the new system. The following fun
   - Deprecated in v0.39
   - Removed in v0.40
 
-* :func:`pennylane.pauli.simplify` has been removed. Instead, please use :func:`pennylane.simplify` or :meth:`pennylane.operation.Operator.simplify`.
+* :func:`pennylane.pauli.simplify` has been removed. Instead, please use :func:`pennylane.simplify` or :meth:`pennylane.operation.LegacyOperator.simplify`.
 
   - Deprecated in v0.39
   - Removed in v0.40
@@ -157,7 +157,7 @@ Completed deprecation cycles
 
   - Removed in releases after v0.45
 
-* Implementing ``Operator.generator`` as a property is no longer supported. Instead, define a ``generator()`` method for your operator that returns an ``Operator`` instance.
+* Implementing ``LegacyOperator.generator`` as a property is no longer supported. Instead, define a ``generator()`` method for your operator that returns an ``LegacyOperator`` instance.
 
   - Deprecated in v0.22
   - Removed in v0.46
@@ -168,11 +168,11 @@ Completed deprecation cycles
   - Deprecated in v0.43
   - Removed in v0.46
 
-* Deactivating queuing of an ``Operator`` by setting its
-  :attr:`~pennylane.operation.Operator._queue_category` to ``None``
+* Deactivating queuing of an ``LegacyOperator`` by setting its
+  :attr:`~pennylane.operation.LegacyOperator._queue_category` to ``None``
   has been removed in v0.46. If necessary, the
-  :attr:`~pennylane.operation.Operator.queue` method can be overwritten for
-  subclasses of ``Operator``.
+  :attr:`~pennylane.operation.LegacyOperator.queue` method can be overwritten for
+  subclasses of ``LegacyOperator``.
 
   - Deprecated in v0.45
   - Removed in v0.46
@@ -206,7 +206,7 @@ Completed deprecation cycles
   - Deprecated in v0.45
   - Will be removed in v0.46
 
-* The ``id`` keyword argument to :class:`~.Operator` has been removed.
+* The ``id`` keyword argument to :class:`~.LegacyOperator` has been removed.
 
   - Deprecated in v0.45
   - Removed in v0.46
@@ -269,7 +269,7 @@ Completed deprecation cycles
   - Deprecated in v0.44
   - Removed in v0.45
 
-* ``compute_qfunc_decomposition`` and ``has_qfunc_decomposition`` have been removed from  :class:`~.Operator`
+* ``compute_qfunc_decomposition`` and ``has_qfunc_decomposition`` have been removed from  :class:`~.LegacyOperator`
   and all subclasses that implemented them. The graph decomposition system should be used to enable capture instead.
 
   - Removed in v0.45
@@ -335,8 +335,8 @@ Completed deprecation cycles
   1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
   2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
 
-* The :attr:`pennylane.operation.Operator.is_hermitian` property has been removed and replaced
-  with :attr:`pennylane.operation.Operator.is_verified_hermitian` as it better reflects the functionality of this property.
+* The :attr:`pennylane.operation.LegacyOperator.is_hermitian` property has been removed and replaced
+  with :attr:`pennylane.operation.LegacyOperator.is_verified_hermitian` as it better reflects the functionality of this property.
   Alternatively, consider using the :func:`pennylane.is_hermitian` function instead as it provides a more reliable check for hermiticity.
   Please be aware that it comes with a higher computational cost.
 
@@ -454,7 +454,7 @@ Completed deprecation cycles
 
 .. code-block:: python
 
-    from pennylane.core.operator import Operator
+    from pennylane.core.operator import LegacyOperator
     from pennylane.exceptions import TermsUndefinedError
 
     def not_tape(obj):
@@ -482,7 +482,7 @@ Completed deprecation cycles
         return obj.has_diagonalizing_gates
 
     def gen_is_multi_term_hamiltonian(obj):
-        if not isinstance(obj, Operator) or not obj.has_generator:
+        if not isinstance(obj, LegacyOperator) or not obj.has_generator:
             return False
         try:
             generator = obj.generator()
@@ -508,7 +508,7 @@ Completed deprecation cycles
 
   .. code-block:: python
 
-      class MyObs(Operator):
+      class MyObs(LegacyOperator):
           is_hermitian = True
 
           def queue(self, context=qml.QueuingManager):
@@ -522,7 +522,7 @@ Completed deprecation cycles
   - Removed in v0.43
 
 * ``qml.operation.WiresEnum``, ``qml.operation.AllWires``, and ``qml.operation.AnyWires`` have been removed. If an operation can act
-  on any number of wires, ``Operator.num_wires = None`` should be used instead. This is the default, and does not need
+  on any number of wires, ``LegacyOperator.num_wires = None`` should be used instead. This is the default, and does not need
   to be overridden unless the operator developer wants to validate that the correct number of wires is passed.
 
   - Deprecated in v0.42
@@ -584,7 +584,7 @@ Completed deprecation cycles
   - Removed in v0.42
 
 * ``op.ops`` and ``op.coeffs`` for ``Sum`` and ``Prod`` have been removed. Instead, please use
-  :meth:`~.Operator.terms`.
+  :meth:`~.LegacyOperator.terms`.
 
   - Deprecated in v0.35
   - Removed in v0.42
@@ -754,7 +754,7 @@ Completed deprecation cycles
   - Deprecated in v0.38
   - Removed in v0.39
 
-* `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.decomposition())` instead.
+* `LegacyOperator.expand` is now removed. Use `qml.tape.QuantumScript(op.decomposition())` instead.
 
   - Deprecated in v0.38
   - Removed in v0.39
@@ -806,7 +806,7 @@ Completed deprecation cycles
   - Deprecated in v0.38
   - Removed in v0.39
 
-* ``queue_idx`` attribute has been removed from the ``Operator``, ``CompositeOp``, and ``SymboliOp`` classes. Instead, the index is now stored as the label of the ``CircuitGraph.graph`` nodes.
+* ``queue_idx`` attribute has been removed from the ``LegacyOperator``, ``CompositeOp``, and ``SymboliOp`` classes. Instead, the index is now stored as the label of the ``CircuitGraph.graph`` nodes.
 
   - Deprecated in v0.38
   - Removed in v0.38
@@ -890,9 +890,9 @@ Completed deprecation cycles
   - Contents moved in v0.35
   - Old import path removed in v0.36
 
-* The method ``Operator.validate_subspace(subspace)``, only employed under a specific set of qutrit
+* The method ``LegacyOperator.validate_subspace(subspace)``, only employed under a specific set of qutrit
   operators, has been relocated to the ``qml.ops.qutrit.parametric_ops`` module and has been removed
-  from the ``Operator`` class.
+  from the ``LegacyOperator`` class.
 
   - Deprecated in v0.35
   - Removed in v0.36
@@ -1014,7 +1014,7 @@ Completed deprecation cycles
   - Deprecated in v0.31
   - Changed in v0.33
 
-* The behaviour of ``Operator.__eq__`` and ``Operator.__hash__`` has been updated. Their documentation
+* The behaviour of ``LegacyOperator.__eq__`` and ``LegacyOperator.__hash__`` has been updated. Their documentation
   has been updated to reflect the incoming changes.
 
   The changes to operator equality allow users to use operator equality the same way as
@@ -1041,7 +1041,7 @@ Completed deprecation cycles
   is no longer accepted; the fermionic operators ``qml.FermiA``, ``qml.FermiC``,
   ``qml.FermiWord`` and ``qml.FermiSentence`` should be used instead. See the
   :mod:`pennylane.fermi` module documentation, and the
-  :doc:`Fermionic Operator <demo:demos/tutorial_fermionic_operators>` tutorial for more details.
+  :doc:`Fermionic LegacyOperator <demo:demos/tutorial_fermionic_operators>` tutorial for more details.
 
   - Deprecated in v0.32
   - Removed in v0.33
@@ -1127,7 +1127,7 @@ Completed deprecation cycles
   - Still accepted in v0.31
   - Removed in v0.32
 
-* The ``do_queue`` keyword argument in ``qml.operation.Operator`` has been removed. This affects
+* The ``do_queue`` keyword argument in ``qml.operation.LegacyOperator`` has been removed. This affects
   all child classes, such as ``Operation``, ``Observable``, ``SymbolicOp`` and more. Instead of
   setting ``do_queue=False``, use the ``qml.QueuingManager.stop_recording()`` context.
 
@@ -1157,7 +1157,7 @@ Completed deprecation cycles
   - Deprecated in v0.31
   - Removed in v0.32
 
-* The ``Operation.base_name`` property is removed. Please use ``Operator.name`` or ``type(obj).__name__`` instead.
+* The ``Operation.base_name`` property is removed. Please use ``LegacyOperator.name`` or ``type(obj).__name__`` instead.
 
   - Still accessible in v0.31
   - Removed in v0.32

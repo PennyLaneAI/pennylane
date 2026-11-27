@@ -18,14 +18,14 @@ Tests for the 'label' functionality.
 import pytest
 
 import pennylane as qp
-from pennylane.core import Operator
+from pennylane.core import LegacyOperator
 from pennylane.decomposition.resources import resource_rep
 from pennylane.drawer.label import LabelledOp, label
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import DynOp
 
 
-class CustomOp(Operator):  # pylint: disable=too-few-public-methods
+class CustomOp(LegacyOperator):  # pylint: disable=too-few-public-methods
     pass
 
 

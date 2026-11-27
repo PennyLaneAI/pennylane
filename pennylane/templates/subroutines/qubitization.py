@@ -148,7 +148,7 @@ class Qubitization(Operation):
             **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
 
         Returns:
-            list[Operator]: decomposition of the operator
+            list[LegacyOperator]: decomposition of the operator
 
         **Example:**
 

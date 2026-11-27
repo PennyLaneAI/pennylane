@@ -402,7 +402,9 @@ class TestFiniteDiff:
             def __radd__(self, other):
                 return self + other
 
-        class SpecialObservable(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class SpecialObservable(
+            qp.operation.LegacyOperator
+        ):  # pylint: disable=too-few-public-methods
             """SpecialObservable"""
 
             def diagonalizing_gates(self):

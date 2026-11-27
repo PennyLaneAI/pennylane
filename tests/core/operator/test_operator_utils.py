@@ -20,7 +20,7 @@ from operator2_utils import CompilableOp, DynOp, FullOp, MixedHybridOp, MultiWir
 
 import pennylane as qp
 from pennylane.core import Operator1
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.core.operator.utils import abstractify
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, Wire
@@ -130,7 +130,7 @@ class TestAbstractifyOperatorInstances:
         assert op.wires == Wires([0])
 
     def test_dynamic_operator(self):
-        """Test that ``Operator2`` instances are abstractified correctly."""
+        """Test that ``Operator`` instances are abstractified correctly."""
         op = DynOp(0.5, wires=[0, 1])
         result = abstractify(op)
         assert result.phi == Float
@@ -183,7 +183,7 @@ class TestAbstractifyOperatorInstances:
         assert abstractify(result) == result  # idempotency
 
     def test_operator_hybrid_args(self):
-        """Test that ``Operator2`` instances are abstractified correctly when there
+        """Test that ``Operator`` instances are abstractified correctly when there
         are hybrid arguments."""
         op = MixedHybridOp(
             phi=1.5, ops=[TwoDynOp(2.5, [0, 1], 0)], pytree_wires=[1, [2, 3, 4], [5]], wires=6
@@ -228,7 +228,7 @@ class TestAbstractifyOperatorInstances:
     def test_arg_specs_integration_with_nested_ops(self):
         """Tests how abstractify plays in with arg_specs validation."""
 
-        class AnotherOp2(Operator2):
+        class AnotherOp2(Operator):
             dynamic_argnames = ("theta",)
 
             wire_argnames = ("wires",)
@@ -238,7 +238,7 @@ class TestAbstractifyOperatorInstances:
             def __init__(self, theta, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(theta, wires)
 
-        class CustomOp2(Operator2):
+        class CustomOp2(Operator):
             dynamic_argnames = ("params",)
 
             wire_argnames = ("wires",)
@@ -298,7 +298,7 @@ class TestAbstractifyOperatorClasses:
     def test_operator_subclass_with_complete_arg_specs(self):
         """Tests that an operator subclass with a complete arg_specs correctly."""
 
-        class FixedSigOp(Operator2):
+        class FixedSigOp(Operator):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires", "ctrl_wires")
             arg_specs = {
@@ -318,7 +318,7 @@ class TestAbstractifyOperatorClasses:
     def test_operator_subclass_with_incomplete_arg_specs(self):
         """Tests that an error is raised if an operator subclass is used without a complete arg_specs."""
 
-        class FixedSigOp(Operator2):
+        class FixedSigOp(Operator):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires", "ctrl_wires")
 

@@ -21,7 +21,7 @@ from numbers import Integral
 from typing import Literal
 
 from pennylane.capture import enabled as capture_enabled
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.math import is_tracer
 from pennylane.wires import DynamicWire, Wires
 
@@ -80,7 +80,7 @@ else:
         return []
 
 
-class Allocate(Operator):
+class Allocate(LegacyOperator):
     """An instruction to request dynamic wires.
 
     Args:
@@ -117,7 +117,7 @@ class Allocate(Operator):
         return cls(wires=wires, state=state, restored=restored)
 
 
-class Deallocate(Operator):
+class Deallocate(LegacyOperator):
     """An instruction to deallocate the provided ``DynamicWire``'s.
 
     Args:

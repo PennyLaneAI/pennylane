@@ -367,7 +367,7 @@ class TestSelectTHCOperator:
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_assert_valid_and_decomposition(self):
-        """Test Operator2 validity and decomposition with and without capture."""
+        """Test Operator validity and decomposition with and without capture."""
         system, index, flags, gradient, work, _ = _layout(2, 4, 1)
         op = qp.SelectTHC(
             ((1.0, 1.0), (1.0, -1.0)),

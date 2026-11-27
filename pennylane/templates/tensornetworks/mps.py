@@ -249,7 +249,7 @@ class MPS(Operation):
             **kwargs: additional keyword arguments for implementing the ``block``
 
         Returns:
-            list[.Operator]: decomposition of the operator
+            list[.LegacyOperator]: decomposition of the operator
         """
         decomp = []
         itrweights = iter([]) if weights is None else iter(weights)

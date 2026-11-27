@@ -73,7 +73,7 @@ def iterative_qpe(base, aux_wire, iters):
     estimation and returns a list of mid-circuit measurements with qubit reset.
 
     Args:
-        base (Operator): the phase estimation unitary, specified as an :class:`~.Operator`
+        base (LegacyOperator): the phase estimation unitary, specified as an :class:`~.LegacyOperator`
         aux_wire (Wires or int): the wire to be used for the estimation
         iters (int): the number of measurements to be performed
 

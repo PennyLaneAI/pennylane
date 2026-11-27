@@ -15,7 +15,7 @@ r"""Contains the MultiplexerStatePreparation template."""
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import register_condition
 from pennylane.templates.state_preparations.mottonen import _get_alpha_y
@@ -23,7 +23,7 @@ from pennylane.typing import AbstractArray, Complex, Float, Wire
 from pennylane.wires import Wires
 
 
-class MultiplexerStatePreparation(Operator2):
+class MultiplexerStatePreparation(Operator):
     r"""Prepares a quantum state using multiplexed rotations.
 
     This operation implements the state preparation method described

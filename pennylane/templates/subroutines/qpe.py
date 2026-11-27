@@ -17,7 +17,7 @@ Contains the QuantumPhaseEstimation template.
 
 from pennylane import capture, compiler, math, ops
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator, Operator2
+from pennylane.core.operator import LegacyOperator, Operator
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
@@ -32,7 +32,7 @@ from pennylane.wires import Wires, validate_no_wire_overlaps
 from .qft import QFT
 
 
-class QuantumPhaseEstimation(Operator2):
+class QuantumPhaseEstimation(Operator):
     r"""Performs the
     `quantum phase estimation <https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm>`__
     circuit.
@@ -43,14 +43,14 @@ class QuantumPhaseEstimation(Operator2):
         :target: javascript:void(0);
 
     Args:
-        unitary (Operator): the phase estimation unitary. The target wires of the phase estimation
+        unitary (LegacyOperator): the phase estimation unitary. The target wires of the phase estimation
             are the wires of this operator. To use a unitary matrix, wrap it in a
             :class:`~.QubitUnitary`.
         estimation_wires (Union[Wires, Sequence[int], or int]): the wires to be used for phase
             estimation
 
     Raises:
-        TypeError: if ``unitary`` is not an :class:`~.Operator`
+        TypeError: if ``unitary`` is not an :class:`~.LegacyOperator`
         QuantumFunctionError: if the wires of ``unitary`` and ``estimation_wires`` share a common
             element
 
@@ -157,7 +157,7 @@ class QuantumPhaseEstimation(Operator2):
     hybrid_argnames = ("unitary",)
 
     def __init__(self, unitary, estimation_wires):
-        if not isinstance(unitary, Operator):
+        if not isinstance(unitary, LegacyOperator):
             raise TypeError(
                 "The unitary of QuantumPhaseEstimation must be an Operator, got "
                 f"{type(unitary).__name__}. To use a unitary matrix, wrap it in a "

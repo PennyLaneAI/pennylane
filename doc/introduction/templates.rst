@@ -297,11 +297,11 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/subroutines/iqp.png
 
 .. gallery-item::
-    :description: :doc:`Grover Diffusion Operator <../code/api/pennylane.GroverOperator>`
+    :description: :doc:`Grover Diffusion LegacyOperator <../code/api/pennylane.GroverOperator>`
     :figure: _static/templates/subroutines/grover.svg
 
 .. gallery-item::
-    :description: :doc:`Reflection Operator <../code/api/pennylane.Reflection>`
+    :description: :doc:`Reflection LegacyOperator <../code/api/pennylane.Reflection>`
     :figure: _static/templates/subroutines/reflection.png
 
 .. gallery-item::

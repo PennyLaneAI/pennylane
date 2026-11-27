@@ -22,7 +22,7 @@ import numpy as np
 
 from pennylane import capture, math
 from pennylane.core.apply import apply
-from pennylane.core.operator import Operator, Operator2
+from pennylane.core.operator import LegacyOperator, Operator
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
@@ -74,7 +74,7 @@ def _partial_select(K, control):
     return (list(zip(*ctrl_, strict=True)) for ctrl_ in controls)
 
 
-class Select(Operator2):
+class Select(Operator):
     r"""The ``Select`` operator, also available as :class:`~.Multiplexer` and :class:`~.Multiplexor`,
     applies different operations depending on the state of designated control wires.
 
@@ -92,7 +92,7 @@ class Select(Operator2):
     .. seealso:: :class:`~.SelectPauliRot`
 
     Args:
-        ops (list[Operator]): operations to apply
+        ops (list[LegacyOperator]): operations to apply
         control (Sequence[int]): the wires controlling which operation is applied.
             At least :math:`\lceil \log_2 K\rceil` wires are required for :math:`K` operations.
         work_wires (Union[Wires, Sequence[int], or int]): auxiliary wire(s) that may be
@@ -399,7 +399,7 @@ class Select(Operator2):
                 + "wires are required."
             )
 
-        target_wire_args = tuple(op.wires for op in self.ops if isinstance(op, Operator))
+        target_wire_args = tuple(op.wires for op in self.ops if isinstance(op, LegacyOperator))
         self._target_wires = Wires.all_wires(target_wire_args)
         all_wire_args = (self.control, self._target_wires)
         self._wires = Wires.all_wires(all_wire_args)
@@ -711,12 +711,12 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     instead.
 
     Args:
-        ops (Sequence[Operator]): Operators applied by the Select unary iterator.
+        ops (Sequence[LegacyOperator]): Operators applied by the Select unary iterator.
         control (Sequence[hashable]): Control wires. Should be at least ``ceil(log2(len(ops)))`` many.
         work_wires (Sequence[hashable]): Work wires. Should be at least ``len(control)-1`` many.
 
     Returns:
-        Sequence[Operator]: Decomposition of a non-partial ``Select`` using unary iteration.
+        Sequence[LegacyOperator]: Decomposition of a non-partial ``Select`` using unary iteration.
 
     Denote the number of control qubits as ``c`` and the number of operators as ``K``.
     Arrange the control wires and ``c-1`` work wires as ``["c0", "c1", "w0", "c2", "w1", ...]``.

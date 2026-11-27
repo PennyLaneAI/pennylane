@@ -18,14 +18,14 @@ Contains the FlipSign template.
 from collections.abc import Sequence
 
 from pennylane import math
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CZ, X, Z, ctrl
 from pennylane.typing import AbstractArray, Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 
-class FlipSign(Operator2):
+class FlipSign(Operator):
     r"""Flips the sign of a given basis state.
 
     This template performs the following operation:

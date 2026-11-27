@@ -17,7 +17,7 @@ from openqasm3.visitor import QASMNode
 
 from pennylane import math, ops
 from pennylane.control_flow import for_loop, while_loop
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.ops import MeasurementValue, MidMeasure, measure
 
 NON_PARAMETERIZED_GATES = {
@@ -1475,14 +1475,14 @@ class QasmInterpreter:  # pylint: disable=too-many-public-methods
         return gate, arg, wires
 
     def apply_modifier(  # pragma: no cover
-        self, mod: ast.QuantumGate, previous: Operator, context: Context, wires: list
-    ):
+        self, mod: ast.QuantumGate, previous: LegacyOperator, context: Context, wires: list  # pragma: no cover
+    ):  # pragma: no cover
         """
         Applies a modifier to the previous gate or modified gate.
 
         Args:
             mod (QASMNode): The modifier QASMNode.
-            previous (Operator): The previous (called) operator.
+            previous (LegacyOperator): The previous (called) operator.
             context (Context): The current context.
             wires (list): The wires that the operator is applied to.
 

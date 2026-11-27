@@ -23,7 +23,7 @@ from functools import partial
 import numpy as np
 
 from pennylane import math, ops
-from pennylane.core.operator import Channel, Operator, StatePrepBase
+from pennylane.core.operator import Channel, LegacyOperator, StatePrepBase
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.transforms import CompilePipeline
 from pennylane.exceptions import DeviceError, QuantumFunctionError
@@ -111,12 +111,12 @@ _OPERATIONS_MAP = {
 }
 
 
-def operation_stopping_condition(op: Operator) -> bool:
+def operation_stopping_condition(op: LegacyOperator) -> bool:
     """Specifies whether an operation is accepted by ``DefaultClifford``."""
     return op.name in _OPERATIONS_MAP
 
 
-def observable_stopping_condition(obs: Operator) -> bool:
+def observable_stopping_condition(obs: LegacyOperator) -> bool:
     """Specifies whether an observable is accepted by ``DefaultClifford``."""
     return obs.name in _OBSERVABLES_MAP
 

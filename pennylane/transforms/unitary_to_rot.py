@@ -16,7 +16,7 @@ A transform for decomposing arbitrary single-qubit QubitUnitary gates into eleme
 """
 
 from pennylane import math
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.queuing import QueuingManager
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
@@ -161,14 +161,14 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     return [new_tape], null_postprocessing
 
 
-def _recursively_decompose_qubit_unitary(op: QubitUnitary) -> list[Operator]:
+def _recursively_decompose_qubit_unitary(op: QubitUnitary) -> list[LegacyOperator]:
     """Recursively decomposes single or two-qubit QubitUnitary operators.
 
     Args:
         op (QubitUnitary): The operator to decompose.
 
     Returns:
-        list[Operator]: The decomposition that does not contain any single or two-qubit unitaries.
+        list[LegacyOperator]: The decomposition that does not contain any single or two-qubit unitaries.
 
     """
     # pylint: disable-next=import-outside-toplevel

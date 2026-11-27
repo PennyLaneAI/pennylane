@@ -75,7 +75,7 @@ def is_pauli_word(observable):
 
 
     Args:
-        observable (~.Operator): the operator to be examined
+        observable (~.LegacyOperator): the operator to be examined
 
     Returns:
         bool: true if the input observable is a Pauli word, false otherwise.
@@ -384,7 +384,7 @@ def pauli_word_to_string(pauli_word, wire_map=None):
         'X'
 
     Args:
-        pauli_word (Operator): an observable, either a single-qubit observable
+        pauli_word (LegacyOperator): an observable, either a single-qubit observable
             representing a Pauli group element, or a tensor product of single-qubit observables.
         wire_map (dict[int, int]): dictionary containing all wire labels used in
             the Pauli word as keys, and unique integer labels as their values
@@ -435,7 +435,7 @@ def string_to_pauli_word(pauli_string, wire_map=None):
             the Pauli word as keys, and unique integer labels as their values
 
     Returns:
-        .Operator: The Pauli word representing of ``pauli_string`` on the wires
+        .LegacyOperator: The Pauli word representing of ``pauli_string`` on the wires
         enumerated in the wire map.
 
     **Example**
@@ -497,7 +497,7 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
     product at the correct positions.
 
     Args:
-        pauli_word (Operator): an observable, either a single-qubit observable
+        pauli_word (LegacyOperator): an observable, either a single-qubit observable
             representing a Pauli group element, or a tensor product of single-qubit observables.
         wire_map (dict[int, int]): dictionary containing all wire labels used in
             the Pauli word as keys, and unique integer labels as their values
@@ -635,7 +635,7 @@ def are_pauli_words_qwc(lst_pauli_words):
     number of distinct wire labels used to represent the Pauli words.
 
     Args:
-        lst_pauli_words (list[Operator]): List of observables (assumed to be valid Pauli words).
+        lst_pauli_words (list[LegacyOperator]): List of observables (assumed to be valid Pauli words).
 
     Returns:
         (bool): True if they are all qubit-wise commuting, false otherwise. If any of the provided
@@ -993,10 +993,10 @@ def diagonalize_pauli_word(pauli_word):
     """Transforms the Pauli word to diagonal form in the computational basis.
 
     Args:
-        pauli_word (Operator): the Pauli word to diagonalize in computational basis
+        pauli_word (LegacyOperator): the Pauli word to diagonalize in computational basis
 
     Returns:
-        Operator: the Pauli word diagonalized in the computational basis
+        LegacyOperator: the Pauli word diagonalized in the computational basis
 
     Raises:
         TypeError: if the input is not a Pauli word, i.e., a Pauli operator,
@@ -1030,7 +1030,7 @@ def diagonalize_qwc_pauli_words(
     """Diagonalizes a list of mutually qubit-wise commutative Pauli words.
 
     Args:
-        qwc_grouping (list[Operator]): a list of observables containing mutually
+        qwc_grouping (list[LegacyOperator]): a list of observables containing mutually
             qubit-wise commutative Pauli words
 
     Returns:
@@ -1038,7 +1038,7 @@ def diagonalize_qwc_pauli_words(
 
             * list[Operation]: an instance of the qwc_rotation template which
               diagonalizes the qubit-wise commuting grouping
-            * list[Operator]: list of Pauli string observables diagonal in
+            * list[LegacyOperator]: list of Pauli string observables diagonal in
               the computational basis
 
     Raises:
@@ -1085,7 +1085,7 @@ def diagonalize_qwc_groupings(qwc_groupings):
     """Diagonalizes a list of qubit-wise commutative groupings of Pauli strings.
 
     Args:
-        qwc_groupings (list[list[Operator]]): a list of mutually qubit-wise commutative groupings
+        qwc_groupings (list[list[LegacyOperator]]): a list of mutually qubit-wise commutative groupings
             of Pauli string observables
 
     Returns:
@@ -1094,7 +1094,7 @@ def diagonalize_qwc_groupings(qwc_groupings):
             * list[list[Operation]]: a list of instances of the qwc_rotation
               template which diagonalizes the qubit-wise commuting grouping,
               order corresponding to qwc_groupings
-            * list[list[Operator]]: a list of QWC groupings diagonalized in the
+            * list[list[LegacyOperator]]: a list of QWC groupings diagonalized in the
               computational basis, order corresponding to qwc_groupings
 
     **Example**

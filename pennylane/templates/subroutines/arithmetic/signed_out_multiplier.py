@@ -21,7 +21,7 @@ from jax import numpy as jnp
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -36,7 +36,7 @@ from .out_multiplier import OutMultiplier
 from .semi_adder import SemiAdder
 
 
-class SignedOutMultiplier(Operator2):
+class SignedOutMultiplier(Operator):
     r"""
     Implements signed out-place multiplication
 

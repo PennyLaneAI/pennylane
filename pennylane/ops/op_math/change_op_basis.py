@@ -23,7 +23,7 @@ from functools import reduce
 from pennylane import capture, math
 from pennylane.core import queuing
 from pennylane.core.apply import apply
-from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.core.operator import LegacyOperator, Operator, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.resources import CompressedResourceOp, resource_rep
 from pennylane.exceptions import (
@@ -73,7 +73,7 @@ def _convert_to_prod(op_or_func):
     if callable(op_or_func):
         _validate_callable(op_or_func)
         return prod(op_or_func)()
-    if isinstance(op_or_func, Operator):
+    if isinstance(op_or_func, LegacyOperator):
         return op_or_func
     raise TypeError(
         f"The parameters to change_op_basis must be Operator or Callable, not {type(op_or_func)}"
@@ -81,16 +81,16 @@ def _convert_to_prod(op_or_func):
 
 
 def change_op_basis(
-    compute_op: Operator | Callable,
-    target_op: Operator | Callable,
-    uncompute_op: Operator | Callable | None = None,
+    compute_op: LegacyOperator | Callable,
+    target_op: LegacyOperator | Callable,
+    uncompute_op: LegacyOperator | Callable | None = None,
 ):
     """Construct an operator representing a compute-uncompute pattern.
 
     Args:
-        compute_op (~.Operator or Callable): operator applied before the target
-        target_op (~.Operator or Callable): operator applied in the changed basis
-        uncompute_op (~.Operator or Callable or None): Operator applied after the target.
+        compute_op (~.LegacyOperator or Callable): operator applied before the target
+        target_op (~.LegacyOperator or Callable): operator applied in the changed basis
+        uncompute_op (~.LegacyOperator or Callable or None): LegacyOperator applied after the target.
             If ``None`` (the default), the adjoint of ``compute_op`` is used.
 
     Returns:
@@ -206,7 +206,7 @@ def change_op_basis(
                     "change_op_basis does not support callables as inputs when using program "
                     "capture. To create an operator from a quantum function, use qp.subcircuit."
                 )
-            if not (isinstance(op, Operator) or _is_abstract_operator(op)):
+            if not (isinstance(op, LegacyOperator) or _is_abstract_operator(op)):
                 raise TypeError(
                     "The parameters to change_op_basis must be of type Operator when using program "
                     f"capture, not {type(op)}"
@@ -217,9 +217,9 @@ def change_op_basis(
         target = _convert_to_prod(target_op)
         uncompute = _convert_to_prod(uncompute_op) if uncompute_op is not None else None
     if (
-        isinstance(compute, Operator2)
-        and isinstance(target, Operator2)
-        and (isinstance(uncompute, Operator2) or uncompute is None)
+        isinstance(compute, Operator)
+        and isinstance(target, Operator)
+        and (isinstance(uncompute, Operator) or uncompute is None)
     ):
         return ChangeOpBasis2(
             compute,
@@ -235,13 +235,13 @@ class ChangeOpBasis(CompositeOp):
     which an operator is applied.
 
     Args:
-        compute_op (:class:`~.Operator`): A single operator or product that applies quantum operations.
-        target_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
-        uncompute_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
+        compute_op (:class:`~.LegacyOperator`): A single operator or product that applies quantum operations.
+        target_op (:class:`~.LegacyOperator`): A single operator or a product that applies quantum operations.
+        uncompute_op (:class:`~.LegacyOperator`): A single operator or a product that applies quantum operations.
             Default is uncompute_op=qp.adjoint(compute_op).
 
     Returns:
-        (Operator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, uncompute_op.
+        (LegacyOperator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, uncompute_op.
 
     .. note::
         When a ``ChangeOpBasis`` operator is iterated over, its factors are iterated in the reverse order. This is to
@@ -251,7 +251,10 @@ class ChangeOpBasis(CompositeOp):
     """
 
     def __init__(
-        self, compute_op: Operator, target_op: Operator, uncompute_op: Operator | None = None
+        self,
+        compute_op: LegacyOperator,
+        target_op: LegacyOperator,
+        uncompute_op: LegacyOperator | None = None,
     ):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
@@ -267,19 +270,19 @@ class ChangeOpBasis(CompositeOp):
             uncompute_op = adjoint(compute_op)
 
         leaves, structure = flatten(
-            (compute_op, target_op, uncompute_op), is_leaf=lambda x: isinstance(x, Operator)
+            (compute_op, target_op, uncompute_op), is_leaf=lambda x: isinstance(x, LegacyOperator)
         )
 
         new_leaves = []
         for leaf in leaves:
-            if isinstance(leaf, Operator2):
+            if isinstance(leaf, Operator):
                 if leaf.tracer is None:
                     leaf._bind_primitive()  # pylint: disable=protected-access
                 new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
                 # The equation is now an input to the legacy primitive. Detach its tracer
                 # so prebuilt operands can be reused in another trace.
                 leaf.tracer = None
-            elif isinstance(leaf, Operator):
+            elif isinstance(leaf, LegacyOperator):
                 queuing.QueuingManager.remove(leaf)
                 new_leaves.append(apply(leaf))
             else:
@@ -321,18 +324,18 @@ class ChangeOpBasis(CompositeOp):
     grad_method = None
 
     @classmethod
-    def _sort(cls, op_list: list, wire_map: dict = None) -> list[Operator]:
+    def _sort(cls, op_list: list, wire_map: dict = None) -> list[LegacyOperator]:
         """
         We do not sort the ops. The order is guaranteed to matter since if the compute operator
         and the base operator commute, the pattern would simplify to just being the base operator.
 
         Args:
-            op_list (List[.Operator]): list of operators to be sorted
+            op_list (List[.LegacyOperator]): list of operators to be sorted
             wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
                 Defaults to None.
 
         Returns:
-            List[.Operator]: sorted list of operators
+            List[.LegacyOperator]: sorted list of operators
         """
         return op_list
 

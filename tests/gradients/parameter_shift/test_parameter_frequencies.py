@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 from pennylane import gradients, math
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.exceptions import ParameterFrequenciesUndefinedError
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops import U1, U2, U3, Exp, Hermitian, PauliZ
@@ -33,7 +33,7 @@ class TestParameterFrequencies:
     def test_parameter_frequencies_raises_error_too_many_dynamic_args(self):
         """Test that parameter_frequencies raises an error if there are too many dynamic arguments."""
 
-        class MultiArgOpWithGen(Operator2):
+        class MultiArgOpWithGen(Operator):
             dynamic_argnames = ("phi", "theta")
             wire_argnames = ("wires",)
 
@@ -51,7 +51,7 @@ class TestParameterFrequencies:
     def test_parameter_frequencies_raises_error_no_generator(self):
         """Test that parameter_frequencies raises an error if the op.generator() is undefined."""
 
-        class SingleArgOpNoGen(Operator2):
+        class SingleArgOpNoGen(Operator):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires",)
 
@@ -68,7 +68,7 @@ class TestParameterFrequencies:
     def test_param_freqs_no_generator(self, freqs):
         """Test that parameter_frequencies are accessible when provided explicitly, even if the op.generator() is undefined."""
 
-        class MultiArgOpNoGenParamFreqs(Operator2):
+        class MultiArgOpNoGenParamFreqs(Operator):
             dynamic_argnames = ("phi", "theta")
             wire_argnames = ("wires",)
 
@@ -94,7 +94,7 @@ class TestParameterFrequencies:
     def test_param_freqs_with_generator(self, matrix):
         """Test that parameter_frequencies relate to the eigenvalues of the generator if the op.generator() is defined."""
 
-        class OpWithGen(Operator2):
+        class OpWithGen(Operator):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires",)
 

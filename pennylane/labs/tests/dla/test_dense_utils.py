@@ -175,7 +175,7 @@ class TestPauliDecompose:
             assert set(op.keys()) == set(expected.keys())
             assert all(np.isclose(op[k], expected[k]) for k in op.keys())
         else:
-            assert isinstance(op, qp.operation.Operator)
+            assert isinstance(op, qp.operation.LegacyOperator)
             assert qp.equal(op, expected)
 
     @pytest.mark.parametrize("pauli", [False, True])
@@ -214,7 +214,7 @@ class TestPauliDecompose:
                 assert all(np.isclose(_op[k], e[k]) for k in _op.keys())
         else:
             for _op, e in zip(op, expected, strict=True):
-                assert isinstance(_op, qp.operation.Operator)
+                assert isinstance(_op, qp.operation.LegacyOperator)
                 assert qp.equal(_op, e)
 
     @pytest.mark.parametrize(
@@ -241,7 +241,7 @@ class TestPauliDecompose:
             assert set(op.keys()) == set(expected.keys())
             assert all(np.isclose(op[k], expected[k]) for k in op.keys())
         else:
-            assert isinstance(op, qp.operation.Operator)
+            assert isinstance(op, qp.operation.LegacyOperator)
             assert qp.equal(op, expected)
 
     @pytest.mark.parametrize("pauli", [False, True])
@@ -282,7 +282,7 @@ class TestPauliDecompose:
                 assert all(np.isclose(_op[k], e[k]) for k in _op.keys())
         else:
             for _op, e in zip(op, expected, strict=True):
-                assert isinstance(_op, qp.operation.Operator)
+                assert isinstance(_op, qp.operation.LegacyOperator)
                 assert qp.equal(_op, e)
 
 

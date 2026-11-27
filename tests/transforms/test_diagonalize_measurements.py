@@ -214,7 +214,7 @@ class TestDiagonalizeObservable:
     def test_diagonalizing_unknown_observable(self):
         """Test that an unknown observable is left undiagonalized"""
 
-        class MyObs(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class MyObs(qp.operation.LegacyOperator):  # pylint: disable=too-few-public-methods
 
             @property
             def name(self):

@@ -17,7 +17,7 @@ from collections.abc import Iterable
 
 from pennylane.allocation import AllocateState
 from pennylane.core.measurements import MeasurementProcess
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.estimator.estimate import _get_resource_decomposition
 from pennylane.estimator.resource_mapping import _map_to_resource_op
 from pennylane.estimator.resource_operator import GateCount, ResourceOperator
@@ -170,19 +170,19 @@ def _estimate_auxiliary_wires(
 
 
 def _process_circuit_lst(
-    circuit_as_lst: Iterable[ResourceOperator | Operator | MeasurementProcess | MarkQubits],
+    circuit_as_lst: Iterable[ResourceOperator | LegacyOperator | MeasurementProcess | MarkQubits],
 ):
     r"""A private function that pre-processes the quantum tape obtained from a qfunc as part of the wire
     tracking pipeline.
 
     This function has three main responsibilities. Firstly, mapping and pruning all operators (``ResourceOperator``
-    or ``Operator``) to their associated ``CompressedResourceOp``, ignoring any measurements
+    or ``LegacyOperator``) to their associated ``CompressedResourceOp``, ignoring any measurements
     (``MeasurementProcess``). Secondly, it extracts and stores the wires each operator acts upon, obtaining the
     set of all wires in the circuit. Finally, in case wire labels are not provided for certain operators, unique
     wires are generated for the operator and tracked as part of the circuit wires.
 
     Args:
-        circuit_as_lst (Iterable[ResourceOperator | Operator | MeasurementProcess | MarkQubits]): A quantum circuit
+        circuit_as_lst (Iterable[ResourceOperator | LegacyOperator | MeasurementProcess | MarkQubits]): A quantum circuit
             represented by a list of circuit elements (operators, measurements, etc,).
 
     Returns:
@@ -201,12 +201,12 @@ def _process_circuit_lst(
 
     processed_circ = []
     for op in circuit_as_lst:
-        if not isinstance(op, (ResourceOperator, Operator, MeasurementProcess, MarkQubits)):
+        if not isinstance(op, (ResourceOperator, LegacyOperator, MeasurementProcess, MarkQubits)):
             raise ValueError(
                 f"Circuit must contain only instances of 'ResourceOperator', 'Operator', 'MeasurementProcess' and 'MarkQubits', got {type(op)}"
             )
 
-        if isinstance(op, Operator):
+        if isinstance(op, LegacyOperator):
             op_wires = op.wires
             cmp_rep_op = _map_to_resource_op(op).resource_rep_from_op()
 
@@ -245,7 +245,7 @@ def _process_circuit_lst(
 
 
 def estimate_wires_from_circuit(
-    circuit_as_lst: Iterable[ResourceOperator | Operator | MeasurementProcess | MarkQubits],
+    circuit_as_lst: Iterable[ResourceOperator | LegacyOperator | MeasurementProcess | MarkQubits],
     gate_set: set | None = None,
     config: LabsResourceConfig | None = None,
     zeroed: int = 0,
@@ -255,7 +255,7 @@ def estimate_wires_from_circuit(
     of a quantum circuit into a specific ``gate_set`` with a given ``config``.
 
     Args:
-        circuit_as_lst (Iterable[ResourceOperator | Operator | MeasurementProcess | MarkQubits]): A quantum circuit
+        circuit_as_lst (Iterable[ResourceOperator | LegacyOperator | MeasurementProcess | MarkQubits]): A quantum circuit
             represented by a list of circuit elements (operators, measurements, etc.).
         gate_set (set[str] | None): A set of names (strings) of the fundamental operators to count
             throughout the quantum workflow. If not provided, the default gate set will be used,

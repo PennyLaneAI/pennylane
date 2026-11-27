@@ -579,7 +579,7 @@ def clifford_t_decomposition(  # pylint: disable=too-many-branches,too-many-stat
 
         # _CACHED_DECOMPOSE is a global variable that caches the decomposition function,
         # where the implementation of each function should have the following signature:
-        # def decompose_fn(op: Operator, epsilon: float, **method_kwargs) -> List[Operator]
+        # def decompose_fn(op: LegacyOperator, epsilon: float, **method_kwargs) -> List[LegacyOperator]
         # note: the last operator in the decomposition must be a GlobalPhase
 
         is_qjit = qp.compiler.active_compiler() == "catalyst"

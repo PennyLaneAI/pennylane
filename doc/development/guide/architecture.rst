@@ -28,7 +28,7 @@ provided by plugins.
 
 The quantum circuit is specified by defining a **quantum function**,
 which is a Python function that contains quantum operations and measurements
-represented by the :class:`~.Operator` and :class:`~.MeasurementProcess` classes,
+represented by the :class:`~.LegacyOperator` and :class:`~.MeasurementProcess` classes,
 respectively.
 
 Internally, the quantum function is used to construct one or more
@@ -50,16 +50,16 @@ gradients (or, more precisely, *jacobian-vector products*).
 Let's go through these components one-by-one, this time from the "inside out" of the
 schematic drawing above.
 
-Operator
+LegacyOperator
 ********
 
-Quantum operators are represented by the :class:`~.Operator` class.
+Quantum operators are represented by the :class:`~.LegacyOperator` class.
 
 Operators are uniquely defined by their **name**, their (trainable) **parameters**,
 their (non-trainable) **hyperparameters**, and the **wires** they act on. Note that the
 trainable parameters can be tensors of any supported autodifferentiation framework.
 
-These four defining properties are accessible for all :class:`~.Operator` instances:
+These four defining properties are accessible for all :class:`~.LegacyOperator` instances:
 
 >>> from jax import numpy as jnp
 >>> op = qp.Rot(jnp.array(0.1), jnp.array(0.2), jnp.array(0.3), wires=["a"])
@@ -98,7 +98,7 @@ gain information on how to implement the operator.
 MeasurementProcess
 ******************
 
-While the :class:`~.Operator` class describes a physical system and its dynamics,
+While the :class:`~.LegacyOperator` class describes a physical system and its dynamics,
 the :class:`pennylane.measurement.MeasurementProcess` class describes how we extract information from the quantum system.
 Each measurement in pennylane has a specific class that inherits from :class:`pennylane.measurement.MeasurementProcess`.
 The measurement functions such as :func:`~pennylane.expval` create an instance of its corresponding
@@ -132,7 +132,7 @@ The user defines the circuit by constructing a quantum function, such as:
 
 Internally, a quantum function is translated to a quantum tape, which is
 the central representation of a quantum circuit. The tape is a context manager that stores lists
-of :class:`~.Operator` and :class:`~.MeasurementProcesses` instances.
+of :class:`~.LegacyOperator` and :class:`~.MeasurementProcesses` instances.
 
 If we call the quantum function in a tape context, the
 gates are stored in the tape's ``operation`` property, while the

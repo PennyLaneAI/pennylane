@@ -75,7 +75,7 @@ class TestAllocateOp:
 
     @pytest.mark.usefixtures("disable_capture")
     def test_valid_operation(self):
-        """Test that Allocate is a valid Operator."""
+        """Test that Allocate is a valid LegacyOperator."""
         op = Allocate.from_num_wires(3)
         qp.testing.assert_valid(op)
 

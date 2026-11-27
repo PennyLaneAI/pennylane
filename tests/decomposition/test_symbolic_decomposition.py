@@ -22,7 +22,7 @@ from textwrap import dedent
 import pytest
 
 import pennylane as qp
-from pennylane.core import Operator, Operator1, queuing
+from pennylane.core import LegacyOperator, Operator1, queuing
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.decomposition_rule import (
     _fix_decomp,
@@ -83,7 +83,7 @@ from tests.core.operator.operator2_utils import (
 from tests.decomposition.conftest import to_resources
 
 
-class CustomOp(qp.operation.Operator):
+class CustomOp(qp.operation.LegacyOperator):
     resource_keys = {"key"}
 
     @property
@@ -91,7 +91,7 @@ class CustomOp(qp.operation.Operator):
         return {"key": 0}
 
 
-class DummyHadamard(qp.operation.Operator):
+class DummyHadamard(qp.operation.LegacyOperator):
     resource_keys = set({})
     num_wires = 1
 
@@ -113,7 +113,7 @@ class TestAdjointDecompositionRules:
         )
 
     def test_cancel_adjoint2(self):
-        """Tests the _adjoint_cancel rule written for Operator2."""
+        """Tests the _adjoint_cancel rule written for Operator."""
 
         op = qp.adjoint(qp.adjoint(OneWireDynOp(0.5, wires=[0])))
 
@@ -500,7 +500,7 @@ class TestPowDecomposition:
         # the default exponent is 1
         assert _pow_abstract(resource_rep(DummyHadamard)) == pow_resource_rep(DummyHadamard, {}, 1)
 
-        # an (abstract) Operator2 yields a Pow2
+        # an (abstract) Operator yields a Pow2
         abstract_base = DynOp(Float, wires=Wire[3])
         op = _pow_abstract(abstract_base, 2)
         assert isinstance(op, Pow2)
@@ -1186,7 +1186,7 @@ class TestControlledDecomposition:
     def test_controlled_decomp_with_work_wire(self):
         """Tests the controlled decomposition with a single work wire (Lemma 7.11 from https://arxiv.org/pdf/quant-ph/9503016)."""
 
-        class CustomRot(Operator):
+        class CustomRot(LegacyOperator):
             """A dummy legacy (Operator1) single-qubit op with a defined matrix."""
 
             @staticmethod
@@ -1259,7 +1259,7 @@ class TestControlledDecomposition:
     def test_decompose_to_controlled_qubit_unitary(self):
         """Tests the decomposition to controlled qubit unitary"""
 
-        class CustomRot(Operator):
+        class CustomRot(LegacyOperator):
 
             @staticmethod
             def compute_matrix(*params):

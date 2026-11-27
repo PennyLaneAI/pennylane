@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Set
 
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 
 from .utils import to_name
 
@@ -36,7 +36,7 @@ class GateSet(Mapping):
     immutability for improved protection when used as a global variable, and conversion
     between class and string based representations of operators.
 
-    We can create a gateset using both :class:`~.Operator` subclasses or strings, and use
+    We can create a gateset using both :class:`~.LegacyOperator` subclasses or strings, and use
     both classes and strings to check inclusion in the gateset
 
     >>> from pennylane.decomposition import GateSet
@@ -124,7 +124,9 @@ class GateSet(Mapping):
         return GateSet(self._gate_set | other._gate_set)
 
     def __sub__(self, other: Set | Mapping) -> GateSet:
-        if (isinstance(other, type) and issubclass(other, Operator)) or isinstance(other, str):
+        if (isinstance(other, type) and issubclass(other, LegacyOperator)) or isinstance(
+            other, str
+        ):
             other = GateSet({other})
         if not isinstance(other, (Mapping, Set)):
             return NotImplemented

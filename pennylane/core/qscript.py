@@ -28,7 +28,7 @@ from functools import cached_property
 from typing import ParamSpec, TypeVar
 
 from pennylane.core.measurements import MeasurementProcess
-from pennylane.core.operator import Operation, Operator, Operator2, StatePrepBase
+from pennylane.core.operator import LegacyOperator, Operation, Operator, StatePrepBase
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.core.shots import Shots, ShotsLike
 from pennylane.exceptions import DiagGatesUndefinedError, PennyLaneDeprecationWarning
@@ -43,7 +43,7 @@ _UNSET_BATCH_SIZE = -1
 
 def process_queue(
     queue: AnnotatedQueue,
-) -> tuple[list[Operator], list[MeasurementProcess]]:
+) -> tuple[list[LegacyOperator], list[MeasurementProcess]]:
     """Process the annotated queue, creating a list of quantum
     operations and measurement processes.
 
@@ -66,7 +66,7 @@ def process_queue(
     # cant use for obj in queue.queue, as OperatorRecorder overrides the definition of queue
     # cant use for obj in queue, as QuantumTape overrides the definition of __iter__
     for obj, _ in queue.items():
-        if isinstance(obj, (Operator, Operator2, QuantumScript)):
+        if isinstance(obj, (LegacyOperator, Operator, QuantumScript)):
             if encountered_measurement:
                 raise ValueError(f"{obj} must occur prior to measurements.")
             ops.append(obj)
@@ -87,7 +87,7 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
     execution on a quantum device.
 
     Args:
-        ops (Iterable[Operator]): An iterable of the operations to be performed
+        ops (Iterable[LegacyOperator]): An iterable of the operations to be performed
         measurements (Iterable[MeasurementProcess]): All the measurements to be performed
 
     Keyword Args:
@@ -172,7 +172,7 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
 
     def __init__(
         self,
-        ops: Iterable[Operator] | None = None,
+        ops: Iterable[LegacyOperator] | None = None,
         measurements: Iterable[MeasurementProcess] | None = None,
         shots: ShotsLike | None = None,
         trainable_params: Sequence[int] | None = None,
@@ -201,13 +201,13 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
         fingerprint.extend(self.shots)
         return hash(tuple(fingerprint))
 
-    def __iter__(self) -> Iterator[Operator | MeasurementProcess]:
-        """Iterator[.Operator, .MeasurementProcess]: Return an iterator to the
+    def __iter__(self) -> Iterator[LegacyOperator | MeasurementProcess]:
+        """Iterator[.LegacyOperator, .MeasurementProcess]: Return an iterator to the
         underlying quantum circuit object."""
         return iter(self.circuit)
 
-    def __getitem__(self, idx: int) -> Operator | MeasurementProcess:
-        """Union[Operator, MeasurementProcess]: Return the indexed operator from underlying quantum
+    def __getitem__(self, idx: int) -> LegacyOperator | MeasurementProcess:
+        """Union[LegacyOperator, MeasurementProcess]: Return the indexed operator from underlying quantum
         circuit object."""
         return self.circuit[idx]
 
@@ -221,7 +221,7 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
     # ========================================================
 
     @property
-    def circuit(self) -> list[Operator | MeasurementProcess]:
+    def circuit(self) -> list[LegacyOperator | MeasurementProcess]:
         """Returns the underlying quantum circuit as a list of operations and measurements.
 
         The circuit is created with the assumptions that:
@@ -235,17 +235,17 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
 
         Returns:
 
-            list[.Operator, .MeasurementProcess]: the quantum circuit
+            list[.LegacyOperator, .MeasurementProcess]: the quantum circuit
             containing quantum operations and measurements
         """
         return self.operations + self.measurements
 
     @property
-    def operations(self) -> list[Operator]:
+    def operations(self) -> list[LegacyOperator]:
         """Returns the state preparations and operations on the quantum script.
 
         Returns:
-            list[.Operator]: quantum operations
+            list[.LegacyOperator]: quantum operations
 
         >>> ops = [qp.StatePrep([0, 1], 0), qp.RX(0.432, 0)]
         >>> qscript = QuantumScript(ops, [qp.expval(qp.Z(0))])
@@ -255,11 +255,11 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
         return self._ops
 
     @property
-    def observables(self) -> list[MeasurementProcess | Operator]:
+    def observables(self) -> list[MeasurementProcess | LegacyOperator]:
         """Returns the observables on the quantum script.
 
         Returns:
-            list[.MeasurementProcess, .Operator]]: list of observables
+            list[.MeasurementProcess, .LegacyOperator]]: list of observables
 
         **Example**
 
@@ -312,7 +312,7 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
         r"""The batch size of the quantum script inferred from the batch sizes
         of the used operations for parameter broadcasting.
 
-        .. seealso:: :attr:`~.Operator.batch_size` for details.
+        .. seealso:: :attr:`~.LegacyOperator.batch_size` for details.
 
         Returns:
             int or None: The batch size of the quantum script if present, else ``None``.
@@ -441,11 +441,11 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
         return len(self.wires)
 
     @cached_property
-    def par_info(self) -> list[dict[str, int | Operator]]:
+    def par_info(self) -> list[dict[str, int | LegacyOperator]]:
         """Returns the parameter information of the operations and measurements in the quantum script.
 
         Returns:
-            list[dict[str, Operator or int]]: list of dictionaries with parameter information.
+            list[dict[str, LegacyOperator or int]]: list of dictionaries with parameter information.
 
         **Example**
 
@@ -471,12 +471,12 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
         return par_info
 
     @property
-    def obs_sharing_wires(self) -> list[Operator]:
+    def obs_sharing_wires(self) -> list[LegacyOperator]:
         """Returns the subset of the observables that share wires with another observable,
         i.e., that do not have their own unique set of wires.
 
         Returns:
-            list[~.Operator]: list of observables with shared wires.
+            list[~.LegacyOperator]: list of observables with shared wires.
 
         """
         if self._obs_sharing_wires is None:
@@ -501,7 +501,7 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
         identifying any observables that share wires.
 
         Sets:
-            _obs_sharing_wires (list[~.Operator]): Observables that share wires with
+            _obs_sharing_wires (list[~.LegacyOperator]): Observables that share wires with
                 any other observable
             _obs_sharing_wires_id (list[int]): Indices of the measurements that contain
                 the observables in _obs_sharing_wires
@@ -600,7 +600,7 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
 
         self._trainable_params = sorted(set(param_indices))
 
-    def get_operation(self, idx: int) -> tuple[Operator, int, int]:
+    def get_operation(self, idx: int) -> tuple[LegacyOperator, int, int]:
         """Returns the trainable operation, the operation index and the corresponding operation argument
         index, for a specified trainable parameter index.
 
@@ -743,11 +743,11 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
 
         for op_idx, p_indices in op_indices.items():
             op = new_ops[op_idx]
-            data = op.data if isinstance(op, Operator) else op.obs.data
+            data = op.data if isinstance(op, LegacyOperator) else op.obs.data
 
             new_params = [params[p_indices[i]] if i in p_indices else d for i, d in enumerate(data)]
 
-            if isinstance(op, Operator):
+            if isinstance(op, LegacyOperator):
                 new_op = bind_new_parameters(op, new_params)
             else:
                 new_obs = bind_new_parameters(op.obs, new_params)
@@ -783,7 +783,7 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
                 this argument will be treated as True.
 
         Keyword Args:
-            operations (Iterable[Operator]): An iterable of the operations to be performed. If provided, these
+            operations (Iterable[LegacyOperator]): An iterable of the operations to be performed. If provided, these
                 operations will replace the copied operations on the new tape.
             measurements (Iterable[MeasurementProcess]): All the measurements to be performed. If provided, these
                 measurements will replace the copied measurements on the new tape.

@@ -233,7 +233,7 @@ def drawable_layers(operations, wire_map=None, bit_map=None, _dynamic_wires=True
     """Determine non-overlapping yet dense placement of operations into layers for drawing.
 
     Args:
-        operations (Iterable[~.Operator]): A list of operations.
+        operations (Iterable[~.LegacyOperator]): A list of operations.
 
     Keyword Args:
         wire_map (dict): A map from wire label to non-negative integers. Defaults to None.
@@ -243,7 +243,7 @@ def drawable_layers(operations, wire_map=None, bit_map=None, _dynamic_wires=True
             on only dynamic wires to the right next to the first time the dynamic wires are used.
 
     Returns:
-        (list[set[~.Operator]], list[set[~.MeasurementProcess]]) : Each index is a set of operations
+        (list[set[~.LegacyOperator]], list[set[~.MeasurementProcess]]) : Each index is a set of operations
         for the corresponding layer in both lists. The first list corresponds to the operation layers,
         and the second corresponds to the measurement layers.
 

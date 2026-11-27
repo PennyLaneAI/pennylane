@@ -27,7 +27,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.exceptions import ConditionalTransformError
 from pennylane.ops.op_math.condition import Conditional
 
@@ -439,7 +439,7 @@ class TestProperties:
     def test_has_matrix(self, value):
         """Test that Conditional defers has_matrix to base operator."""
 
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(LegacyOperator):  # pylint: disable=too-few-public-methods
             num_wires = 1
             has_matrix = value
 
@@ -452,7 +452,7 @@ class TestProperties:
     def test_has_adjoint(self, value):
         """Test that Conditional defers has_adjoint to base operator."""
 
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(LegacyOperator):  # pylint: disable=too-few-public-methods
             num_wires = 1
             has_adjoint = value
 
@@ -465,7 +465,7 @@ class TestProperties:
     def test_has_diagonalizing_gates(self, value):
         """Test that Conditional defers has_adjoint to base operator."""
 
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(LegacyOperator):  # pylint: disable=too-few-public-methods
             num_wires = 1
             has_diagonalizing_gates = value
 

@@ -48,8 +48,8 @@ General Execution Errors
     ~InvalidCapabilitiesError
     ~NonDifferentiableError
 
-Operator Property Errors
-~~~~~~~~~~~~~~~~~~~~~~~~
+LegacyOperator Property Errors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
@@ -122,13 +122,13 @@ class MeasurementShapeError(ValueError):
 
 
 # =============================================================================
-# Operator Property Errors
+# LegacyOperator Property Errors
 # =============================================================================
 
 
 class OperatorPropertyUndefined(Exception):
     """Generic exception to be used for undefined
-    Operator properties or methods."""
+    LegacyOperator properties or methods."""
 
 
 class DecompositionUndefinedError(OperatorPropertyUndefined):

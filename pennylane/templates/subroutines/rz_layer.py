@@ -15,7 +15,7 @@
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import RZ
 from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle as adjoint_rotation2
@@ -23,7 +23,7 @@ from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 
-class RZLayer(Operator2):
+class RZLayer(Operator):
     r"""Applies :class:`~.RZ` rotations by the same angle to each of its wires.
 
     For :math:`m` wires, this is

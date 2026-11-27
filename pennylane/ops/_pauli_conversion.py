@@ -31,7 +31,7 @@ _cached_factor = lru_cache(_make_factor)
 
 @QueuingManager.stop_recording()
 def to_operator(value, identity_wires: WiresLike = ()):
-    """Convert a :class:`~pennylane.pauli.PauliWord` or :class:`~pennylane.pauli.PauliSentence` into a PennyLane :class:`~pennylane.core.operator.Operator`.
+    """Convert a :class:`~pennylane.pauli.PauliWord` or :class:`~pennylane.pauli.PauliSentence` into a PennyLane :class:`~pennylane.core.operator.LegacyOperator`.
 
     Args:
         value (PauliWord or PauliSentence): The Pauli representation to convert.
@@ -41,7 +41,7 @@ def to_operator(value, identity_wires: WiresLike = ()):
             non-identity terms.
 
     Returns:
-        Operator: The corresponding operator, without adding it to the queue.
+        LegacyOperator: The corresponding operator, without adding it to the queue.
 
     Raises:
         TypeError: If ``value`` is not a Pauli word or sentence.
@@ -51,16 +51,16 @@ def to_operator(value, identity_wires: WiresLike = ()):
 
     **Example**
 
-    >>> from pennylane.core.operator import Operator
+    >>> from pennylane.core.operator import LegacyOperator
     >>> word = qp.pauli.PauliWord({0: "X", 1: "Z"})
     >>> word_op = qp.pauli.to_operator(word)
-    >>> isinstance(word_op, Operator)
+    >>> isinstance(word_op, LegacyOperator)
     True
     >>> word_op
     X(0) @ Z(1)
     >>> sentence = qp.pauli.PauliSentence({word: 2.0})
     >>> sentence_op = qp.pauli.to_operator(sentence)
-    >>> isinstance(sentence_op, Operator)
+    >>> isinstance(sentence_op, LegacyOperator)
     True
     >>> sentence_op
     2.0 * (X(0) @ Z(1))

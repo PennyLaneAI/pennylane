@@ -16,10 +16,10 @@ This module contains the qp.is_unitary function.
 """
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 
 
-def is_unitary(op: Operator):
+def is_unitary(op: LegacyOperator):
     r"""Check if the operation is unitary.
 
     A matrix is unitary if its adjoint is also its inverse, that is, if
@@ -27,7 +27,7 @@ def is_unitary(op: Operator):
     .. math:: O^\dagger O = OO^\dagger = I
 
     Args:
-        op (~.operation.Operator): the operator to check against
+        op (~.operation.LegacyOperator): the operator to check against
 
     Returns:
         bool: True if the operation is unitary, False otherwise

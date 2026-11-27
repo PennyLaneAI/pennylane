@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for Operator2's metaclass."""
+"""Tests for Operator's metaclass."""
 
 # pylint: disable=too-few-public-methods
 
@@ -19,15 +19,15 @@ import pytest
 from operator2_utils import CompilableOp, DynOp, StaticOp
 
 import pennylane as qp
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.core.operator.operator2 import operator_p
 from pennylane.testing import find_eqns
 from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
 
-class DynCanonOp(Operator2):
-    """Operator with a dynamic parameter and wires that performs canonicalization."""
+class DynCanonOp(Operator):
+    """LegacyOperator with a dynamic parameter and wires that performs canonicalization."""
 
     dynamic_argnames = ("phi",)
 
@@ -68,8 +68,8 @@ class TestArgSpecValidationAbstractInputs:
     def test_weak_dtype_is_preserved(self):
         """Tests that canonicalization preserves strength of dtype."""
 
-        class MixedArgOp(Operator2):
-            """Operator with static, dynamic and hybrid argnames."""
+        class MixedArgOp(Operator):
+            """LegacyOperator with static, dynamic and hybrid argnames."""
 
             dynamic_argnames = ("dynamic_arg",)
 
@@ -87,8 +87,8 @@ class TestArgSpecValidationAbstractInputs:
     def test_arg_spec_with_unknown_shape_canonicalizes_only_dtype(self):
         """Tests that only the dtype is promoted."""
 
-        class MixedArgOp(Operator2):
-            """Operator with static, dynamic and hybrid argnames."""
+        class MixedArgOp(Operator):
+            """LegacyOperator with static, dynamic and hybrid argnames."""
 
             dynamic_argnames = ("dynamic_arg",)
 
@@ -105,8 +105,8 @@ class TestArgSpecValidationAbstractInputs:
     def test_arg_spec_canonicalizes_abstract_inputs(self):
         """Tests that abstract inputs are canonicalized when possible."""
 
-        class MixedArgOp(Operator2):
-            """Operator with static, dynamic and hybrid argnames."""
+        class MixedArgOp(Operator):
+            """LegacyOperator with static, dynamic and hybrid argnames."""
 
             dynamic_argnames = ("dynamic_arg",)
 
@@ -133,8 +133,8 @@ class TestArgSpecValidationAbstractInputs:
     def test_valid_arg_spec_with_unknown_shape(self):
         """Tests that using ... in your arg_specs works as expected."""
 
-        class MixedArgOp(Operator2):
-            """Operator with static, dynamic and hybrid argnames."""
+        class MixedArgOp(Operator):
+            """LegacyOperator with static, dynamic and hybrid argnames."""
 
             dynamic_argnames = ("dynamic_arg",)
 
@@ -154,8 +154,8 @@ class TestArgSpecValidationAbstractInputs:
     def test_valid_arg_spec_with_fixed_shape(self):
         """Tests a simple valid arg spec."""
 
-        class MixedArgOp(Operator2):
-            """Operator with static, dynamic and hybrid argnames."""
+        class MixedArgOp(Operator):
+            """LegacyOperator with static, dynamic and hybrid argnames."""
 
             dynamic_argnames = ("dynamic_arg",)
 
@@ -171,8 +171,8 @@ class TestArgSpecValidationAbstractInputs:
     def test_invalid_dynamic_arg_spec(self, bad_dynamic_arg):
         """Tests arg_spec validation against operators constructed with abstract inputs."""
 
-        class MixedArgOp(Operator2):
-            """Operator with static, dynamic and hybrid argnames."""
+        class MixedArgOp(Operator):
+            """LegacyOperator with static, dynamic and hybrid argnames."""
 
             dynamic_argnames = ("dynamic_arg",)
 

@@ -21,7 +21,7 @@ This submodule tests strategy structure for defining custom plxpr interpreters
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator.operator2 import Operator2
+from pennylane.core.operator.operator2 import Operator
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -192,7 +192,7 @@ def test_controlled_operator_handling(op_class, args, kwargs):
         return qp.expval(qp.Z(0))
 
     jaxpr = jax.make_jaxpr(f)()
-    if issubclass(op_class, Operator2):
+    if issubclass(op_class, Operator):
         assert_eqn_matches_op(jaxpr.eqns[0], op_class)
     else:
         assert jaxpr.eqns[0].primitive == op_class._primitive
@@ -473,7 +473,7 @@ class TestHigherOrderPrimitiveRegistrations:  # pylint: disable=too-many-public-
         false_branch = jaxpr.eqns[0].params["jaxpr_branches"][-1]
         assert len(false_branch.eqns) == 0
 
-        # ``Operator2`` instances are collected with an interpreter rather than a queue, since
+        # ``Operator`` instances are collected with an interpreter rather than a queue, since
         # evaluating the ``operator`` primitive does not append to the active queuing context.
         collector_true = CollectOpsandMeas()
         collector_true.eval(jaxpr.jaxpr, jaxpr.consts, True)
@@ -594,8 +594,8 @@ class TestHigherOrderPrimitiveRegistrations:  # pylint: disable=too-many-public-
         class AddNoise(PlxprInterpreter):
             def interpret_operation(self, op):
                 new_op = op._unflatten(*op._flatten())
-                if isinstance(new_op, Operator2):
-                    # ``Operator2`` pytree reconstruction happens with capture paused, so the
+                if isinstance(new_op, Operator):
+                    # ``Operator`` pytree reconstruction happens with capture paused, so the
                     # reconstructed op has to be explicitly bound into the surrounding trace.
                     new_op._bind_primitive()
                 _ = [qp.RX(0.1, w) for w in op.wires]

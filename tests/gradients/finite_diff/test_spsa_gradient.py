@@ -555,7 +555,9 @@ class TestSpsaGradient:
                 new = self.val + (other.val if isinstance(other, self.__class__) else other)
                 return SpecialObject(new)
 
-        class SpecialObservable(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class SpecialObservable(
+            qp.operation.LegacyOperator
+        ):  # pylint: disable=too-few-public-methods
             """SpecialObservable"""
 
             def diagonalizing_gates(self):

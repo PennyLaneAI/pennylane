@@ -29,7 +29,7 @@ from pennylane.typing import Int, Wire
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_assert_valid():
-    """Test that LeftClassicalComparator passes the standard Operator2 checks,
+    """Test that LeftClassicalComparator passes the standard Operator checks,
     with capture enabled and disabled."""
     op = qp.LeftClassicalComparator(
         x_wires=[0, 1, 2], value=2, target_wire=3, work_wires=[4, 5], comparator=">="

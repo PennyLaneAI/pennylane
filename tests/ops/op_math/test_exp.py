@@ -90,7 +90,7 @@ class TestInitialization:
     def test_has_diagonalizing_gates(self, value, constructor):
         """Test that Exp defers has_diagonalizing_gates to base operator."""
 
-        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(qp.operation.LegacyOperator):  # pylint: disable=too-few-public-methods
             num_wires = 1
             has_diagonalizing_gates = value
 
@@ -486,7 +486,7 @@ class TestDecomposition:
         op_class = getattr(qp.ops.qubit, op_name)
 
         if not op_class.has_generator:
-            pytest.skip("Operator does not have a generator.")
+            pytest.skip("LegacyOperator does not have a generator.")
 
         if op_class in {qp.DoubleExcitationMinus, qp.DoubleExcitationPlus}:
             pytest.skip("qp.equal doesn't work for `SparseHamiltonian` generators.")

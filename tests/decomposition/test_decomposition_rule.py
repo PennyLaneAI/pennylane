@@ -23,7 +23,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.core.operator import LegacyOperator, Operator, abstractify
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
@@ -59,7 +59,7 @@ from tests.core.operator.operator2_utils import (
 )
 
 
-class CustomOp(Operator):
+class CustomOp(LegacyOperator):
     pass
 
 
@@ -407,7 +407,7 @@ class TestDecompositionRule:  # pylint: disable=too-many-public-methods
     def test_auto_wrap_in_resource_op(self):
         """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""
 
-        class DummyOp(Operator):
+        class DummyOp(LegacyOperator):
             resource_keys = set()
 
         @register_resources({DummyOp: 1}, name="custom_decomp")
@@ -441,7 +441,7 @@ class TestDecompositionRule:  # pylint: disable=too-many-public-methods
     def test_operator_without_fixed_sig_raises_error(self, my_arg_specs):
         """Tests that if an operator type without a fixed_sig is used, an error is raised."""
 
-        class MissingFixedSigOp(Operator2):
+        class MissingFixedSigOp(Operator):
             dynamic_argnames = ("angles", "eps")
 
             arg_specs = my_arg_specs
@@ -480,7 +480,7 @@ class TestDecompositionRule:  # pylint: disable=too-many-public-methods
     def test_resource_keys_are_abstract_operators(self, abstract_sig, concrete_sig):
         """Tests that abstract operators can be used as keys."""
 
-        class FixedSigOp(Operator2):
+        class FixedSigOp(Operator):
             dynamic_argnames = ("phi", "matrix")
 
             arg_specs = abstract_sig
@@ -507,7 +507,7 @@ class TestDecompositionRule:  # pylint: disable=too-many-public-methods
     def test_auto_wrap_fails(self):
         """Tests that an op with non-empty resource_keys cannot be auto-wrapped."""
 
-        class DummyOp(Operator):
+        class DummyOp(LegacyOperator):
             resource_keys = {"foo"}
 
         @register_resources({DummyOp: 1}, name="custom_decomp")
@@ -606,13 +606,13 @@ class TestDecompositionRule:  # pylint: disable=too-many-public-methods
         ],
     )
     def test_verify_operator2_is_abstract_and_fixed(self, op):
-        """Tests that the resource function can only contain abstract and fixed Operator2."""
+        """Tests that the resource function can only contain abstract and fixed Operator."""
 
         with pytest.raises(TypeError, match="abstract data of undetermined dimensions"):
             _verify_is_abstract_and_fixed(op)
 
     def test_verify_operator2_with_legacy_resource_rep(self):
-        """Tests that a legacy resource rep is a valid fully abstract leaf of an Operator2."""
+        """Tests that a legacy resource rep is a valid fully abstract leaf of an Operator."""
 
         # e.g. ``Select`` stores the resource reps of its legacy target operators
         op = ParametrizedHybridOp(Float[3], Wire[3], qp.resource_rep(qp.ops.Sum))
@@ -625,7 +625,7 @@ class TestDecompDictionary:
     def test_add_and_list_decomps(self):
         """Tests that decomposition rules can be registered for an operator."""
 
-        class SomeOtherOp(Operator):
+        class SomeOtherOp(LegacyOperator):
             pass
 
         assert not qp.decomposition.has_decomp(SomeOtherOp)
@@ -675,7 +675,7 @@ class TestDecompDictionary:
     def test_add_decomp_duplicate_names(self):
         """Tests that you cannot add decomposition rules with duplicate names."""
 
-        class AnotherOp(Operator):
+        class AnotherOp(LegacyOperator):
             pass
 
         @register_resources({qp.RZ: 2, qp.CNOT: 1}, name="custom_decomp")
@@ -699,7 +699,7 @@ class TestDecompDictionary:
     def test_add_decomp_exact_alias(self):
         """Tests that adding exactly the same decomp rule twice does not error out."""
 
-        class AnotherOp(Operator):
+        class AnotherOp(LegacyOperator):
             pass
 
         @register_resources({qp.RZ: 2, qp.CNOT: 1}, name="custom_decomp")
@@ -1234,7 +1234,7 @@ class TestDecompCollection:
         assert "custom3" in collection
 
 
-class CustomParametrizedOp(Operator):
+class CustomParametrizedOp(LegacyOperator):
     """A custom parametrized op for testing."""
 
     resource_keys = {"num_wires"}

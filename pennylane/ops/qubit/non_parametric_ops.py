@@ -29,7 +29,7 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qp
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.typing import TensorLike, Wire
@@ -38,7 +38,7 @@ from pennylane.wires import Wires, WiresLike
 INV_SQRT2 = 1 / qp.math.sqrt(2)
 
 
-class Hadamard(Operator2):
+class Hadamard(Operator):
     r"""Hadamard(wires)
     The Hadamard operator
 
@@ -201,7 +201,7 @@ class Hadamard(Operator2):
 
     @staticmethod
     @override
-    def compute_diagonalizing_gates(wires: WiresLike) -> list[qp.operation.Operator]:
+    def compute_diagonalizing_gates(wires: WiresLike) -> list[qp.operation.LegacyOperator]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -216,7 +216,7 @@ class Hadamard(Operator2):
         Args:
             wires (Iterable[int], Wires): wires that the operator acts on
         Returns:
-            list[.Operator]: list of diagonalizing gates
+            list[.LegacyOperator]: list of diagonalizing gates
 
         **Example**
 
@@ -252,7 +252,7 @@ Args:
 """
 
 
-class PauliX(Operator2):
+class PauliX(Operator):
     r"""
     The Pauli X operator
 
@@ -426,7 +426,7 @@ class PauliX(Operator2):
 
     @staticmethod
     @override
-    def compute_diagonalizing_gates(wires: WiresLike) -> list[qp.operation.Operator]:
+    def compute_diagonalizing_gates(wires: WiresLike) -> list[qp.operation.LegacyOperator]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -441,7 +441,7 @@ class PauliX(Operator2):
         Args:
            wires (Iterable[int], Wires): wires that the operator acts on
         Returns:
-           list[.Operator]: list of diagonalizing gates
+           list[.LegacyOperator]: list of diagonalizing gates
 
         **Example**
 
@@ -455,7 +455,7 @@ class PauliX(Operator2):
         return X(wires=self.wires)
 
     @override
-    def pow(self, z: int | float) -> list[qp.operation.Operator]:
+    def pow(self, z: int | float) -> list[qp.operation.LegacyOperator]:
         z_mod2 = z % 2
         if abs(z_mod2 - 0.5) < 1e-6:
             return [SX(wires=self.wires)]
@@ -479,7 +479,7 @@ Args:
 """
 
 
-class PauliY(Operator2):
+class PauliY(Operator):
     r"""
     The Pauli Y operator
 
@@ -644,7 +644,7 @@ class PauliY(Operator2):
         return qp.pauli.pauli_eigs(1)
 
     @staticmethod
-    def compute_diagonalizing_gates(wires: WiresLike) -> list[qp.operation.Operator]:
+    def compute_diagonalizing_gates(wires: WiresLike) -> list[qp.operation.LegacyOperator]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -659,7 +659,7 @@ class PauliY(Operator2):
         Args:
             wires (Iterable[int], Wires): wires that the operator acts on
         Returns:
-            list[.Operator]: list of diagonalizing gates
+            list[.LegacyOperator]: list of diagonalizing gates
 
         **Example**
 
@@ -675,7 +675,7 @@ class PauliY(Operator2):
     def adjoint(self) -> "PauliY":
         return Y(wires=self.wires)
 
-    def pow(self, z: float | int) -> list[qp.operation.Operator]:
+    def pow(self, z: float | int) -> list[qp.operation.LegacyOperator]:
         return super().pow(z % 2)
 
 
@@ -696,7 +696,7 @@ Args:
 """
 
 
-class PauliZ(Operator2):
+class PauliZ(Operator):
     r"""
     The Pauli Z operator
 
@@ -872,7 +872,7 @@ class PauliZ(Operator2):
         return qp.pauli.pauli_eigs(1)
 
     @staticmethod
-    def compute_diagonalizing_gates(wires: WiresLike) -> list[qp.operation.Operator]:
+    def compute_diagonalizing_gates(wires: WiresLike) -> list[qp.operation.LegacyOperator]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -888,7 +888,7 @@ class PauliZ(Operator2):
             wires (Iterable[int] or Wires): wires that the operator acts on
 
         Returns:
-            list[.Operator]: list of diagonalizing gates
+            list[.LegacyOperator]: list of diagonalizing gates
 
         **Example**
 
@@ -900,7 +900,7 @@ class PauliZ(Operator2):
     def adjoint(self) -> "PauliZ":
         return Z(wires=self.wires)
 
-    def pow(self, z: float) -> list[qp.operation.Operator]:
+    def pow(self, z: float) -> list[qp.operation.LegacyOperator]:
         z_mod2 = z % 2
         if z_mod2 == 0:
             return []
@@ -932,7 +932,7 @@ Args:
 """
 
 
-class S(Operator2):
+class S(Operator):
     r"""S(wires)
     The single-qubit phase gate
 
@@ -1075,7 +1075,7 @@ class S(Operator2):
         """
         return np.array([1, 1j])
 
-    def pow(self, z: int | float) -> list[qp.operation.Operator]:
+    def pow(self, z: int | float) -> list[qp.operation.LegacyOperator]:
         z_mod4 = z % 4
         pow_map = {
             0: lambda op: [],
@@ -1088,7 +1088,7 @@ class S(Operator2):
         )
 
 
-class T(Operator2):
+class T(Operator):
     r"""T(wires)
     The single-qubit T gate
 
@@ -1212,7 +1212,7 @@ class T(Operator2):
         """
         return np.array([1, cmath.exp(1j * np.pi / 4)])
 
-    def pow(self, z: int | float) -> list[qp.operation.Operator]:
+    def pow(self, z: int | float) -> list[qp.operation.LegacyOperator]:
         z_mod8 = z % 8
         pow_map = {
             0: lambda op: [],
@@ -1225,7 +1225,7 @@ class T(Operator2):
         )
 
 
-class SX(Operator2):
+class SX(Operator):
     r"""SX(wires)
     The single-qubit Square-Root X operator.
 
@@ -1355,14 +1355,14 @@ class SX(Operator2):
         """
         return np.array([1, 1j])
 
-    def pow(self, z: int | float) -> list[qp.operation.Operator]:
+    def pow(self, z: int | float) -> list[qp.operation.LegacyOperator]:
         z_mod4 = z % 4
         if z_mod4 == 2:
             return [X(wires=self.wires)]
         return super().pow(z_mod4)
 
 
-class SWAP(Operator2):
+class SWAP(Operator):
     r"""SWAP(wires)
     The swap operator
 
@@ -1508,7 +1508,7 @@ class SWAP(Operator2):
         return sparse.csr_matrix((data, indices, indptr)).asformat(format=format)
 
     @override
-    def pow(self, z: int | float) -> list[qp.operation.Operator]:
+    def pow(self, z: int | float) -> list[qp.operation.LegacyOperator]:
         return super().pow(z % 2)
 
     @override
@@ -1516,7 +1516,7 @@ class SWAP(Operator2):
         return SWAP(wires=self.wires)
 
 
-class ECR(Operator2):
+class ECR(Operator):
     r""" ECR(wires)
 
     An echoed RZX(:math:`\pi/2`) gate.
@@ -1657,11 +1657,11 @@ class ECR(Operator2):
         return ECR(wires=self.wires)
 
     @override
-    def pow(self, z: int | float) -> list[qp.operation.Operator]:
+    def pow(self, z: int | float) -> list[qp.operation.LegacyOperator]:
         return super().pow(z % 2)
 
 
-class ISWAP(Operator2):
+class ISWAP(Operator):
     r"""ISWAP(wires)
     The i-swap operator
 
@@ -1800,7 +1800,7 @@ class ISWAP(Operator2):
         return np.array([1j, -1j, 1, 1])
 
     @override
-    def pow(self, z: int | float) -> list[qp.operation.Operator]:
+    def pow(self, z: int | float) -> list[qp.operation.LegacyOperator]:
         z_mod4 = z % 4
         if abs(z_mod4 - 0.5) < 1e-6:
             return [SISWAP(wires=self.wires)]
@@ -1809,7 +1809,7 @@ class ISWAP(Operator2):
         return super().pow(z_mod4)
 
 
-class SISWAP(Operator2):
+class SISWAP(Operator):
     r"""SISWAP(wires)
     The square root of i-swap operator. Can also be accessed as ``qp.SQISW``
 
@@ -1961,7 +1961,7 @@ class SISWAP(Operator2):
         return np.array([INV_SQRT2 * (1 + 1j), INV_SQRT2 * (1 - 1j), 1, 1])
 
     @override
-    def pow(self, z: int | float) -> list[qp.operation.Operator]:
+    def pow(self, z: int | float) -> list[qp.operation.LegacyOperator]:
         z_mod8 = z % 8
         if abs(z_mod8 - 2) < 1e-6:
             return [ISWAP(wires=self.wires)]
@@ -1973,8 +1973,8 @@ class SISWAP(Operator2):
 SQISW = SISWAP
 
 
-class _FixedAnglePPR(Operator2, is_baseclass=True):
-    """Shared ``Operator2`` boilerplate for :class:`~.PPR_2`, :class:`~.PPR_4`, and
+class _FixedAnglePPR(Operator, is_baseclass=True):
+    """Shared ``Operator`` boilerplate for :class:`~.PPR_2`, :class:`~.PPR_4`, and
     :class:`~.PPR_8`, the Pauli product rotations by the angle ``±π / _denominator``."""
 
     compilable_argnames = ("sign", "pauli_word")

@@ -196,7 +196,7 @@ def compile(
             basis_set = gate_sets.ALL_OPS
 
         def stop_at(obj):
-            if not isinstance(obj, qp.operation.Operator):
+            if not isinstance(obj, qp.operation.LegacyOperator):
                 return True
             if not obj.has_decomposition:
                 return True

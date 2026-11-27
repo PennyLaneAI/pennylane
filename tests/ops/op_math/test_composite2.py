@@ -23,7 +23,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.core.operator import LegacyOperator, Operator, abstractify
 from pennylane.core.pauli import PauliWord
 from pennylane.core.queuing import AnnotatedQueue
 from pennylane.exceptions import DecompositionUndefinedError
@@ -57,7 +57,7 @@ class NoOperandsOp(CompositeOp2):
     wire_argnames = ()
 
     # pylint: disable-next=redefined-outer-name
-    def __init__(self, ops: Sequence[Operator], _init_pauli_rep=None):
+    def __init__(self, ops: Sequence[LegacyOperator], _init_pauli_rep=None):
         super().__init__(ops, _init_pauli_rep=_init_pauli_rep)
 
     def _build_pauli_rep(self):
@@ -87,7 +87,7 @@ class ValidOp(CompositeOp2):
     hybrid_argnames = ("operands", "_init_pauli_rep")
     wire_argnames = ()
 
-    def __init__(self, operands: Sequence[Operator], _init_pauli_rep=None):
+    def __init__(self, operands: Sequence[LegacyOperator], _init_pauli_rep=None):
         super().__init__(operands, _init_pauli_rep=_init_pauli_rep)
 
     def _build_pauli_rep(self):
@@ -110,7 +110,7 @@ class ValidOp(CompositeOp2):
         return op_list
 
 
-class NoMatrixOp(Operator2):  # pylint: disable=too-few-public-methods
+class NoMatrixOp(Operator):  # pylint: disable=too-few-public-methods
 
     def __init__(self, wires: WiresLike):
         super().__init__(wires=wires)
@@ -118,7 +118,7 @@ class NoMatrixOp(Operator2):  # pylint: disable=too-few-public-methods
 
 class NonOverlappingOp(ValidOp):
 
-    def __init__(self, operands: Sequence[Operator], _init_pauli_rep=None):
+    def __init__(self, operands: Sequence[LegacyOperator], _init_pauli_rep=None):
         super().__init__(operands, _init_pauli_rep=_init_pauli_rep)
         self._overlapping_ops = []
 

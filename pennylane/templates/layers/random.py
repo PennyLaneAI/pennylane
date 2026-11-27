@@ -202,7 +202,7 @@ class RandomLayers(Operation):
             seed (int): seed to generate random architecture
 
         Returns:
-            list[.Operator]: decomposition of the operator
+            list[.LegacyOperator]: decomposition of the operator
 
         **Example**
 

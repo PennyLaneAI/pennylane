@@ -20,7 +20,7 @@ import pytest
 from gate_data import I, X, Y, Z
 
 import pennylane as qp
-from pennylane.core import Operator2
+from pennylane.core import Operator
 from pennylane.ops.functions import bind_new_parameters
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.typing import TensorLike
@@ -109,7 +109,7 @@ def test_scalar_symbolic_ops(op, new_params, expected_op):
     assert new_op.base is not op.base
 
 
-class MultiRot(Operator2):  # pylint: disable=too-few-public-methods
+class MultiRot(Operator):  # pylint: disable=too-few-public-methods
     """MultiRot class used for testing purposes."""
 
     dynamic_argnames = ("angles",)
@@ -118,7 +118,7 @@ class MultiRot(Operator2):  # pylint: disable=too-few-public-methods
 
     def __init__(self, angles: TensorLike, wires: WiresLike, string: str):
         """
-        A simple MultiRot operator based on Operator2.
+        A simple MultiRot operator based on Operator.
 
         Args:
             angles: The angles of each rotation.
@@ -164,7 +164,7 @@ class MultiRot(Operator2):  # pylint: disable=too-few-public-methods
     ],
 )
 def test_operator_2_ops(op, new_params, expected_op):
-    """Test that `bind_new_arguments` with `Operator2` returns a new
+    """Test that `bind_new_arguments` with `Operator` returns a new
     operator with the new arguments without mutating the original
     operator."""
     new_op = bind_new_parameters(op, new_params)
@@ -174,7 +174,7 @@ def test_operator_2_ops(op, new_params, expected_op):
 
 
 def test_operator2_rebinds_dynamic_args_by_name():
-    """Operator2 dynamic args are rebound by name, not constructor order.
+    """Operator dynamic args are rebound by name, not constructor order.
 
     ``IQPEmbedding(features, wires, n_repeats, pattern)`` has ``wires`` between
     the two dynamic args, so a positional ``cls(*dynamic_args, wires=...)``
@@ -517,7 +517,7 @@ def test_conditional_ops(op, new_params, expected_op):
     assert new_op.meas_val.measurements == [mp0]
 
 
-class KeywordOnlyOperation(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+class KeywordOnlyOperation(qp.operation.LegacyOperator):  # pylint: disable=too-few-public-methods
     """Operation with a constructor unsupported by the generic parameter-binding path."""
 
     num_wires = 1

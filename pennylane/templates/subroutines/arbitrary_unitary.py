@@ -133,7 +133,7 @@ class ArbitraryUnitary(Operation):
 
 
         Returns:
-            list[.Operator]: decomposition of the operator
+            list[.LegacyOperator]: decomposition of the operator
         """
         op_list = []
 

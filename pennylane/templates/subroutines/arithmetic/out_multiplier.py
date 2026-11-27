@@ -18,7 +18,7 @@ Contains the OutMultiplier template.
 from collections import defaultdict
 
 from pennylane import capture, compiler, math
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -50,7 +50,7 @@ def _resolve_mod_and_num_work_wires(num_output_wires, mod, num_work_wires):
     return mod, num_work_wires
 
 
-class OutMultiplier(Operator2):
+class OutMultiplier(Operator):
     r"""Performs the out-place modular multiplication operation.
 
     This operator performs the modular multiplication of integers :math:`x` and :math:`y` modulo

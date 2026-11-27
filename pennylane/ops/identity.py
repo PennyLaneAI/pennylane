@@ -20,7 +20,7 @@ from functools import lru_cache
 from scipy import sparse
 
 import pennylane as qp
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.typing import Float, TensorLike, Wire
@@ -39,7 +39,7 @@ def _identity_sparse_matrix(n_wires, format):
     return sparse.eye(int(2**n_wires), format=format)
 
 
-class Identity(Operator2):
+class Identity(Operator):
     r"""
     The Identity operator
 
@@ -159,7 +159,7 @@ class Identity(Operator2):
             wires (Iterable[int], Wires): wires that the operator acts on
 
         Returns:
-            list[.Operator]: list of diagonalizing gates
+            list[.LegacyOperator]: list of diagonalizing gates
 
         **Example**
 
@@ -197,7 +197,7 @@ simulators should always be equal to 1.
 """
 
 
-class GlobalPhase(Operator2):
+class GlobalPhase(Operator):
     r"""A global phase operation that multiplies all components of the state by :math:`e^{-i \phi}`.
 
     **Details:**
@@ -344,7 +344,7 @@ class GlobalPhase(Operator2):
             wires (Iterable[int], Wires): wires that the operator acts on
 
         Returns:
-            list[.Operator]: list of diagonalizing gates
+            list[.LegacyOperator]: list of diagonalizing gates
 
         **Example**
 

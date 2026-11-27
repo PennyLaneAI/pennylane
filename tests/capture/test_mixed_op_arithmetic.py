@@ -11,10 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Regression tests for sc-130866: arithmetic between Operator2 instances and
+"""Regression tests for sc-130866: arithmetic between Operator instances and
 operator-valued tracers (AbstractOperator) under program capture.
 
-AbstractOperator tracers are not ``TensorLike``, so Operator2 ``+/-`` defer to
+AbstractOperator tracers are not ``TensorLike``, so Operator ``+/-`` defer to
 AbstractOperator arithmetic instead of the scalar/Identity branch. Scalar
 ``+/-`` still uses the Identity embedding.
 """
@@ -27,7 +27,7 @@ jax = pytest.importorskip("jax")
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
-# Mixed Operator2 / operator-tracer: the tracer must not be mistaken for a scalar.
+# Mixed Operator / operator-tracer: the tracer must not be mistaken for a scalar.
 MIXED_CASES = {
     "op2 + tracer": (lambda: (qp.Y(0) @ qp.X(1)) + 3 * qp.X(2)),
     "tracer + op2": (lambda: 3 * qp.X(2) + (qp.Y(0) @ qp.X(1))),
@@ -74,7 +74,7 @@ def _assert_eval_matches(build, wire_order):
 @pytest.mark.usefixtures("enable_capture")
 @pytest.mark.parametrize("name", MIXED_CASES)
 def test_mixed_operator_arithmetic(name):
-    """Operator tracers must not be treated as scalars (no stray Identity)."""
+    """LegacyOperator tracers must not be treated as scalars (no stray Identity)."""
     build = MIXED_CASES[name]
     jaxpr = _assert_eval_matches(build, wire_order=range(3))
     assert "Identity" not in _op_names(jaxpr)

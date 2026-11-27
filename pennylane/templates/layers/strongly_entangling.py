@@ -204,7 +204,7 @@ class StronglyEntanglingLayers(Operation):
             imprimitive (pennylane.ops.Operation): two-qubit gate to use
 
         Returns:
-            list[.Operator]: decomposition of the operator
+            list[.LegacyOperator]: decomposition of the operator
 
         **Example**
 

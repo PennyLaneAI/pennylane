@@ -441,7 +441,7 @@ class QuantumMonteCarlo(Operation):
             estimation_wires (Iterable[int]): the estimation wires
 
         Returns:
-            list[.Operator]: decomposition of the operator
+            list[.LegacyOperator]: decomposition of the operator
         """
         op_list = [
             QubitUnitary(A, wires=target_wires[:-1]),

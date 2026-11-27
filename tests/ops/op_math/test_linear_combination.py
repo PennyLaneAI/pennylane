@@ -432,7 +432,7 @@ matmul_LinearCombinations = [
             ],
         ),
     ),
-    (  # This does not use __matmul__ of LinearCombination but of Operator
+    (  # This does not use __matmul__ of LinearCombination but of LegacyOperator
         X(2),
         qp.ops.LinearCombination([1, 1], [X(0), Z(1)]),
         X(2) @ (1 * X(0) + 1 * Z(1)),
@@ -828,7 +828,7 @@ class TestLinearCombination:  # pylint: disable=too-many-public-methods
         assert isinstance(o, list)
         assert all(isinstance(item, np.ndarray) for item in c)
         assert all(item.requires_grad for item in c)
-        assert all(isinstance(item, qp.operation.Operator) for item in o)
+        assert all(isinstance(item, qp.operation.LegacyOperator) for item in o)
 
     def test_LinearCombination_no_empty_wire_list_error(self):
         """Test that empty LinearCombination does not raise an empty wire error."""
@@ -1819,13 +1819,13 @@ def test_create_instance_while_tracing():
 
 @pytest.mark.capture
 def test_capture_with_legacy_observable():
-    """Test that a LinearCombination can be captured when an observable is not an Operator2."""
+    """Test that a LinearCombination can be captured when an observable is not an Operator."""
 
-    assert not isinstance(qp.Hermitian(np.eye(2), wires=0), qp.core.operator.Operator2)
+    assert not isinstance(qp.Hermitian(np.eye(2), wires=0), qp.core.operator.Operator)
 
     def f(matrix):
         # a legacy operator is already bound to the trace on construction, so its tracer is
-        # used as-is instead of being bound like an ``Operator2`` observable
+        # used as-is instead of being bound like an ``Operator`` observable
         return qp.ops.LinearCombination([1.0, 2.0], [qp.Hermitian(matrix, wires=0), qp.Z(1)])
 
     jaxpr = jax.make_jaxpr(f)(np.eye(2))

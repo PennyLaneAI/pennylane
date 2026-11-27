@@ -16,12 +16,12 @@ Defines all_decomps, a recursive tool for collecting all downstream operators
 and rules.
 """
 
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import Operator, abstractify
 
 from .decomposition_rule import DecompositionRule, list_decomps
 
 
-def _recursive_all_decomps(op: Operator2, rules_map: dict, skip_ops):
+def _recursive_all_decomps(op: Operator, rules_map: dict, skip_ops):
     """Collect all the rules for op, putting them into rules_map by in-place mutation."""
 
     if op in rules_map or op in skip_ops:
@@ -36,17 +36,17 @@ def _recursive_all_decomps(op: Operator2, rules_map: dict, skip_ops):
 
 
 def all_decomps(
-    op: Operator2,
-    skip_ops: set[Operator2] | None = None,
-) -> dict[Operator2, list[DecompositionRule]]:
+    op: Operator,
+    skip_ops: set[Operator] | None = None,
+) -> dict[Operator, list[DecompositionRule]]:
     """Collect all decomposition rules downstream of an Operator.
 
     Args:
-        op (Operator2): an operator that we will want to decompose:
-        skip_ops (set[Operator2] | None): abstract operators that should not be included in the results
+        op (Operator): an operator that we will want to decompose:
+        skip_ops (set[Operator] | None): abstract operators that should not be included in the results
 
     Returns:
-        dict[Operator2, list[DecompositionRule]]: A map from abstract operators to their applicable rules
+        dict[Operator, list[DecompositionRule]]: A map from abstract operators to their applicable rules
 
     >>> from pennylane.typing import Wire, Float
 

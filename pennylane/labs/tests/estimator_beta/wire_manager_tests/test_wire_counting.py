@@ -224,7 +224,7 @@ class TestProcessCircuitLst:
 
     def test_error_incompatible_object(self):
         """Test that an error is raised when an object is encountered that is not
-        a valid type (Operator, ResourceOperator, MeasurementProcess, MarkQubits)."""
+        a valid type (LegacyOperator, ResourceOperator, MeasurementProcess, MarkQubits)."""
 
         with pytest.raises(ValueError, match="Circuit must contain only instances of"):
             _process_circuit_lst([qre.X(0), "InvalidOp"])

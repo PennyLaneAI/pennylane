@@ -164,7 +164,7 @@ class TwoLocalSwapNetwork(Operation):
             **kwargs: additional keyword arguments for `acquaintances`
 
         Returns:
-            list[.Operator]: decomposition of the operator
+            list[.LegacyOperator]: decomposition of the operator
 
         **Example**
 

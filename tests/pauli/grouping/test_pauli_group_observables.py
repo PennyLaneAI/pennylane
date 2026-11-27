@@ -369,8 +369,8 @@ def are_partitions_equal(partition_1: list, partition_2: list) -> bool:
     We check this way since the partitions might vary in the order of the elements
 
     Args:
-        partition_1 (list[Operator]): list of Pauli word ``Operator`` instances corresponding to a partition.
-        partition_2 (list[Operator]): list of Pauli word ``Operator`` instances corresponding to a partition.
+        partition_1 (list[LegacyOperator]): list of Pauli word ``LegacyOperator`` instances corresponding to a partition.
+        partition_2 (list[LegacyOperator]): list of Pauli word ``LegacyOperator`` instances corresponding to a partition.
 
     """
     partition_3 = set(

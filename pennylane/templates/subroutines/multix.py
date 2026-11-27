@@ -22,7 +22,7 @@ from scipy import sparse
 from pennylane import capture, compiler, math
 from pennylane.allocation import allocate
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -41,7 +41,7 @@ from pennylane.wires import DynamicWire, Wires, WiresLike, is_abstract_qubit
 from .arithmetic.temporary_and import TemporaryAND
 
 
-class MultiX(Operator2):
+class MultiX(Operator):
     r"""
     Conditionally applies PauliX gates according to a non-empty bitstring.
 
@@ -351,7 +351,7 @@ class MultiX(Operator2):
         """Return the adjoint of the operator."""
         return MultiX(self.bitstring, wires=self.wires)
 
-    def pow(self, z: int | float) -> list[Operator2]:
+    def pow(self, z: int | float) -> list[Operator]:
         # Only encodes the involutive property: MultiX^2 = I
         return super().pow(z % 2)
 

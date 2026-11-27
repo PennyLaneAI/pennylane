@@ -14,14 +14,14 @@
 """Functionality for Cartan decomposition"""
 
 from pennylane import math
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.pauli import PauliSentence, PauliVSpace
 from pennylane.typing import TensorLike
 
 
 def cartan_decomp(
-    g: list[PauliSentence | Operator], involution: callable
-) -> tuple[list[PauliSentence | Operator], list[PauliSentence | Operator]]:
+    g: list[PauliSentence | LegacyOperator], involution: callable
+) -> tuple[list[PauliSentence | LegacyOperator], list[PauliSentence | LegacyOperator]]:
     r"""Compute the Cartan Decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}` of a Lie algebra :math:`\mathfrak{g}`.
 
     Given a Lie algebra :math:`\mathfrak{g}`, the Cartan decomposition is a decomposition
@@ -39,12 +39,12 @@ def cartan_decomp(
     .. math:: [\mathfrak{k}, \mathfrak{k}] \subseteq \mathfrak{k} \text{ ; } [\mathfrak{k}, \mathfrak{m}] \subseteq \mathfrak{m} \text{ ; } [\mathfrak{m}, \mathfrak{m}] \subseteq \mathfrak{k}
 
     Args:
-        g (List[Union[PauliSentence, Operator]]): the (dynamical) Lie algebra to decompose.
+        g (List[Union[PauliSentence, LegacyOperator]]): the (dynamical) Lie algebra to decompose.
         involution (callable): Involution function :math:`\Theta(\cdot)` to act on the input operator, should return ``0/1`` or ``False/True``.
             E.g., :func:`~even_odd_involution` or :func:`~concurrence_involution`.
 
     Returns:
-        Tuple(List[Union[PauliSentence, Operator]], List[Union[PauliSentence, Operator]]): Tuple ``(k, m)`` containing the even
+        Tuple(List[Union[PauliSentence, LegacyOperator]], List[Union[PauliSentence, LegacyOperator]]): Tuple ``(k, m)`` containing the even
         parity subspace :math:`\Theta(\mathfrak{k}) = \mathfrak{k}` and the odd
         parity subspace :math:`\Theta(\mathfrak{m}) = -\mathfrak{m}`.
 
@@ -134,7 +134,7 @@ def check_commutation_relation(
     ops2_is_tensor = any(isinstance(op, TensorLike) for op in ops2)
     if not isinstance(vspace, PauliVSpace):
         vspace_is_tensor = any(isinstance(op, TensorLike) for op in vspace)
-        if any(isinstance(op, Operator) for op in vspace):
+        if any(isinstance(op, LegacyOperator) for op in vspace):
             vspace = PauliVSpace(vspace, dtype=complex)
 
     else:
@@ -151,10 +151,10 @@ def check_commutation_relation(
         all_coms = _all_coms(ops1, ops2)
         return _is_subspace(all_coms, vspace)
 
-    if any(isinstance(op, Operator) for op in ops1):
+    if any(isinstance(op, LegacyOperator) for op in ops1):
         ops1 = [op.pauli_rep for op in ops1]
 
-    if any(isinstance(op, Operator) for op in ops2):
+    if any(isinstance(op, LegacyOperator) for op in ops2):
         ops2 = [op.pauli_rep for op in ops2]
 
     for o1 in ops1:
@@ -257,9 +257,9 @@ def check_cartan_decomp(
                 f"`m` of types {[type(op) for op in m]}"
             )
 
-    if any(isinstance(op, Operator) for op in k):
+    if any(isinstance(op, LegacyOperator) for op in k):
         k = [op.pauli_rep for op in k]
-    if any(isinstance(op, Operator) for op in m):
+    if any(isinstance(op, LegacyOperator) for op in m):
         m = [op.pauli_rep for op in m]
 
     if any(isinstance(op, TensorLike) for op in k):

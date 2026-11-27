@@ -857,7 +857,7 @@ class LabsQROM(ResourceOperator):
         select_swap_depth: int | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             num_bitstrings (int): the number of bitstrings that are to be encoded
@@ -1749,7 +1749,7 @@ class SelectCopyQROM(ResourceOperator):
         bits_per_iter: int | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             num_bitstrings (int): the number of bitstrings that are to be encoded

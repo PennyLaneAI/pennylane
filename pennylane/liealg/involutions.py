@@ -18,7 +18,7 @@ from functools import singledispatch
 import numpy as np
 
 import pennylane.ops.functions as op_func
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.ops import Y, Z, op_math
 from pennylane.pauli import PauliSentence
 
@@ -79,7 +79,7 @@ def Kpq(p, q, wire=None):
     return np.diag(np.concatenate([np.ones(p), -np.ones(q), np.ones(p), -np.ones(q)]))
 
 
-def A(op: np.ndarray | PauliSentence | Operator, wire: int | None = None) -> bool:
+def A(op: np.ndarray | PauliSentence | LegacyOperator, wire: int | None = None) -> bool:
     r"""Canonical Cartan decomposition of type A on
     :math:`\mathfrak{su}(n)\oplus \mathfrak{su}(n)`, given by
     :math:`\theta: x\oplus y \mapsto y\oplus x`.
@@ -89,7 +89,7 @@ def A(op: np.ndarray | PauliSentence | Operator, wire: int | None = None) -> boo
         evaluating the involution.
 
     Args:
-        op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
+        op (Union[np.ndarray, PauliSentence, LegacyOperator]): LegacyOperator on which the involution is
             evaluated and for which the parity under the involution is returned.
         wire (int): The wire on which the Pauli-:math:`Y` operator acts to implement the
             involution. Will default to ``0`` if ``None``.
@@ -103,7 +103,7 @@ def A(op: np.ndarray | PauliSentence | Operator, wire: int | None = None) -> boo
     return DIII(op, wire)
 
 
-def AI(op: np.ndarray | PauliSentence | Operator) -> bool:
+def AI(op: np.ndarray | PauliSentence | LegacyOperator) -> bool:
     r"""Canonical Cartan decomposition of type AI, given by :math:`\theta: x \mapsto x^\ast`.
 
     .. note:: Note that we work with Hermitian
@@ -111,7 +111,7 @@ def AI(op: np.ndarray | PauliSentence | Operator) -> bool:
         evaluating the involution.
 
     Args:
-        op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
+        op (Union[np.ndarray, PauliSentence, LegacyOperator]): LegacyOperator on which the involution is
             evaluated and for which the parity under the involution is returned.
 
     Returns:
@@ -153,15 +153,15 @@ def _AI_ps(op: PauliSentence) -> bool:
     return parity[0]
 
 
-@_AI.register(Operator)
-def _AI_op(op: Operator) -> bool:
+@_AI.register(LegacyOperator)
+def _AI_op(op: LegacyOperator) -> bool:
     r"""Operator implementation of the canonical form of the AI involution
     :math:`\theta: x \mapsto x^\ast`.
     """
     return _AI_ps(op.pauli_rep)
 
 
-def AII(op: np.ndarray | PauliSentence | Operator, wire: int | None = None) -> bool:
+def AII(op: np.ndarray | PauliSentence | LegacyOperator, wire: int | None = None) -> bool:
     r"""Canonical Cartan decomposition of type AII, given by :math:`\theta: x \mapsto Y_0 x^\ast Y_0`.
 
     .. note:: Note that we work with Hermitian
@@ -169,7 +169,7 @@ def AII(op: np.ndarray | PauliSentence | Operator, wire: int | None = None) -> b
         evaluating the involution.
 
     Args:
-        op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
+        op (Union[np.ndarray, PauliSentence, LegacyOperator]): LegacyOperator on which the involution is
             evaluated and for which the parity under the involution is returned.
         wire (int): The wire on which the Pauli-:math:`Y` operator acts to implement the
             involution. Will default to ``0`` if ``None``.
@@ -217,8 +217,8 @@ def _AII_ps(op: PauliSentence, wire: int | None = None) -> bool:
     return parity[0]
 
 
-@_AII.register(Operator)
-def _AII_op(op: Operator, wire: int | None = None) -> bool:
+@_AII.register(LegacyOperator)
+def _AII_op(op: LegacyOperator, wire: int | None = None) -> bool:
     r"""Operator implementation of the canonical form of the AII involution
     :math:`\theta: x \mapsto Y_0 x^\ast Y_0`.
     """
@@ -226,7 +226,7 @@ def _AII_op(op: Operator, wire: int | None = None) -> bool:
 
 
 def AIII(
-    op: np.ndarray | PauliSentence | Operator,
+    op: np.ndarray | PauliSentence | LegacyOperator,
     p: int = None,
     q: int = None,
     wire: int | None = None,
@@ -245,7 +245,7 @@ def AIII(
         multiplied by :math:`i` before evaluating the involution.
 
     Args:
-        op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
+        op (Union[np.ndarray, PauliSentence, LegacyOperator]): LegacyOperator on which the involution is
             evaluated and for which the parity under the involution is returned.
         p (int): Dimension of first subspace.
         q (int): Dimension of second subspace.
@@ -301,15 +301,15 @@ def _AIII_ps(op: PauliSentence, p: int = None, q: int = None, wire: int | None =
     return _AIII_matrix(op_func.matrix(op, wire_order=sorted(op.wires)), p, q, wire)
 
 
-@_AIII.register(Operator)
-def _AIII_op(op: Operator, p: int = None, q: int = None, wire: int | None = None) -> bool:
+@_AIII.register(LegacyOperator)
+def _AIII_op(op: LegacyOperator, p: int = None, q: int = None, wire: int | None = None) -> bool:
     r"""Operator implementation of the canonical form of the AIII involution
     :math:`\theta: x \mapsto I_{p,q} x I_{p,q}`.
     """
     return _AIII_ps(op.pauli_rep, p, q, wire)
 
 
-def BD(op: np.ndarray | PauliSentence | Operator, wire: int | None = None) -> bool:
+def BD(op: np.ndarray | PauliSentence | LegacyOperator, wire: int | None = None) -> bool:
     r"""Canonical Cartan decomposition of type BD on
     :math:`\mathfrak{so}(n)\oplus \mathfrak{so}(n)`, given by
     :math:`\theta: x\oplus y \mapsto y\oplus x`.
@@ -319,7 +319,7 @@ def BD(op: np.ndarray | PauliSentence | Operator, wire: int | None = None) -> bo
         evaluating the involution.
 
     Args:
-        op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
+        op (Union[np.ndarray, PauliSentence, LegacyOperator]): LegacyOperator on which the involution is
             evaluated and for which the parity under the involution is returned.
         wire (int): The wire on which the operator acts to implement the
             involution. Will default to ``0`` if ``None``.
@@ -334,7 +334,7 @@ def BD(op: np.ndarray | PauliSentence | Operator, wire: int | None = None) -> bo
 
 
 def BDI(
-    op: np.ndarray | PauliSentence | Operator,
+    op: np.ndarray | PauliSentence | LegacyOperator,
     p: int = None,
     q: int = None,
     wire: int | None = None,
@@ -354,7 +354,7 @@ def BDI(
 
 
     Args:
-        op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
+        op (Union[np.ndarray, PauliSentence, LegacyOperator]): LegacyOperator on which the involution is
             evaluated and for which the parity under the involution is returned.
         p (int): Dimension of first subspace.
         q (int): Dimension of second subspace.
@@ -368,11 +368,11 @@ def BDI(
     return AIII(op, p, q, wire)
 
 
-def DIII(op: np.ndarray | PauliSentence | Operator, wire: int | None = None) -> bool:
+def DIII(op: np.ndarray | PauliSentence | LegacyOperator, wire: int | None = None) -> bool:
     r"""Canonical Cartan decomposition of type DIII, given by :math:`\theta: x \mapsto Y_0 x Y_0`.
 
     Args:
-        op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
+        op (Union[np.ndarray, PauliSentence, LegacyOperator]): LegacyOperator on which the involution is
             evaluated and for which the parity under the involution is returned.
         wire (int): The wire on which the Pauli-:math:`Y` operator acts to implement the
             involution. Will default to ``0`` if ``None``.
@@ -415,15 +415,15 @@ def _DIII_ps(op: PauliSentence, wire: int | None = None) -> bool:
     return parity[0]
 
 
-@_DIII.register(Operator)
-def _DIII_op(op: Operator, wire: int | None = None) -> bool:
+@_DIII.register(LegacyOperator)
+def _DIII_op(op: LegacyOperator, wire: int | None = None) -> bool:
     r"""Operator implementation of the canonical form of the DIII involution
     :math:`\theta: x \mapsto Y_0 x Y_0`.
     """
     return _DIII_ps(op.pauli_rep, wire)
 
 
-def C(op: np.ndarray | PauliSentence | Operator, wire: int | None = None) -> bool:
+def C(op: np.ndarray | PauliSentence | LegacyOperator, wire: int | None = None) -> bool:
     r"""Canonical Cartan decomposition of type C on
     :math:`\mathfrak{sp}(n)\oplus \mathfrak{sp}(n)`, given by
     :math:`\theta: x\oplus y \mapsto y\oplus x`.
@@ -433,7 +433,7 @@ def C(op: np.ndarray | PauliSentence | Operator, wire: int | None = None) -> boo
         evaluating the involution.
 
     Args:
-        op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
+        op (Union[np.ndarray, PauliSentence, LegacyOperator]): LegacyOperator on which the involution is
             evaluated and for which the parity under the involution is returned.
         wire (int): The wire on which the Pauli-:math:`Y` operator acts to implement the
             involution. Will default to ``0`` if ``None``.
@@ -447,7 +447,7 @@ def C(op: np.ndarray | PauliSentence | Operator, wire: int | None = None) -> boo
     return DIII(op, wire)
 
 
-def CI(op: np.ndarray | PauliSentence | Operator) -> bool:
+def CI(op: np.ndarray | PauliSentence | LegacyOperator) -> bool:
     r"""Canonical Cartan decomposition of type CI, given by :math:`\theta: x \mapsto x^\ast`.
 
     .. note:: Note that we work with Hermitian
@@ -455,7 +455,7 @@ def CI(op: np.ndarray | PauliSentence | Operator) -> bool:
         evaluating the involution.
 
     Args:
-        op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
+        op (Union[np.ndarray, PauliSentence, LegacyOperator]): LegacyOperator on which the involution is
             evaluated and for which the parity under the involution is returned.
 
     Returns:
@@ -466,7 +466,7 @@ def CI(op: np.ndarray | PauliSentence | Operator) -> bool:
 
 
 def CII(
-    op: np.ndarray | PauliSentence | Operator,
+    op: np.ndarray | PauliSentence | LegacyOperator,
     p: int = None,
     q: int = None,
     wire: int | None = None,
@@ -490,7 +490,7 @@ def CII(
         multiplied by :math:`i` before evaluating the involution.
 
     Args:
-        op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
+        op (Union[np.ndarray, PauliSentence, LegacyOperator]): LegacyOperator on which the involution is
             evaluated and for which the parity under the involution is returned.
         p (int): Dimension of first subspace.
         q (int): Dimension of second subspace.
@@ -546,15 +546,15 @@ def _CII_ps(op: PauliSentence, p: int = None, q: int = None, wire: int | None = 
     return _CII(op_func.matrix(op, wire_order=sorted(op.wires)), p, q, wire)
 
 
-@_CII.register(Operator)
-def _CII_op(op: Operator, p: int = None, q: int = None, wire: int | None = None) -> bool:
+@_CII.register(LegacyOperator)
+def _CII_op(op: LegacyOperator, p: int = None, q: int = None, wire: int | None = None) -> bool:
     r"""Operator implementation of the canonical form of the CII involution
     :math:`\theta: x \mapsto K_{p,q} x K_{p,q}`.
     """
     return _CII_ps(op.pauli_rep, p, q, wire)
 
 
-def even_odd_involution(op: PauliSentence | np.ndarray | Operator) -> bool:
+def even_odd_involution(op: PauliSentence | np.ndarray | LegacyOperator) -> bool:
     r"""The Even-Odd involution.
 
     This is defined in `quant-ph/0701193 <https://arxiv.org/abs/quant-ph/0701193>`__.
@@ -562,7 +562,7 @@ def even_odd_involution(op: PauliSentence | np.ndarray | Operator) -> bool:
     For an even (odd) number of qubits, it is of type AI (AII).
 
     Args:
-        op ( Union[PauliSentence, np.ndarray, Operator]): Input operator
+        op ( Union[PauliSentence, np.ndarray, LegacyOperator]): Input operator
 
     Returns:
         bool: Boolean output ``True`` or ``False`` for odd (:math:`\mathfrak{k}`) and even parity subspace (:math:`\mathfrak{m}`), respectively
@@ -623,14 +623,14 @@ def _even_odd_involution_matrix(op: np.ndarray):
     raise ValueError(f"The Even-Odd involution is not well-defined for operator {op}.")
 
 
-@_even_odd_involution.register(Operator)
-def _even_odd_involution_op(op: Operator):
+@_even_odd_involution.register(LegacyOperator)
+def _even_odd_involution_op(op: LegacyOperator):
     """use pauli representation"""
     return _even_odd_involution_ps(op.pauli_rep)
 
 
 # dispatch to different input types
-def concurrence_involution(op: PauliSentence | np.ndarray | Operator) -> bool:
+def concurrence_involution(op: PauliSentence | np.ndarray | LegacyOperator) -> bool:
     r"""The Concurrence Canonical Decomposition :math:`\Theta(g) = -g^T` as a Cartan
     involution function. It is of type AI.
 
@@ -638,7 +638,7 @@ def concurrence_involution(op: PauliSentence | np.ndarray | Operator) -> bool:
     For Pauli words and sentences, it comes down to counting Pauli-Y operators.
 
     Args:
-        op ( Union[PauliSentence, np.ndarray, Operator]): Input operator
+        op ( Union[PauliSentence, np.ndarray, LegacyOperator]): Input operator
 
     Returns:
         bool: Boolean output ``True`` or ``False`` for odd (:math:`\mathfrak{k}`) and even parity subspace (:math:`\mathfrak{m}`), respectively
@@ -685,8 +685,8 @@ def _concurrence_involution_pauli(op: PauliSentence):
     return bool(parity[0])
 
 
-@_concurrence_involution.register(Operator)
-def _concurrence_involution_operator(op: Operator):
+@_concurrence_involution.register(LegacyOperator)
+def _concurrence_involution_operator(op: LegacyOperator):
     return _concurrence_involution_matrix(op.matrix())
 
 

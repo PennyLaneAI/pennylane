@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.core.qscript import QuantumScript, process_queue
 from pennylane.core.queuing import AnnotatedQueue
 from pennylane.core.shots import Shots
@@ -42,8 +42,8 @@ def test_adjoint_deprecated():
         qs.adjoint()
 
 
-class Op2(Operator2):  # pylint: disable=too-few-public-methods
-    """A simple ``Operator2`` subclass for testing."""
+class Op2(Operator):  # pylint: disable=too-few-public-methods
+    """A simple ``Operator`` subclass for testing."""
 
     dynamic_argnames = ("phi",)
 
@@ -52,10 +52,10 @@ class Op2(Operator2):  # pylint: disable=too-few-public-methods
 
 
 class TestProcessQueueOperator2:
-    """Tests that ``process_queue`` correctly handles :class:`~.Operator2` instances."""
+    """Tests that ``process_queue`` correctly handles :class:`~.Operator` instances."""
 
     def test_operator2_collected_as_op(self):
-        """Test that an ``Operator2`` instance in the queue ends up in the ``ops`` list."""
+        """Test that an ``Operator`` instance in the queue ends up in the ``ops`` list."""
         with AnnotatedQueue() as q:
             op = Op2(0.5, wires=0)
             m = qp.expval(qp.PauliZ(0))
@@ -65,7 +65,7 @@ class TestProcessQueueOperator2:
         assert measurements == [m]
 
     def test_operator2_after_measurement_error(self):
-        """Test that an ``Operator2`` appearing after a measurement raises an error."""
+        """Test that an ``Operator`` appearing after a measurement raises an error."""
         with AnnotatedQueue() as q:
             qp.expval(qp.PauliZ(0))
             Op2(0.5, wires=0)
@@ -74,7 +74,7 @@ class TestProcessQueueOperator2:
             process_queue(q)
 
     def test_mixed_operator_and_operator2(self):
-        """Test that legacy ``Operator`` and new ``Operator2`` instances both end up in
+        """Test that legacy ``LegacyOperator`` and new ``Operator`` instances both end up in
         ``ops`` and preserve insertion order."""
         with AnnotatedQueue() as q:
             o1 = qp.PauliX(0)
@@ -730,7 +730,7 @@ class TestScriptCopying:
         assert qs.shots is copied_qs.shots
 
     @pytest.mark.pl2do(
-        reason="Figure out the desired behaviour of copying dynamic arguments, the factual behaviour of Operator2 differs from that of Operator, making this test fail."
+        reason="Figure out the desired behaviour of copying dynamic arguments, the factual behaviour of Operator differs from that of LegacyOperator, making this test fail."
     )
     def test_deep_copy(self):
         """Test that deep copying a tape works, and copies all constituent data except parameters"""

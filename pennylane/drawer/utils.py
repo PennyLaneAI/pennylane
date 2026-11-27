@@ -41,7 +41,7 @@ def dynamic_wire_connections(layers: list[list], wire_map: dict) -> tuple[dict, 
     for dynamic wires when possible.
 
     Args:
-        layers (List[List[.Operator, .MeasurementProcess]]): the operations and measurements sorted
+        layers (List[List[.LegacyOperator, .MeasurementProcess]]): the operations and measurements sorted
             into layers via ``drawable_layers``. Measurement layers may be appended to operation layers.
         wire_map (dict): map from the wires to the horizontal line
 
@@ -321,7 +321,7 @@ def cwire_connections(layers, bit_map, wire_map):
     """Extract the information required for classical control wires.
 
     Args:
-        layers (List[List[.Operator, .MeasurementProcess]]): the operations and measurements sorted
+        layers (List[List[.LegacyOperator, .MeasurementProcess]]): the operations and measurements sorted
             into layers via ``drawable_layers``. Measurement layers may be appended to operation layers.
         bit_map (Dict): Dictionary containing mid-circuit measurements that are used for
             classical conditions or measurement statistics as keys.

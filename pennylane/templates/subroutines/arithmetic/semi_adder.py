@@ -17,7 +17,7 @@ from math import pi
 
 from pennylane import capture, compiler
 from pennylane.allocation import allocate
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.ops import CNOT, PPR_8, GlobalPhase, X, Z, adjoint, cond, ctrl, pauli_measure
@@ -185,7 +185,7 @@ def _controlled_right_ladder(x_wires, y_wires, non_ctrl_work_wires, carry_flip=N
     ctrl(CNOT([x_wires[0], y_wires[0]]), **ctrl_kwargs)
 
 
-class SemiAdder(Operator2):
+class SemiAdder(Operator):
     r"""This operator performs the plain addition of two integers :math:`x` and :math:`y` in the computational basis:
 
     .. math::

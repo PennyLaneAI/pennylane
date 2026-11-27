@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING
 
 import pennylane as qp
 from pennylane.core.measurements import MeasurementProcess
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.queuing import QueuingManager
 from pennylane.typing import PostprocessingFn
@@ -32,16 +32,16 @@ if TYPE_CHECKING:
     from pennylane.workflow import QNode
 
 
-def simplify(input: Operator | MeasurementProcess | QuantumScript | QNode | Callable):
+def simplify(input: LegacyOperator | MeasurementProcess | QuantumScript | QNode | Callable):
     """Simplifies an operator, tape, qnode or quantum function by reducing its arithmetic depth
     or number of rotation parameters.
 
     Args:
-        input (.Operator, .MeasurementProcess, pennylane.QNode, .QuantumTape, or Callable): an
+        input (.LegacyOperator, .MeasurementProcess, pennylane.QNode, .QuantumTape, or Callable): an
             operator, quantum node, tape or function that applies quantum operations
 
     Returns:
-        (Operator or MeasurementProcess or qnode (QNode) or quantum function (Callable)
+        (LegacyOperator or MeasurementProcess or qnode (QNode) or quantum function (Callable)
         or tuple[List[QuantumTape], function]): Simplified input. If an operator or measurement
         process is provided as input, the simplified input is returned directly. Otherwise, the
         transformed circuit is returned as described in :func:`qp.transform <pennylane.transform>`.
@@ -89,7 +89,7 @@ def simplify(input: Operator | MeasurementProcess | QuantumScript | QNode | Call
     [RZ(11.566370614359172, wires=[0]) @ RY(11.566370614359172, wires=[0]) @ RX(11.566370614359172, wires=[0]),
      probs(wires=[0])]
     """
-    if isinstance(input, (Operator, MeasurementProcess)):
+    if isinstance(input, (LegacyOperator, MeasurementProcess)):
         if QueuingManager.recording():
             with QueuingManager.stop_recording():
                 new_op = copy(input.simplify())

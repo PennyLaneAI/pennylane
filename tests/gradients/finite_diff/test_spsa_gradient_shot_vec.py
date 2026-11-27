@@ -21,7 +21,7 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.shots import Shots
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import spsa_grad
@@ -443,7 +443,7 @@ class TestSpsaGradient:
                 new = self.val + (other.val if isinstance(other, self.__class__) else other)
                 return SpecialObject(new)
 
-        class SpecialObservable(Operator):  # pylint: disable=too-few-public-methods
+        class SpecialObservable(LegacyOperator):  # pylint: disable=too-few-public-methods
             """SpecialObservable"""
 
             def diagonalizing_gates(self):

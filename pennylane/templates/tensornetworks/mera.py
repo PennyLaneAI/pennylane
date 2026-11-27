@@ -241,7 +241,7 @@ class MERA(Operation):
             ind_gates (array): array of wire indices
 
         Returns:
-            list[.Operator]: decomposition of the operator
+            list[.LegacyOperator]: decomposition of the operator
         """
         op_list = []
         block_gen = make_qscript(block)

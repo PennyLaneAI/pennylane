@@ -119,7 +119,7 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
         cls, value: int, register_size: int, geq: bool = False
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             value (int): The value :math:`L` that the state’s decimal representation is compared against.
@@ -322,7 +322,7 @@ class RegisterEquality(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, register_size: int) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             register_size (int): Number of qubits n in each register.

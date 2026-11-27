@@ -22,23 +22,23 @@ Queuing
     ~QueuingManager
     ~AnnotatedQueue
 
-Operator Types
-~~~~~~~~~~~~~~
+LegacyOperator Types
+~~~~~~~~~~~~~~~~~~~~
 
 .. currentmodule:: pennylane.core.operator
 .. autosummary::
     :toctree: api
 
-    ~Operator
+    ~LegacyOperator
     ~Operator1
-    ~Operator2
+    ~Operator
     ~Operation
     ~Channel
     ~StatePrepBase
 
 .. currentmodule:: pennylane.core.operator
 
-.. inheritance-diagram:: Operator Operation Channel StatePrepBase
+.. inheritance-diagram:: LegacyOperator Operation Channel StatePrepBase
     :parts: 1
 
 Pauli Arithmetic
@@ -127,9 +127,9 @@ from .pauli import PauliWord, PauliSentence
 from .operator import (
     Channel,
     Operation,
-    Operator,
+    LegacyOperator,
     Operator1,
-    Operator2,
+    Operator,
     StatePrepBase,
     StatePrepBase2,
     abstractify,
@@ -155,9 +155,9 @@ __all__ = [
     "QueuingManager",
     "AnnotatedQueue",
     "apply",
-    "Operator",
+    "LegacyOperator",
     "Operator1",
-    "Operator2",
+    "Operator",
     "Operation",
     "abstractify",
     "get_op_class_by_name",

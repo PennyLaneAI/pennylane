@@ -28,7 +28,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as npp
-from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.core.operator import LegacyOperator, Operator, abstractify
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.drawer.label import LabelledOp
 from pennylane.measurements import ExpectationMP
@@ -358,7 +358,7 @@ class TestEqual:  # pylint: disable=too-many-public-methods
             AssertionError,
             match=(
                 r"op1 and op2 have different wires for"
-                if issubclass(op1, Operator2)
+                if issubclass(op1, Operator)
                 else "op1 and op2 have different wires."
             ),
         ):
@@ -1349,7 +1349,7 @@ class TestEqual:  # pylint: disable=too-many-public-methods
 
     def test_equal_with_different_arithmetic_depth(self):
         """Test equal method with two operators with different arithmetic depth."""
-        op1 = Operator(wires=0)
+        op1 = LegacyOperator(wires=0)
         op2 = DepthIncreaseOperator(op1)
 
         assert qp.equal(op1, op2) is False
@@ -2973,10 +2973,10 @@ class TestHilbertSchmidt:
         assert qp.equal(op, other_op, check_interface=False, check_trainability=False) is True
 
 
-class DepthIncreaseOperator(Operator):
+class DepthIncreaseOperator(LegacyOperator):
     """Dummy class which increases depth by one"""
 
-    def __init__(self, op: Operator):
+    def __init__(self, op: LegacyOperator):
         self._op = op
 
     @property
