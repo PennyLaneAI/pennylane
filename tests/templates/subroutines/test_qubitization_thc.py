@@ -244,10 +244,10 @@ class TestQubitizationTHC:
     def test_second_chebyshev_moment(self, seed):
         """Test that two walks give T_2(H / lambda) = 2 (H / lambda)^2 - I.
 
-        The single-walk test above cannot detect a reflection of the wrong scope, because
+        The single-walk test above cannot detect a faulty reflection, because
         ``<0| R = <0|`` for any reflection whose fixed subspace contains ``|0>``. This one
-        can: it is the first moment that sees the reflection, and it fails by O(1) if the
-        garbage is left out of the reflected register.
+        can, since it is the first moment that sees the reflection. At this size, it does not
+        detect every reflected wire being left out, which ``test_reflection_scope`` covers.
         """
         M, N, aleph, beth = 1, 2, 1, 1
         zeta, t_ell = np.array([[2.0]]), np.array([-1.0])
@@ -261,6 +261,66 @@ class TestQubitizationTHC:
 
         got = _run(zeta, t_ell, chi, tev, aleph, beth, psi, num_walks=2)
         assert np.allclose(got, chebyshev_2 @ psi, atol=1e-8)
+
+    def test_reflection_scope(self):
+        """Test that the reflection acts on exactly the ``2 n + aleph + 4`` wires that
+        ``PREPARE`` puts in superposition: the index, the amplitude amplification wire of
+        ``SuperpositionTHC``, the ``aleph + 1`` wires ``AliasSamplingTHC`` applies a
+        ``Hadamard`` to (its sampling register and symmetrization flag), and the two spin
+        flags."""
+        M, N, aleph, beth = 6, 2, 2, 2
+        zeta, t_ell, chi = _random_input(M, N, 0)
+        *_, t_eigenvectors = _dummy_input(M, N)
+        wires = qp.registers(qp.qubitization_thc_wires(M, N, aleph, beth))
+        op = qp.QubitizationTHC(zeta, t_ell, chi, t_eigenvectors, aleph, beth, **wires)
+
+        tape = qp.testing.decomp_rule_to_tape(op, qp.list_decomps(qp.QubitizationTHC)[0])
+        sandwich, reflection = tape.operations[:2]
+        assert isinstance(reflection, qp.FlipSign)
+        assert reflection.hyperparameters["state"] == (0,) * len(reflection.wires)
+
+        prepare_ops = sandwich.compute_op.decomposition()
+        alias = next(o for o in prepare_ops if isinstance(o, qp.AliasSamplingTHC))
+        alias_hadamards = [o.wires[0] for o in alias.decomposition() if isinstance(o, qp.Hadamard)]
+        assert len(alias_hadamards) == aleph + 1
+        garbage = wires["prep_garbage_wires"]
+        expected = list(wires["index_wires"]) + [garbage[0]] + alias_hadamards + list(garbage[-2:])
+        assert len(reflection.wires) == len(expected) == len(wires["index_wires"]) + aleph + 4
+        assert set(reflection.wires) == set(expected)
+
+    def test_unreflected_wires_return_to_zero(self, seed):
+        """Test that ``PREPARE^dagger SELECT PREPARE`` returns every auxiliary wire outside the
+        reflection to |0> for arbitrary states of the system and the reflected wires. Then the
+        walk operator does not change if the reflection acts on more wires, see the note in
+        ``qubitization_thc_wires``."""
+        M, N, aleph, beth = 1, 2, 1, 1
+        zeta, t_ell, chi, tev = _dummy_input(M, N)
+        sizes = qp.qubitization_thc_wires(M, N, aleph, beth)
+        wires = qp.registers(sizes)
+        op = qp.QubitizationTHC(zeta, t_ell, chi, tev, aleph, beth, **wires)
+
+        tape = qp.testing.decomp_rule_to_tape(op, qp.list_decomps(qp.QubitizationTHC)[0])
+        sandwich, reflection = tape.operations[:2]
+        # For N = 2, SELECT has no Givens rotations, so the phase gradient register stays in |0>.
+        prepared = list(wires["system_wires"]) + list(reflection.wires)
+        others = [w for w in range(sum(sizes.values())) if w not in prepared]
+
+        rng = np.random.default_rng(seed)
+        psi = rng.standard_normal(2 ** len(prepared)) + 1j * rng.standard_normal(2 ** len(prepared))
+        psi /= np.linalg.norm(psi)
+
+        # pylint: disable-next=protected-access
+        @qp.transforms._tape_decompose(
+            gate_set=ROTATIONS_PLUS_CNOT,
+            stopping_condition=lambda op: len(op.wires) <= 3 or isinstance(op, qp.StatePrep),
+        )
+        @qp.qnode(qp.device("default.qubit", wires=sum(sizes.values())))
+        def circuit():
+            qp.StatePrep(psi, wires=prepared)
+            qp.apply(sandwich)
+            return qp.probs(wires=others)
+
+        assert np.isclose(circuit()[0], 1.0)
 
     def test_identity_shift_form(self):
         """Test the closed form quoted in the docstring: the block is H / lambda up to a
