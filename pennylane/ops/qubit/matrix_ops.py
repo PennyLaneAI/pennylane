@@ -363,9 +363,9 @@ class QubitUnitary(Operator2):
         """
         # pylint: disable-next=import-outside-toplevel
         from pennylane.decomposition_rules import (
+            multi_qubit_decomposition,
             one_qubit_decomposition,
             two_qubit_decomposition,
-            multi_qubit_decomposition,
         )
 
         # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),

@@ -24,9 +24,9 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane.decomposition_rules import (
+    multi_qubit_decomposition,
     one_qubit_decomposition,
     two_qubit_decomposition,
-    multi_qubit_decomposition,
 )
 from pennylane.decomposition_rules.qubit.matrix_ops import (
     _compute_num_cnots,
