@@ -2706,6 +2706,11 @@ Bug fixes 🐛
   as ``PPM-w<n>`` when Catalyst captures them as generic measurements.
   `(#10598) <https://github.com/PennyLaneAI/pennylane/pull/10598>`__
 
+* Fixed ``mcm_method="tree-traversal"`` without shots so that a single terminal measurement such as
+  ``qp.probs`` is no longer truncated to its first entry, or fails for scalar results, when the
+  circuit also measures a mid-circuit measurement value.
+  `(#10597) <https://github.com/PennyLaneAI/pennylane/pull/10597>`__
+
 * Fixed the extra-control-wire test for :class:`~.QROM` to omit work-register sampling
   when no work wires are present, and removed its outdated expected-failure marker.
   `(#10586) <https://github.com/PennyLaneAI/pennylane/pull/10586>`__
