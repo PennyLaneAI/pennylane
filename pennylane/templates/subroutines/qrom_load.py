@@ -228,6 +228,21 @@ class QROMLoad(Operator):
 
                 :class:`~.QROM` | :math:`1` | 1
 
+            .. decomposition-rule:: select_swap_measure_garbage
+                :image: /_static/decomposition_thumbnails/qrom_load_select_swap_measure_garbage.svg
+                :lightbox:
+                :requires: program capture, as with :func:`qjit(capture=True) <.qjit>`,
+                    and :math:`k > 1`
+                :where: :math:`k` is the number of bitstrings that :class:`~.SelectSwap` loads in
+                    parallel. The :math:`n(k - 1)` work wires holding the bitstrings that were
+                    not swapped into the target register are unloaded by the adjoint of a
+                    ``QROMLoad`` of these bitstrings for each of the
+                    :math:`L' = k \lceil L/k \rceil` addresses, which can be decomposed with
+                    measurements and a phase fixup (see the ``measurement`` rule below)
+
+                :class:`~.SelectSwap` | :math:`1` | 1
+                :class:`Adjoint(QROMLoad) <.QROMLoad>` with :math:`L'` bitstrings of length :math:`n(k - 1)` on :math:`c` control wires and :math:`w - n(k - 1)` work wires | :math:`1` | 1
+
             .. decomposition-rule:: measurement
                 :image: /_static/decomposition_thumbnails/qrom_load_adjoint_measurement.svg
                 :lightbox:
@@ -423,6 +438,12 @@ def _calculate_select_swap_sizes(
         num_work_wires_swap,
         num_work_wires_cswap,
         depth,
+    )
+
+
+def _select_swap_sizes(bitstrings, control_wires, target_wires, work_wires):
+    return _calculate_select_swap_sizes(
+        len(bitstrings), len(control_wires), len(target_wires), len(work_wires), clean=False
     )
 
 
@@ -734,5 +755,109 @@ def _adjoint_qrom_load_measurement(base):
     _phase_fixup(fixups, base.control_wires, Wires(target_wires) + Wires(base.work_wires))
 
 
-add_decomps(QROMLoad, _select_swap, _qrom_load_to_qrom)
+def _swap_permutations(depth):
+    """For each value ``l`` of the SWAP control wires, the permutation ``perms[l]`` of a column of
+    ``depth`` bitstrings applied by the SWAP network of ``_swap_ops``, which moves bitstring
+    ``perms[l, p]`` of the column into position ``p``. The SWAP layer controlled on bit ``i`` of
+    ``l`` exchanges the first two blocks of ``2**i`` positions."""
+    perms = math.tile(math.arange(depth), (depth, 1))
+    for i in reversed(range(depth.bit_length() - 1)):
+        swapped = (math.arange(depth) >> i) & 1 == 1
+        perms[swapped, : 2 ** (i + 1)] = math.roll(perms[swapped, : 2 ** (i + 1)], 2**i, axis=1)
+    return perms
+
+
+def _select_swap_table(bitstrings, depth):
+    r"""Return the bits that ``SelectSwap`` leaves on its target wires followed by the first
+    :math:`n(k - 1)` work wires, for each of the :math:`k\lceil L/k \rceil` addresses, with
+    :math:`k` = ``depth``.
+
+    Row :math:`i` consists of the :math:`k` bitstrings :math:`b_{\pi_i(p)}` that were loaded in
+    parallel, in the order :math:`p` in which the SWAP network leaves them, starting with the
+    bitstring in the target register. As ``SelectSwap`` loads nothing beyond these rows, it acts
+    on the target and first :math:`n(k - 1)` work wires like a ``QROMLoad`` of this table.
+
+    Args:
+        bitstrings (TensorLike): the :math:`L` loaded bitstrings as integers
+        depth (int): the number :math:`k` of bitstrings loaded in parallel
+
+    Returns:
+        TensorLike: the table of shape ``(depth * ceil(L / depth), depth * n)``
+    """
+    num_bitstrings, num_targets = math.shape(bitstrings)
+    num_columns = -(-num_bitstrings // depth)
+    padding = math.zeros(
+        (num_columns * depth - num_bitstrings, num_targets), dtype=int, like=bitstrings
+    )
+    columns = math.concatenate([bitstrings, padding])
+    columns = math.reshape(columns, (num_columns, depth, num_targets))
+    # loaded[h, l, p] is the bitstring that the SWAP network moves into position p of column h
+    loaded = columns[:, _swap_permutations(depth)]
+    return math.reshape(loaded, (num_columns * depth, depth * num_targets))
+
+
+def _select_swap_measure_garbage_condition(bitstrings, control_wires, target_wires, work_wires):
+    if not capture.enabled() or len(control_wires) == 0:
+        return False
+    *_, depth = _select_swap_sizes(bitstrings, control_wires, target_wires, work_wires)
+    return depth > 1
+
+
+def _select_swap_measure_garbage_resources(bitstrings, control_wires, target_wires, work_wires):
+    # pylint: disable-next=import-outside-toplevel
+    from .select_swap import SelectSwap
+
+    _, _, num_work_wires_swap, _, depth = _select_swap_sizes(
+        bitstrings, control_wires, target_wires, work_wires
+    )
+    num_entries = depth * -(-len(bitstrings) // depth)
+    select_swap = SelectSwap(
+        Bool[*bitstrings.shape],
+        Wire[len(control_wires)],
+        Wire[len(target_wires)],
+        Wire[len(work_wires)],
+    )
+    unload_garbage = qp_ops.adjoint(
+        QROMLoad(
+            Bool[num_entries, num_work_wires_swap],
+            Wire[len(control_wires)],
+            Wire[num_work_wires_swap],
+            Wire[len(work_wires) - num_work_wires_swap],
+        )
+    )
+    return {select_swap: 1, unload_garbage: 1}
+
+
+@register_condition(_select_swap_measure_garbage_condition)
+@register_resources(_select_swap_measure_garbage_resources, name="select_swap_measure_garbage")
+def _select_swap_measure_garbage(bitstrings, control_wires, target_wires, work_wires):
+    r"""Load with ``SelectSwap`` and unload the garbage on its work wires with
+    ``Adjoint(QROMLoad)``, which can be decomposed with measurements and a phase fixup following
+    Appendix C of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__.
+
+    The work wires holding the bitstrings that were loaded in parallel but not swapped into the
+    target register are in the state that a ``QROMLoad`` of these bitstrings would prepare, and
+    the remaining work wires are in :math:`|0\rangle`. Compared to the ``select_swap`` rule, this
+    replaces the second round of Select and SWAPs by the uncomputation of that ``QROMLoad``.
+    """
+    # pylint: disable-next=import-outside-toplevel
+    from .select_swap import SelectSwap
+
+    bitstrings = math.cast(bitstrings, int)
+    _, _, num_work_wires_swap, _, depth = _select_swap_sizes(
+        bitstrings, control_wires, target_wires, work_wires
+    )
+
+    SelectSwap(bitstrings, control_wires, target_wires, work_wires)
+
+    garbage = _select_swap_table(bitstrings, depth)[:, len(target_wires) :]
+    qp_ops.adjoint(QROMLoad)(
+        garbage,
+        control_wires,
+        work_wires[:num_work_wires_swap],
+        work_wires[num_work_wires_swap:],
+    )
+
+
+add_decomps(QROMLoad, _select_swap, _qrom_load_to_qrom, _select_swap_measure_garbage)
 add_decomps("Adjoint(QROMLoad)", _adjoint_qrom_load_measurement)

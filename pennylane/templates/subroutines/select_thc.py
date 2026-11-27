@@ -39,6 +39,7 @@ from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 from .arithmetic.semi_adder import SemiAdder
 from .multix import MultiX
 from .qrom import QROM
+from .qrom_load import QROMLoad
 
 
 def _validate_select_data(chi, t_eigenvectors):
@@ -135,11 +136,10 @@ def _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches):
     r"""Build the incremental ``QROM`` tables of quantized Givens angles.
 
     Each row holds the ``beth``-bit angles that rotate one leaf onto
-    :math:`\lvert e_0 \rangle`, one field per pair in the batch; addresses not backed by a
-    leaf are all-zero and load the identity. Since ``QROM`` writes with an
+    :math:`\lvert e_0 \rangle`, one field per pair in the batch. Since ``QROM`` writes with an
     XOR, table :math:`b` is stored as its difference with table :math:`b - 1`, which carries
     the angle register from one batch to the next instead of erasing and reloading it. The
-    first table is absolute, so re-loading it clears the register.
+    first table is absolute, so it loads into the zeroed angle register.
 
     Args:
         chi (tuple[tuple[float]]): the THC leaf matrix, shape ``(M, N/2)``, addressed by the index
@@ -147,8 +147,9 @@ def _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches):
         t_eigenvectors (tuple[tuple[float]]): the one-body eigenvectors as columns, shape
             ``(N/2, N/2)``. Ignored when ``one_body_table=False``.
         beth (int): bits of precision per Givens angle.
-        one_body_table (bool): if ``True``, the address is extended by the one-body flag and
-            the eigenvectors are loaded above the ``chi`` rows.
+        one_body_table (bool): if ``True``, the ``N/2`` rows of the eigenvectors follow the
+            ``M`` rows of ``chi``. ``_SelectTHCBasis`` loads the two parts with separate
+            ``QROM`` calls.
         batches (Sequence[Sequence[int]]): the Givens pairs of each batch, in application
             order, as returned by ``_angle_batches``.
 
@@ -156,16 +157,11 @@ def _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches):
         list[list[list[int]]]: one ``QROM`` table per batch, empty when there are no pairs
         to rotate.
     """
-    chi = math.asarray(chi, dtype=float)
-    M, n_half = chi.shape
     if not batches:
         return []
 
-    block = 1 << math.ceil_log2(max(M, n_half))
-    addresses = list(range(M))
-    leaves = list(chi)
+    leaves = list(math.asarray(chi, dtype=float))
     if one_body_table:
-        addresses += [block + ell for ell in range(n_half)]
         t_eig = math.asarray(t_eigenvectors, dtype=float)
         leaves += list(math.transpose(t_eig))
 
@@ -178,21 +174,14 @@ def _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches):
     grid = [[int(value) % levels for value in row] for row in grid]
 
     # Only the last batch can be short, so the first sets the width of the angle register
-    # and the rest fill a prefix. The table stops at the last address backed by a leaf:
-    # `QROM`` pads the rest with the identity, so cost falls with the number of rows but
-    # it also scales with ``2 ** len(control_wires)``, so both are kept as tight as possible.
-    n_rows = block + n_half if one_body_table else M
+    # and the rest fill a prefix.
     width = len(batches[0]) * beth
-    leaf_of = dict(zip(addresses, range(len(leaves))))
 
-    def _row(address, batch):
-        if address not in leaf_of:
-            return [0] * width
-        angles = grid[leaf_of[address]]
+    def _row(angles, batch):
         bits = [(angles[p] >> (beth - 1 - j)) & 1 for p in batch for j in range(beth)]
         return bits + [0] * (width - len(bits))
 
-    tables = [[_row(address, batch) for address in range(n_rows)] for batch in batches]
+    tables = [[_row(angles, batch) for angles in grid] for batch in batches]
     return [tables[0]] + [
         [[cur ^ prev for cur, prev in zip(row, previous)] for row, previous in zip(table, before)]
         for table, before in zip(tables[1:], tables[:-1])
@@ -287,8 +276,9 @@ def select_thc_wires(M, N, beth, num_batches=1):
     .. note::
 
         Only ``work_wires`` is a minimum; the other four are exact and must be matched.
-        Extra work wires are forwarded to the internal :class:`~.QROM`, which only uses as
-        many as its unary iteration needs, so extra wires do not lower the gate count.
+        Extra work wires are forwarded to the internal :class:`~.QROMLoad` and :class:`~.QROM`
+        that load the Givens angles. The :class:`~.QROM` only uses as many as its unary
+        iteration needs, while the :class:`~.QROMLoad` may use them for Select-SWAP.
 
     .. note::
 
@@ -339,7 +329,13 @@ def select_thc_wires(M, N, beth, num_batches=1):
 
 
 def _select_basis_resources(  # pylint: disable=too-many-arguments
-    rotation_data, system_wires, control_wires, gradient_wires, angle_wires, work_wires
+    rotation_data,
+    system_wires,
+    control_wires,
+    gradient_wires,
+    angle_wires,
+    work_wires,
+    one_body_wires=(),
 ):
     """Return the routing, QROM and loaded-rotation resources of one basis change."""
     beth, batches, tables = rotation_data
@@ -350,15 +346,27 @@ def _select_basis_resources(  # pylint: disable=too-many-arguments
         work_wire_type="zeroed",
     )
     resources = Counter({swap: len(system_wires) // 2})
-    for table in tables:
+    n_one_body = len(system_wires) // 2 if len(one_body_wires) > 0 else 0
+    for i, table in enumerate(tables):
+        qrom_class = QROMLoad if i == 0 else QROM
         resources[
-            QROM(
-                table,
+            qrom_class(
+                table[: len(table) - n_one_body],
                 control_wires=Wire[len(control_wires) - 1],
                 target_wires=angle_wires,
                 work_wires=work_wires,
             )
         ] += 1
+        if n_one_body:
+            resources[
+                QROM(
+                    table[len(table) - n_one_body :],
+                    control_wires=Wire[len(one_body_wires)],
+                    target_wires=angle_wires,
+                    work_wires=work_wires,
+                )
+            ] += 1
+            resources[X] += 2
     num_pairs = sum(len(batch) for batch in batches)
     if num_pairs:
         resources.update(
@@ -377,7 +385,14 @@ def _select_basis_resources(  # pylint: disable=too-many-arguments
 
 @subcircuit(
     compilable_argnames=("rotation_data",),
-    wire_argnames=("system_wires", "control_wires", "gradient_wires", "angle_wires", "work_wires"),
+    wire_argnames=(
+        "system_wires",
+        "control_wires",
+        "gradient_wires",
+        "angle_wires",
+        "work_wires",
+        "one_body_wires",
+    ),
 )
 @register_resources(_select_basis_resources)
 def _SelectTHCBasis(  # pylint: disable=too-many-arguments
@@ -387,16 +402,22 @@ def _SelectTHCBasis(  # pylint: disable=too-many-arguments
     gradient_wires: WiresLike,
     angle_wires: WiresLike,
     work_wires: WiresLike = (),
+    one_body_wires: WiresLike = (),
 ):
     """Route the spin sector and load each batch of Givens rotations.
 
     Args:
-        rotation_data (tuple): the precision, Givens-pair batches and QROM tables
+        rotation_data (tuple): the precision, Givens-pair batches and QROM tables. If
+            ``one_body_wires`` is given, the last ``N/2`` rows of each table are the one-body
+            rows.
         system_wires (Sequence[int]): the spin-down and spin-up orbitals
-        control_wires (Sequence[int]): the spin flag followed by the QROM address
+        control_wires (Sequence[int]): the spin flag followed by the address of the two-body
+            rows
         gradient_wires (Sequence[int]): the prepared phase-gradient register
         angle_wires (Sequence[int]): the angle register, left loaded until uncomputation
         work_wires (Sequence[int]): zeroed QROM and adder scratch, restored before returning
+        one_body_wires (Sequence[int]): the one-body flag followed by the address of the
+            one-body rows. Empty if there are none.
     """
     beth, batches, tables = rotation_data
     n_half = len(system_wires) // 2
@@ -407,13 +428,29 @@ def _SelectTHCBasis(  # pylint: disable=too-many-arguments
             work_wires=Wires(angle_wires) + Wires(work_wires),
             work_wire_type="zeroed",
         )
-    for table, batch in zip(tables, batches, strict=True):
-        QROM(
-            table,
+    n_one_body = n_half if len(one_body_wires) > 0 else 0
+    for i, (table, batch) in enumerate(zip(tables, batches, strict=True)):
+        # The first two-body table is absolute and the angle register is zeroed, so it is a
+        # QROMLoad whose adjoint can unload it with measurements. That adjoint runs after the
+        # one-body rows are unloaded, so the angle register is zeroed on the one-body branch,
+        # where the QROMLoad loads nothing. Later tables XOR onto the register.
+        qrom_class = QROMLoad if i == 0 else QROM
+        qrom_class(
+            table[: len(table) - n_one_body],
             control_wires=control_wires[1:],
             target_wires=angle_wires,
             work_wires=work_wires,
         )
+        if n_one_body:
+            # On the two-body branch the angle register is loaded, so this cannot be a QROMLoad.
+            X(one_body_wires[0])
+            QROM(
+                table[len(table) - n_one_body :],
+                control_wires=one_body_wires,
+                target_wires=angle_wires,
+                work_wires=work_wires,
+            )
+            X(one_body_wires[0])
         _apply_loaded_rotation(
             system_wires[:n_half], angle_wires, beth, batch, gradient_wires, work_wires
         )
@@ -456,8 +493,8 @@ def _select_half(  # pylint: disable=too-many-arguments
         num_batches (int): the number of batches the Givens angles are loaded in. The
             default of ``1`` loads all of them at once; larger values shrink
             ``work_wires`` at the cost of more ``QROM`` loads.
-        one_body_table (bool): flag to check if the ``QROM`` address is extended by the
-            one-body flag and the one-body rotations are loaded
+        one_body_table (bool): whether the one-body rotations are loaded as well, by a
+            separate ``QROM`` on the one-body flag being in :math:`\lvert 1 \rangle`
         skip_one_body (bool): if ``False``, the :math:`Z_1` reflection is controlled on the
             success flag alone, as in the first sandwich of Fig. 5. If ``True``, it carries
             a second control, the open circle on the :math:`\lvert \nu = M \rangle`
@@ -502,10 +539,16 @@ def _select_half(  # pylint: disable=too-many-arguments
     # the only part of the pool that is zeroed for the ops between the two QROM calls.
     qrom_work = list(work_wires[n_angle:])
     tables = _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches)
-    # The index register is sized by PREPARE, which needs the ``nu = M`` sentinel, but this
-    # QROM only addresses ``mu < M`` or ``ell < N/2``, so its top wire is always in |0>.
-    n_mu = math.ceil_log2(max(M, n_half))
-    control_wires = [spin] + ([edge] if one_body_table else []) + list(index_wires)[n - n_mu :]
+    # The index register is sized by PREPARE, which needs the ``nu = M`` sentinel, but each
+    # QROM only addresses its own rows, so the top index wires may be always in |0> and are
+    # left out of the address. A QROM loads nothing beyond its rows, so the one-body flag on
+    # top of an address restricts the QROM to the flag being in |0>.
+    if one_body_table:
+        control_wires = [spin, edge] + list(index_wires)[n - math.ceil_log2(M) :]
+        one_body_wires = [edge] + list(index_wires)[n - math.ceil_log2(n_half) :]
+    else:
+        control_wires = [spin] + list(index_wires)[n - math.ceil_log2(max(M, n_half)) :]
+        one_body_wires = []
     rotation_data = (
         beth,
         tuple(tuple(batch) for batch in batches),
@@ -520,6 +563,7 @@ def _select_half(  # pylint: disable=too-many-arguments
             gradient_wires,
             work_wires[:n_angle],
             qrom_work,
+            one_body_wires,
         ),
         ctrl(
             Z(system_wires[0]),
@@ -682,14 +726,17 @@ class SelectTHC(Operator):
             :symbols: :math:`N` spin orbitals, :math:`M` is the THC rank, :math:`h = N/2` spatial orbitals, :math:`P = h - 1` Givens pairs loaded in
                 :math:`B` batches (:math:`B \leq` ``num_batches``, and :math:`B = 0` if
                 :math:`P = 0`), and :math:`n = \lceil \log_2(M+1) \rceil` wires per index
-            :example: :math:`M=1`, :math:`N=4` (:math:`h=2`, :math:`P=1`, :math:`B=1`, :math:`n=1`)
+            :example: :math:`M=1`, :math:`N=4` (:math:`h=2`, :math:`P=1`, :math:`B=1`,
+                :math:`n=1`)
 
             .. decomposition-rule:: selected_basis_rotations
                 :image: /_static/decomposition_thumbnails/select_thc_double_factorized.svg
                 :lightbox:
 
-                :class:`~.QROM` | :math:`2B` | 2
-                :class:`Adjoint(QROM) <.QROM>` | :math:`2B` | 2
+                :class:`~.QROMLoad` | :math:`2 \min(B, 1)` | 2
+                :class:`Adjoint(QROMLoad) <.QROMLoad>` | :math:`2 \min(B, 1)` | 2
+                :class:`~.QROM` | :math:`2 \max(B - 1, 0) + B` | 1
+                :class:`Adjoint(QROM) <.QROM>` | :math:`2 \max(B - 1, 0) + B` | 1
                 :class:`~.CSWAP` | :math:`4h + n + 1` | 10
                 :class:`~.Hadamard` | :math:`24P` | 24
                 :class:`~.CNOT` | :math:`8P` | 8
@@ -701,7 +748,7 @@ class SelectTHC(Operator):
                 :class:`Adjoint(SemiAdder) <.SemiAdder>` | :math:`4P` | 4
                 :class:`~.CZ` with 1 control | :math:`1` | 1
                 :class:`~.CZ` with 2 controls | :math:`1` | 1
-                :class:`~.X` | :math:`3` | 3
+                :class:`~.X` | :math:`4B + 3` | 7
 
     """
 
