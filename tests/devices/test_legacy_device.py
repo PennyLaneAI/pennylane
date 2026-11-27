@@ -421,7 +421,7 @@ class TestInternalFunctions:  # pylint: disable=too-many-public-methods
 
     @pytest.mark.parametrize(
         "wires, expected",
-        [([7, 16, -1, 3], Wires([7, 16, -1, 3])), (3, Wires([0, 1, 2])), ([3], Wires([3]))],
+        [([7, 16, 1, 3], Wires([7, 16, 1, 3])), (3, Wires([0, 1, 2])), ([3], Wires([3]))],
     )
     def test_wires_property(self, mock_device, wires, expected):
         """Tests that the wires attribute is set correctly."""
@@ -430,8 +430,8 @@ class TestInternalFunctions:  # pylint: disable=too-many-public-methods
 
     def test_wire_map_property(self, mock_device):
         """Tests that the wire_map is constructed correctly."""
-        dev = mock_device(wires=[7, 16, -1, 3])
-        expected = OrderedDict([(7, 0), (16, 1), (-1, 2), (3, 3)])
+        dev = mock_device(wires=[7, 16, 1, 3])
+        expected = OrderedDict([(7, 0), (16, 1), (1, 2), (3, 3)])
         assert dev.wire_map == expected
 
     def test_execution_property(self, mock_device):

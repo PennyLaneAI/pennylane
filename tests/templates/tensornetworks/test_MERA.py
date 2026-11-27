@@ -223,7 +223,7 @@ class TestIndicesMERA:
         ],
     )
     def test_indices_output(self, wires, n_block_wires, expected_indices):
-        """Verifies the indices are correct for both integer and string wire labels."""
+        """Verifies the indices for consecutive and nonconsecutive integer wire labels."""
         indices = compute_indices(wires, n_block_wires)
 
         assert indices == expected_indices

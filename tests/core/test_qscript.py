@@ -189,12 +189,12 @@ class TestUpdate:
 
     def test_update_circuit_info_wires(self):
         """Test that on construction wires and num_wires are set."""
-        prep = [qp.BasisState([1, 1], wires=(-1, -2))]
+        prep = [qp.BasisState([1, 1], wires=(1, 2))]
         ops = [qp.S(0), qp.T(9), qp.S(0)]
         measurement = [qp.probs(wires=(9))]  # pylint: disable=superfluous-parens
 
         qs = QuantumScript(prep + ops, measurement)
-        assert qs.wires == qp.wires.Wires([-1, -2, 0, 9])
+        assert qs.wires == qp.wires.Wires([1, 2, 0, 9])
         assert qs.num_wires == 4
 
     @pytest.mark.parametrize("sample_ms", sample_measurements)

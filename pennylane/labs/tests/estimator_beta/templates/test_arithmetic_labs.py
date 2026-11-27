@@ -32,7 +32,7 @@ class TestResourcePhaseAdder:
         "num_x_wires, mod, wires",
         (
             (5, 1, [1, 2, 3, 4, 5]),
-            (5, 2, ["a", "b", "c", 1, 2]),
+            (5, 2, [100, 101, 102, 1, 2]),
             (5, 5, None),
             (5, 2**5, None),
             (5, None, None),
@@ -212,7 +212,7 @@ class TestResourceAdder:
         "num_x_wires, mod, wires",
         (
             (5, 1, [1, 2, 3, 4, 5]),
-            (5, 2, ["a", "b", "c", 1, 2]),
+            (5, 2, [100, 101, 102, 1, 2]),
             (5, 5, None),
             (5, 2**5, None),
             (5, None, None),
@@ -446,7 +446,7 @@ class TestResourceOutAdder:
         "num_x_wires, num_y_wires, num_output_wires, mod, wires",
         (
             (3, 4, 5, 1, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
-            (2, 2, 5, 2, ["a", "b", "c", 1, 2, 3, "d", "e", "f"]),
+            (2, 2, 5, 2, [100, 101, 102, 1, 2, 3, 103, 104, 105]),
             (5, 4, 6, 16, None),
             (2, 2, 5, 2**5, None),
             (1, 3, 5, None, None),
@@ -620,7 +620,7 @@ class TestResourceClassicalOutMultiplier:
         "num_x_wires, num_output_wires, mod, wires",
         (
             (3, 5, 1, [1, 2, 3, 4, 5, 6, 7, 8]),
-            (2, 5, 2, ["a", "b", "c", 1, 2, 3, "d"]),
+            (2, 5, 2, [100, 101, 102, 1, 2, 3, 103]),
             (5, 6, 16, None),
             (2, 5, 2**5, None),
             (3, 5, None, None),
@@ -769,7 +769,7 @@ class TestResourceMultiplier:
         "num_x_wires, mod, wires",
         (
             (5, 1, [1, 2, 3, 4, 5]),
-            (5, 2, ["a", "b", "c", 1, 2]),
+            (5, 2, [100, 101, 102, 1, 2]),
             (5, 5, None),
             (5, 2**5, None),
             (5, None, None),
@@ -943,7 +943,7 @@ class TestResourceModExp:
         "num_x_wires, num_output_wires, mod, wires",
         (
             (3, 5, 1, [1, 2, 3, 4, 5, 6, 7, 8]),
-            (2, 5, 2, ["a", "b", "c", 1, 2, 3, "d"]),
+            (2, 5, 2, [100, 101, 102, 1, 2, 3, 103]),
             (5, 6, 16, None),
             (2, 5, 2**5, None),
             (3, 5, None, None),

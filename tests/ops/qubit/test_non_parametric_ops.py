@@ -82,7 +82,7 @@ NON_PARAMETRIZED_OPERATIONS_WITH_PAULI_REP_ALREADY_IMPLEMENTED = [
     (qp.SX(20), SX),
     (qp.SWAP([0, 1]), SWAP),
     (qp.ISWAP([0, 1]), ISWAP),
-    (qp.ECR([-1, 1]), ECR),
+    (qp.ECR([2, 1]), ECR),
     (qp.SISWAP([20, 21]), SISWAP),
 ]
 

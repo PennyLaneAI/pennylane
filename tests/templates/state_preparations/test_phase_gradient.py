@@ -66,51 +66,33 @@ GATE_SETS = {
 }
 
 
-class TestDecomposition:
-    """Tests that the template defines the correct decomposition."""
+@pytest.mark.parametrize("use_qjit", [False, pytest.param(True, marks=pytest.mark.catalyst)])
+@pytest.mark.parametrize("rule", RULES)
+@pytest.mark.parametrize("num_wires", [1, 2, 3, 4, 7, 14])
+def test_decomposition_prepares_state(rule, num_wires, use_qjit):
+    """Test that executing the decomposition prepares the phase gradient state."""
 
-    @pytest.mark.parametrize("use_qjit", [False, pytest.param(True, marks=pytest.mark.catalyst)])
-    @pytest.mark.parametrize("rule", RULES)
-    @pytest.mark.parametrize("num_wires", [1, 2, 3, 4, 7, 14])
-    def test_decomposition_prepares_state(self, rule, num_wires, use_qjit):
-        """Test that executing the decomposition prepares the phase gradient state."""
+    gate_set = GATE_SETS[rule]
+    decompose_kwargs = {
+        "gate_set": gate_set,
+        "fixed_decomps": {qp.PhaseGradientStatePrep: rule},
+    }
 
-        gate_set = GATE_SETS[rule]
-        decompose_kwargs = {
-            "gate_set": gate_set,
-            "fixed_decomps": {qp.PhaseGradientStatePrep: rule},
-        }
+    @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
+    def circuit():
+        qp.PhaseGradientStatePrep(wires=range(num_wires))
+        return qp.state()
 
-        @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
-        def circuit():
-            qp.PhaseGradientStatePrep(wires=range(num_wires))
-            return qp.state()
+    if use_qjit:
+        circuit = qp.transforms.to_ppr(qp.decompose(circuit, **decompose_kwargs))
+        circuit = qp.qjit(circuit, capture=True)
 
-        if use_qjit:
-            circuit = qp.transforms.to_ppr(qp.decompose(circuit, **decompose_kwargs))
-            circuit = qp.qjit(circuit, capture=True)
-
-        else:
-            # pylint: disable-next=protected-access
-            circuit = qp.transforms._tape_decompose(circuit, **decompose_kwargs)
-            tape = qp.workflow.construct_tape(circuit)()
-            assert all(op.name in gate_set for op in tape.operations)
-        assert np.allclose(circuit(), _expected_state(num_wires), atol=1e-12, rtol=0)
-
-    def test_custom_wire_labels(self):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-
-        @qp.qnode(qp.device("default.qubit", wires=3))
-        def circuit():
-            qp.PhaseGradientStatePrep(wires=range(3))
-            return qp.state()
-
-        @qp.qnode(qp.device("default.qubit", wires=["z", "a", "k"]))
-        def circuit2():
-            qp.PhaseGradientStatePrep(wires=["z", "a", "k"])
-            return qp.state()
-
-        assert np.allclose(circuit(), circuit2())
+    else:
+        # pylint: disable-next=protected-access
+        circuit = qp.transforms._tape_decompose(circuit, **decompose_kwargs)
+        tape = qp.workflow.construct_tape(circuit)()
+        assert all(op.name in gate_set for op in tape.operations)
+    assert np.allclose(circuit(), _expected_state(num_wires), atol=1e-12, rtol=0)
 
 
 class TestHardcodedDecompositions:
@@ -221,9 +203,9 @@ class TestPhaseGradientConsistency:
     @pytest.mark.parametrize("num_wires, value", [(1, 1), (2, 1), (3, 5), (4, 11)])
     def test_addition_imprints_phase(self, num_wires, value):
         """Test that adding an integer M with SemiAdder imprints the phase exp(2πiM/B)."""
-        x_wires = [f"x{i}" for i in range(num_wires)]
-        grad_wires = [f"g{i}" for i in range(num_wires)]
-        work_wires = [f"w{i}" for i in range(num_wires - 1)]
+        x_wires = list(range(100, 100 + num_wires))
+        grad_wires = list(range(100 + num_wires, 100 + 2 * num_wires))
+        work_wires = list(range(100 + 2 * num_wires, 100 + 3 * num_wires - 1))
 
         @qp.qnode(qp.device("default.qubit", wires=x_wires + grad_wires + work_wires))
         def circuit(add):
@@ -240,9 +222,9 @@ class TestPhaseGradientConsistency:
         """Test that the template can be used as resource state for ``rz_phase_gradient``."""
         precision = 3
         phi = (1 / 2 + 1 / 8) * 2 * np.pi
-        angle_wires = [f"ang_{i}" for i in range(precision)]
-        phase_grad_wires = [f"phg_{i}" for i in range(precision)]
-        work_wires = [f"work_{i}" for i in range(precision - 1)]
+        angle_wires = list(range(100, 100 + precision))
+        phase_grad_wires = list(range(100 + precision, 100 + 2 * precision))
+        work_wires = list(range(100 + 2 * precision, 100 + 3 * precision - 1))
 
         @qp.transforms.rz_phase_gradient(
             angle_wires=angle_wires, phase_grad_wires=phase_grad_wires, work_wires=work_wires
@@ -250,10 +232,10 @@ class TestPhaseGradientConsistency:
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.PhaseGradientStatePrep(wires=phase_grad_wires)
-            qp.H("targ")
-            qp.RZ(phi, "targ")
-            qp.H("targ")
-            return qp.probs("targ")
+            qp.H(9)
+            qp.RZ(phi, 9)
+            qp.H(9)
+            return qp.probs(9)
 
         expected = np.abs(qp.RX(phi, 0).matrix()[:, 0]) ** 2
         assert np.allclose(circuit(), expected)

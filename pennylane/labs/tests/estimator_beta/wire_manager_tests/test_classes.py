@@ -503,7 +503,7 @@ class TestDeallocate:
 class TestMarkQubits:
     """Test the methods and attributes of the MarkQubits and MarkClean class"""
 
-    @pytest.mark.parametrize("wires", ([1, 2, 3], None, [0], [1, "a", 2, "b"], "c"))
+    @pytest.mark.parametrize("wires", ([1, 2, 3], None, [0], [1, 100, 2, 101], 102))
     def test_init(self, wires):
         """Test that an instance of MarkQubits is instantiated correctly"""
         with AnnotatedQueue() as q:
@@ -523,8 +523,8 @@ class TestMarkQubits:
     def test_queue(self):
         """Test the queue method of the MarkQubits class"""
         marked_qubits1 = MarkQubits(wires=[1, 2, 3])
-        marked_qubits2 = MarkQubits(wires=["a", "b", "c"])
-        marked_qubits3 = MarkClean(wires=[0, "d"])
+        marked_qubits2 = MarkQubits(wires=[100, 101, 102])
+        marked_qubits3 = MarkClean(wires=[0, 103])
 
         with AnnotatedQueue() as q:
             marked_qubits3.queue()
@@ -561,8 +561,8 @@ class TestMarkQubits:
             ([1, 2, 3], "MarkClean([1, 2, 3])"),
             (None, "MarkClean([])"),
             ([0], "MarkClean([0])"),
-            ([1, "a", 2, "b"], "MarkClean([1, 'a', 2, 'b'])"),
-            ("c", "MarkClean(['c'])"),
+            ([1, 100, 2, 101], "MarkClean([1, 100, 2, 101])"),
+            (102, "MarkClean([102])"),
         ),
     )
     def test_MarkClean_repr(self, wires, expected_str):

@@ -125,14 +125,14 @@ class TestDecomposition:
         """Pattern stores indices into wires, so map_wires remaps wires only."""
 
         op = qp.IQPEmbedding([1.0, 2.0, 3.0], wires=[0, 1, 2], pattern=[[0, 2], [1, 2]])
-        mapped = op.map_wires({0: "a", 1: "b", 2: "c"})
+        mapped = op.map_wires({0: 7, 1: 5, 2: 6})
 
-        assert mapped.wires.labels == ("a", "b", "c")
+        assert mapped.wires.labels == (7, 5, 6)
         assert qp.math.allclose(mapped.arguments["pattern"], ((0, 2), (1, 2)))
 
         tape = qp.tape.QuantumScript(mapped.decomposition())
         multi_rz_wires = [gate.wires.labels for gate in tape.operations if gate.name == "MultiRZ"]
-        assert multi_rz_wires == [("a", "c"), ("b", "c")]
+        assert multi_rz_wires == [(7, 6), (5, 6)]
 
     def test_custom_pattern_uses_indices_into_wires(self):
         """A custom pattern addresses positions in wires, not wire labels."""

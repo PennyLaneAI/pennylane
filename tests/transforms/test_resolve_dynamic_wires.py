@@ -161,7 +161,7 @@ class TestFirstExtraction:
         )
 
         with pytest.raises(qp.exceptions.AllocationError, match="no wires left to allocate"):
-            qp.transforms.resolve_dynamic_wires(tape, any_state=("a",), allow_resets=False)
+            qp.transforms.resolve_dynamic_wires(tape, any_state=(4,), allow_resets=False)
 
 
 class TestReuse:

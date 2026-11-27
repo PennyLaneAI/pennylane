@@ -138,7 +138,7 @@ class TestQROMLoad:
             ),
             (
                 np.array([[0, 1], [0, 1], [0, 0], [0, 0]]),
-                np.array(["a", "b"]),
+                np.array([8, 9]),
                 np.array([2, 3]),
                 np.array([4, 5, 6]),
             ),
@@ -151,7 +151,7 @@ class TestQROMLoad:
                         [1, 0, 0],
                     ]
                 ),
-                np.array([0, 1, "b"]),
+                np.array([0, 1, 9]),
                 np.array([2, 3]),
                 None,
             ),
@@ -164,9 +164,9 @@ class TestQROMLoad:
                         [1, 0, 1, 0],
                     ]
                 ),
-                np.array([0, 1, "b", "d"]),
+                np.array([0, 1, 9, 10]),
                 np.array([2, 3]),
-                np.array(["a", 5, 6, 7]),
+                np.array([8, 5, 6, 7]),
             ),
             # Single bitstring with multiple controls and work wires (num_blocks=1 unary path).
             (

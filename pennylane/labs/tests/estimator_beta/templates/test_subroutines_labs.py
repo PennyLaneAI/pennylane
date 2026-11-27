@@ -2679,9 +2679,9 @@ class TestSelectCopyQROM:
 
         def circuit():
             for i in range(4):
-                qre.Hadamard(wires=i)  # wires [1, 2, 3, 4] are dirty borrowable qubits
+                qre.Hadamard(wires=i)  # Wires [0, 1, 2, 3] are dirty borrowable qubits
 
-            qrom_wires = [f"qrom_{i}" for i in range(14)]
+            qrom_wires = list(range(100, 114))
             qre.SelectCopyQROM(1000, 4, batch_size=2, bits_per_iter=4, wires=qrom_wires)
 
         resources_circ = qre.estimate(circuit)()

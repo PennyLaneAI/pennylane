@@ -60,7 +60,7 @@ class TestAdjoint:
         (
             (qre.S, {}),
             (qre.RZ, {"precision": 1e-3}),
-            (qre.CNOT, {"wires": ["ctrl", "trgt"]}),
+            (qre.CNOT, {"wires": [2, 5]}),
         ),
     )
     def test_init(self, base_type, base_args):
@@ -199,7 +199,7 @@ class TestControlled:
         (
             (qre.S, {}),
             (qre.RZ, {"precision": 1e-3}),
-            (qre.CNOT, {"wires": ["ctrl", "trgt"]}),
+            (qre.CNOT, {"wires": [2, 5]}),
         ),
     )
     def test_init(self, ctrl_wires, ctrl_values, base_type, base_args):
@@ -424,7 +424,7 @@ class TestPow:
         (
             (qre.S, {}),
             (qre.RZ, {"precision": 1e-3}),
-            (qre.CNOT, {"wires": ["ctrl", "trgt"]}),
+            (qre.CNOT, {"wires": [2, 5]}),
         ),
     )
     def test_init(self, z, base_type, base_args):

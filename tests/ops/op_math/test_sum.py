@@ -625,7 +625,7 @@ class TestProperties:
         op2 = Sum(qp.PauliY(14), qp.PauliX(9))
         assert hash(op1) == hash(op2)
 
-        op3 = Sum(qp.PauliX(9), qp.PauliY(14), qp.PauliZ(-1))
+        op3 = Sum(qp.PauliX(9), qp.PauliY(14), qp.PauliZ(1))
         assert hash(op3) != hash(op1)
 
         op4 = Sum(qp.X(9), qp.X(9), qp.Y(14))

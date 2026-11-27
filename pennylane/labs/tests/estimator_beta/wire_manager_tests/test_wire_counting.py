@@ -249,18 +249,18 @@ class TestProcessCircuitLst:
                 [
                     qre.Z(wires=0),
                     qp.Z(wires=1),
-                    qre.RZ(wires="a"),
-                    qp.CNOT(wires=[2, "b"]),
-                    qp.RX(1.23, wires="c"),
+                    qre.RZ(wires=100),
+                    qp.CNOT(wires=[2, 101]),
+                    qp.RX(1.23, wires=102),
                 ],
                 [
                     (qre.Z.resource_rep(), Wires(0)),
                     (qre.Z.resource_rep(), Wires(1)),
-                    (qre.RZ.resource_rep(), Wires("a")),
-                    (qre.CNOT.resource_rep(), Wires([2, "b"])),
-                    (qre.RX.resource_rep(), Wires("c")),
+                    (qre.RZ.resource_rep(), Wires(100)),
+                    (qre.CNOT.resource_rep(), Wires([2, 101])),
+                    (qre.RX.resource_rep(), Wires(102)),
                 ],
-                Wires([0, 1, "a", 2, "b", "c"]),
+                Wires([0, 1, 100, 2, 101, 102]),
             ),
             (  # Dynamically Generated
                 [
@@ -1108,12 +1108,12 @@ class TestEstimateWiresFromCircuit:
                 [
                     qre.QFT(wires=range(5)),
                     qre.Hadamard(wires=1),
-                    qre.Z(wires="a"),
+                    qre.Z(wires=100),
                     qre.Hadamard(wires=1),
                     qre.CNOT(wires=[3, 2]),
-                    qre.RX(wires="b"),
+                    qre.RX(wires=101),
                     qre.Hadamard(wires=2),
-                    qre.RZ(wires="c"),
+                    qre.RZ(wires=102),
                 ],
                 (8, 0, 0),
             ),
@@ -1175,7 +1175,7 @@ class TestEstimateWiresFromCircuit:
                     qre.Z(),
                     qre.Hadamard(wires=1),
                     qre.CNOT(),
-                    qre.RX(wires="b"),
+                    qre.RX(wires=101),
                     qre.Hadamard(),
                     qre.RZ(),
                 ],
@@ -1276,10 +1276,8 @@ class TestEstimateWiresFromCircuit:
         (
             (  # Borrow idle
                 [  # 4 available idle qubits of 6 qubits total
-                    qp.CNOT(wires=["busy_wire1", "busy_wire2"]),
-                    AllocOpFree(
-                        num_wires=1, allocate=Allocate(3), op=qre.X(), wires=["busy_wire2"]
-                    ),
+                    qp.CNOT(wires=[103, 104]),
+                    AllocOpFree(num_wires=1, allocate=Allocate(3), op=qre.X(), wires=[104]),
                     qre.QFT(num_wires=4),
                 ],
                 (6, 0, 0),  # The idle qubits are used in place of the allocation!
@@ -1287,10 +1285,8 @@ class TestEstimateWiresFromCircuit:
             (
                 [  # 4 available idle qubits of 6 qubits total
                     AllocateOp(Allocate(2)),
-                    qp.CNOT(wires=["busy_wire1", "busy_wire2"]),
-                    AllocOpFree(
-                        num_wires=1, allocate=Allocate(5), op=qre.X(), wires=["busy_wire2"]
-                    ),
+                    qp.CNOT(wires=[103, 104]),
+                    AllocOpFree(num_wires=1, allocate=Allocate(5), op=qre.X(), wires=[104]),
                     qre.QFT(num_wires=4),
                     DeallocateOp(Deallocate(1)),
                 ],
@@ -1299,11 +1295,9 @@ class TestEstimateWiresFromCircuit:
             (  # Borrow + Mark clean
                 [  # 4 + 1 available idle qubits of 6 qubits total
                     AllocateOp(Allocate(2)),
-                    qp.CNOT(wires=["busy_wire1", "busy_wire2"]),
-                    MarkClean(wires=["busy_wire1"]),  # busy_wire1 is treated as clean and idle
-                    AllocOpFree(
-                        num_wires=1, allocate=Allocate(5), op=qre.X(), wires=["busy_wire2"]
-                    ),
+                    qp.CNOT(wires=[103, 104]),
+                    MarkClean(wires=[103]),  # Wire 103 is treated as clean and idle
+                    AllocOpFree(num_wires=1, allocate=Allocate(5), op=qre.X(), wires=[104]),
                     qre.QFT(num_wires=4),
                     DeallocateOp(Deallocate(1)),
                 ],

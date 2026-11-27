@@ -38,7 +38,7 @@ def tol():
     scope="module",
     params=[
         None,
-        qp.wires.Wires([10, 11, -3, 42, 20, 23, 30] + list(range(100, 120))),
+        qp.wires.Wires([10, 11, 3, 42, 20, 23, 30] + list(range(100, 120))),
         list(range(100, 120)),
         {13 - i: 30 + i for i in range(14)},
     ],

@@ -805,7 +805,7 @@ class TestSparseMatrix:
 
     def test_base_no_sparse_matrix(self):
         """Test that if the base doesn't define a sparse matrix, then the power won't either."""
-        op: Pow = Pow(TempOperator(0.1), 2)
+        op: Pow = Pow(TempOperator(0), 2)
 
         with pytest.raises(qp.operation.SparseMatrixUndefinedError):
             op.sparse_matrix()

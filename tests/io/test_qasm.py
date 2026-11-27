@@ -260,14 +260,14 @@ class TestToQasmUnitTests:
         """Test that no computational basis measurements are added other
         than those already in the tape when ``measure_all=False``."""
         with qp.queuing.AnnotatedQueue() as q_circuit:
-            qp.RX(0.43, wires="a")
-            qp.RY(0.35, wires="b")
+            qp.RX(0.43, wires=7)
+            qp.RY(0.35, wires=5)
             qp.RZ(0.35, wires=2)
-            qp.CNOT(wires=["a", "b"])
+            qp.CNOT(wires=[7, 5])
             qp.Hadamard(wires=2)
-            qp.CNOT(wires=[2, "a"])
-            qp.PauliX(wires="b")
-            qp.expval(qp.PauliZ("a"))
+            qp.CNOT(wires=[2, 7])
+            qp.PauliX(wires=5)
+            qp.expval(qp.PauliZ(7))
             qp.expval(qp.PauliZ(2))
 
         circuit = qp.tape.QuantumScript.from_queue(q_circuit)
@@ -561,17 +561,17 @@ class TestQNodeQasmIntegrationTests:
         assert res == expected
 
     def test_wires(self):
-        """Test that the QASM serializer correctly integrates with the new wires class."""
-        dev = qp.device("default.qubit", wires=["a", "b", "c"])
+        """Test that the QASM serializer respects nonconsecutive integer wire order."""
+        dev = qp.device("default.qubit", wires=[7, 5, 6])
 
         @qp.qnode(dev)
         def qnode():
-            qp.Hadamard(wires="a")
-            qp.CNOT(wires=["b", "a"])
+            qp.Hadamard(wires=7)
+            qp.CNOT(wires=[5, 7])
             return [
-                qp.expval(qp.PauliX("c")),
-                qp.expval(qp.PauliZ("a")),
-                qp.expval(qp.Hadamard("b")),
+                qp.expval(qp.PauliX(6)),
+                qp.expval(qp.PauliZ(7)),
+                qp.expval(qp.Hadamard(5)),
             ]
 
         res = qp.to_openqasm(qnode)()

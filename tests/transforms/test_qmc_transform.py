@@ -241,10 +241,10 @@ class TestQuantumMonteCarlo:
         func = lambda i: np.sin(xs[i]) ** 2
         r_rotations = np.array([2 * np.arcsin(np.sqrt(func(i))) for i in range(M)])
 
-        A_wires = [0, 7, 13, -10, 8]
+        A_wires = [0, 7, 13, 10, 8]
         target_wire = 6
         wires = A_wires + [target_wire]
-        estimation_wires = [9, -3, 42, 12, 11]
+        estimation_wires = [9, 3, 42, 12, 11]
 
         def fn():
             qp.templates.MottonenStatePreparation(np.sqrt(probs), wires=A_wires)

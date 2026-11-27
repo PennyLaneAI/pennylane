@@ -371,8 +371,12 @@ class TestTwoBodyWorkWireDecomposition:
         core = rng.normal(size=(num_orbitals, num_orbitals))
         core = (core + core.T) / 2
         wires = list(range(2 * num_orbitals))
-        control_wires = ["control"] if has_control else []
-        work_wires = ["and", "controlled_and"] if has_control and not double_phase else ["and"]
+        control_wires = [2 * num_orbitals] if has_control else []
+        work_wires = (
+            [2 * num_orbitals + 1, 2 * num_orbitals + 2]
+            if has_control and not double_phase
+            else [2 * num_orbitals + 1]
+        )
         tape = qp.tape.make_qscript(_apply_two_body_diagonal_with_work_wires)(
             core, wires, time_step, control_wires, double_phase, work_wires
         )

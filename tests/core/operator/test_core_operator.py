@@ -316,8 +316,8 @@ class TestOperatorConstruction:
             num_wires = 1
             num_params = 1
 
-        op = DummyOp(1.234, "a")
-        assert op.wires[0] == "a"
+        op = DummyOp(1.234, 7)
+        assert op.wires[0] == 7
         assert op.data == (1.234,)
 
     def test_no_wires(self):
@@ -1955,12 +1955,12 @@ def test_docstring_example_of_operator_class(tol):
                 do_flip=self.hyperparameters["do_flip"],
             )
 
-    dev = qp.device("default.qubit", wires=["q1", "q2", "q3"])
+    dev = qp.device("default.qubit", wires=[0, 1, 2])
 
     @qp.qnode(dev)
     def circuit(angle):
-        FlipAndRotate(angle, wire_rot="q1", wire_flip="q1")
-        return qp.expval(qp.PauliZ("q1"))
+        FlipAndRotate(angle, wire_rot=0, wire_flip=0)
+        return qp.expval(qp.PauliZ(0))
 
     a = np.array(3.14)
     res = circuit(a)

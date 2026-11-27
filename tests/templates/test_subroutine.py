@@ -101,9 +101,9 @@ class TestInitialization:
             "y",
         )
 
-        a, k = S.setup_inputs(0.5, 1.2, "a", [1, 2, 3])
+        a, k = S.setup_inputs(0.5, 1.2, 7, [1, 2, 3])
         assert a == (0.5, 1.2)
-        assert k == {"wires": "a", "z": (1, 2, 3)}
+        assert k == {"wires": 7, "z": (1, 2, 3)}
 
     def test_string_static_argnames_static_argnums(self):
         """Test that if a string is provided to static argnums or static argnames, it's wrapped in a tuple."""

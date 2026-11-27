@@ -387,7 +387,7 @@ class TestGroupingUtils:  # pylint: disable=too-many-public-methods
     def test_identities_always_pauli_words(self):
         """Tests that identity terms are always identical."""
         assert are_identical_pauli_words(qp.Identity(0), qp.Identity(7))
-        assert are_identical_pauli_words(qp.Identity((-2, -3)), qp.Identity(18))
+        assert are_identical_pauli_words(qp.Identity((2, 3)), qp.Identity(18))
 
     @pytest.mark.parametrize("non_pauli_word", non_pauli_words)
     def test_are_identical_pauli_words_non_pauli_word_catch(self, non_pauli_word):
