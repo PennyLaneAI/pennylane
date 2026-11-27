@@ -356,6 +356,7 @@ Core classes and functions
 
     ~CircuitConfig
     ~QuditCircuitConfig
+    ~shot_resources
     ~MMDConfig
     ~QuditMMDConfig
     ~build_expval_func
@@ -392,6 +393,7 @@ from .qudit_expval_functions import (
 )
 from .mmd_loss_pauli import MMDConfig, build_mmd_loss_pauli, median_heuristic
 from .mmd_loss_hw import QuditMMDConfig, build_mmd_loss_hw
+from .resources import shot_resources
 from .training import BatchResult, TrainingOptions, TrainingResult, train, training_iterator
 from .utils import (
     create_lattice_gates,
@@ -404,6 +406,7 @@ from .utils import (
 __all__ = [
     "CircuitConfig",
     "QuditCircuitConfig",
+    "shot_resources",
     "MMDConfig",
     "QuditMMDConfig",
     "build_expval_func",
