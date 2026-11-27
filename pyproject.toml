@@ -19,6 +19,7 @@ dependencies = [
     "autoray==0.8.10",
     "cachetools",
     "pennylane-lightning>=0.45",
+    "pennylane-catalyst>=0.15.0",
     "requests",
     "typing_extensions",
     "packaging",
@@ -44,6 +45,11 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
 ]
 [dependency-groups]
+ci-ecosystem = [
+    # Pin these to wheels built from the intended RC branches for release testing.
+    "pennylane-catalyst>=0.16.0.dev0",
+    "pennylane-lightning>=0.46.0.dev0",
+]
 ci = [
     "matplotlib",
     "rich",
@@ -167,6 +173,16 @@ pl-device-test = "pennylane.devices.tests:cli"
 
 [project.entry-points."console_scripts"]
 "pl-device-test" = "pennylane.devices.tests:cli"
+
+# Restrict TestPyPI to the development packages used by ci-ecosystem.
+[tool.uv.sources]
+pennylane-catalyst = { index = "testpypi" }
+pennylane-lightning = { index = "testpypi" }
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+explicit = true
 
 [tool.setuptools]
 include-package-data = true

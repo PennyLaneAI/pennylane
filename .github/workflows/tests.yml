@@ -65,7 +65,7 @@ jobs:
           
       - name: Update lock files
         run: |
-          uv lock
+          uv lock --prerelease allow
 
       - name: Upload frozen requirements 
         uses: actions/upload-artifact@v6

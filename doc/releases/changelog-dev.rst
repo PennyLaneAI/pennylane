@@ -1687,6 +1687,10 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* Catalyst (``pennylane-catalyst``) is now a required dependency of PennyLane. Installing
+  PennyLane automatically installs Catalyst and its dependencies.
+  `(#10547) <https://github.com/PennyLaneAI/pennylane/pull/10547>`__
+  
 * The public decomposition functions ``one_qubit_decomposition``,
   ``two_qubit_decomposition``, and ``multi_qubit_decomposition`` have moved from
   ``pennylane.ops`` to ``pennylane.decomposition_rules``.
@@ -2134,6 +2138,11 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* CI selects Catalyst and Lightning through the ``ci-ecosystem`` dependency group and retains
+  them when installing the PennyLane branch under test. The editable-install metadata test now
+  isolates its PennyLane mock.
+  `(#10547) <https://github.com/PennyLaneAI/pennylane/pull/10547>`__
+  
 * Decomposition rules have been migrated to the new ``pennylane.decomposition_rules`` module.
   `(#10596) <https://github.com/PennyLaneAI/pennylane/pull/10596>`__
 
