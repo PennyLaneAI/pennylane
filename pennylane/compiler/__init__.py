@@ -47,6 +47,7 @@ other compiler-specific decorators and functions:
     ~qjit
     ~jvp
     ~vjp
+    ~flatten
 
 In addition, several developer functions are available to probe
 available hybrid compilers.
@@ -254,3 +255,4 @@ if no function is provided:
 
 from .compiler import active, active_compiler, available, available_compilers
 from .qjit_api import qjit
+from .flatten import flatten
