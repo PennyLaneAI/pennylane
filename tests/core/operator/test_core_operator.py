@@ -1594,24 +1594,6 @@ class TestStatePrepBase:
         assert self.DefaultPrep([1], 0).label() == "|Ψ⟩"
 
 
-class TestCriteria:
-    doubleExcitation = qp.DoubleExcitation(0.1, wires=[0, 1, 2, 3])
-    rx = qp.RX(qp.numpy.array(0.3, requires_grad=True), wires=1)
-    stiff_rx = qp.RX(0.3, wires=1)
-    cnot = qp.CNOT(wires=[1, 0])
-    rot = qp.Rot(*qp.numpy.array([0.1, -0.7, 0.2], requires_grad=True), wires=0)
-    stiff_rot = qp.Rot(0.1, -0.7, 0.2, wires=0)
-    exp = qp.expval(qp.PauliZ(0))
-
-    def test_is_trainable(self):
-        """Test is_trainable criterion."""
-        assert qp.operation.is_trainable(self.rx)
-        assert not qp.operation.is_trainable(self.stiff_rx)
-        assert qp.operation.is_trainable(self.rot)
-        assert not qp.operation.is_trainable(self.stiff_rot)
-        assert not qp.operation.is_trainable(self.cnot)
-
-
 class MultiRot(Operator2):
     """MultiRot class used for testing purposes."""
 

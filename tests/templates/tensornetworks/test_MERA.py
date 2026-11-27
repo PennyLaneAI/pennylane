@@ -219,7 +219,7 @@ class TestIndicesMERA:
                     (0, 1, 2, 3, 4, 5),
                 ),
             ),
-            (("a", "b", "c", "d"), 2, (("b", "a"), ("c", "d"), ("d", "b"), ("a", "c"), ("a", "b"))),
+            ((15, 17, 18, 19), 2, ((17, 15), (18, 19), (19, 17), (15, 18), (15, 17))),
         ],
     )
     def test_indices_output(self, wires, n_block_wires, expected_indices):

@@ -47,7 +47,7 @@ class QFT(Operator2):
     * Gradient recipe: None
 
     Args:
-        wires (int or Iterable[Number, str]]): the wire(s) the operation acts on
+        wires (int or Iterable[int]): the wire(s) the operation acts on
 
     **Example**
 

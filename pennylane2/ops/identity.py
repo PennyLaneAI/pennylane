@@ -55,7 +55,7 @@ class Identity(Operator2):
     .. seealso:: The equivalent short-form alias :class:`~I`
 
     Args:
-        wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
+        wires (Iterable[int] or int): Wire label(s) that the identity acts on.
 
     Corresponds to the trace of the quantum state, which in exact
     simulators should always be equal to 1.
@@ -160,7 +160,7 @@ class Identity(Operator2):
         .. seealso:: :meth:`~.Identity.diagonalizing_gates`.
 
         Args:
-            wires (Iterable[Any], Wires): wires that the operator acts on
+            wires (Iterable[int], Wires): wires that the operator acts on
 
         Returns:
             list[.Operator]: list of diagonalizing gates
@@ -194,7 +194,7 @@ The expectation of this observable
 .. seealso:: The equivalent long-form alias :class:`~Identity`
 
 Args:
-    wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
+    wires (Iterable[int] or int): Wire label(s) that the identity acts on.
 
 Corresponds to the trace of the quantum state, which in exact
 simulators should always be equal to 1.
@@ -350,7 +350,7 @@ class GlobalPhase(Operator2):
         .. seealso:: :meth:`~.GlobalPhase.diagonalizing_gates`.
 
         Args:
-            wires (Iterable[Any], Wires): wires that the operator acts on
+            wires (Iterable[int], Wires): wires that the operator acts on
 
         Returns:
             list[.Operator]: list of diagonalizing gates

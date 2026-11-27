@@ -436,9 +436,9 @@ class QuantumMonteCarlo(Operation):
             R (array): unitary that encodes the function applied to the auxiliary qubit register
             Q (array): matrix that encodes the expectation value according to the probability unitary
                 and the function-encoding unitary
-            wires (Any or Iterable[Any]): full set of wires that the operator acts on
-            target_wires (Iterable[Any]): the target wires
-            estimation_wires (Iterable[Any]): the estimation wires
+            wires (int or Iterable[int]): full set of wires that the operator acts on
+            target_wires (Iterable[int]): the target wires
+            estimation_wires (Iterable[int]): the estimation wires
 
         Returns:
             list[.Operator]: decomposition of the operator

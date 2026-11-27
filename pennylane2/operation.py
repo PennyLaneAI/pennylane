@@ -15,7 +15,6 @@ The former location of pennylane2/core/operator.
 """
 
 import pennylane2 as qp
-from pennylane2 import math
 
 # pylint: disable-next=wildcard-import,unused-wildcard-import
 from pennylane2.core.operator import *  # tach-ignore
@@ -61,14 +60,6 @@ def operation_derivative(operation: Operation) -> TensorLike:
     """
     generator = qp.matrix(qp.generator(operation, format="observable"), wire_order=operation.wires)
     return 1j * generator @ operation.matrix()
-
-
-@qp.BooleanFn
-def is_trainable(obj):
-    """Returns ``True`` if any of the parameters of an operator is trainable
-    according to ``qp.math.requires_grad``.
-    """
-    return any(math.requires_grad(p) for p in obj.parameters)
 
 
 def __getattr__(name):

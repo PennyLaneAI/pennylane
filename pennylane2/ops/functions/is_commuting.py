@@ -73,13 +73,13 @@ def _pword_is_commuting(pauli_word_1, pauli_word_2):
 
     **Example**
 
-    >>> pauli_word_1 = qp.prod(qp.X("a"), qp.Y("b"))
-    >>> pauli_word_2 = qp.prod(qp.Z("a"), qp.Z("c"))
+    >>> pauli_word_1 = qp.prod(qp.X(0), qp.Y(1))
+    >>> pauli_word_2 = qp.prod(qp.Z(0), qp.Z(2))
     >>> _pword_is_commuting(pauli_word_1, pauli_word_2)
     False
 
-    >>> pauli_word_1 = qp.sum(qp.X('a') , qp.Y('b'))
-    >>> pauli_word_2 = qp.sum(qp.Z('c') , qp.X('a'))
+    >>> pauli_word_1 = qp.sum(qp.X(0), qp.Y(1))
+    >>> pauli_word_2 = qp.sum(qp.Z(2), qp.X(0))
     >>> _pword_is_commuting(pauli_word_1, pauli_word_2)
     True
     """

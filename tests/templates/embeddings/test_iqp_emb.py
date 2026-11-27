@@ -137,33 +137,10 @@ class TestDecomposition:
     def test_custom_pattern_uses_indices_into_wires(self):
         """A custom pattern addresses positions in wires, not wire labels."""
 
-        op = qp.IQPEmbedding([1.0, 2.0, 3.0], wires=["z", "a", "k"], pattern=[[0, 2]])
+        op = qp.IQPEmbedding([1.0, 2.0, 3.0], wires=[7, 5, 6], pattern=[[0, 2]])
         tape = qp.tape.QuantumScript(op.decomposition())
         multi_rz_wires = [gate.wires.labels for gate in tape.operations if gate.name == "MultiRZ"]
-        assert multi_rz_wires == [("z", "k")]
-
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        features = np.random.random(size=(3,))
-
-        dev = qp.device("default.qubit", wires=3)
-        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.IQPEmbedding(features, wires=range(3))
-            return qp.expval(qp.Identity(0)), qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.IQPEmbedding(features, wires=["z", "a", "k"])
-            return qp.expval(qp.Identity("z")), qp.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
+        assert multi_rz_wires == [(7, 6)]
 
     DECOMP_PARAMS = [
         ([1.0, 2.0], [1, 2], 2, [[0, 1], [0, 1]]),
@@ -220,7 +197,7 @@ class TestInputs:
         with pytest.raises(ValueError, match="Features must be a one-dimensional"):
             circuit(f=features)
 
-    @pytest.mark.parametrize("wires", [Wire[3], ["z", "a", "k"]])
+    @pytest.mark.parametrize("wires", [Wire[3], [7, 5, 6]])
     def test_default_pattern_is_indices(self, wires):
         """Default pattern is all pairs of indices into wires."""
 

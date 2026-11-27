@@ -27,7 +27,7 @@ class Identity(ResourceOperator):
     r"""Resource class for the Identity gate.
 
     Args:
-        wires (Iterable[Any] | None): wire label(s) that the identity acts on
+        wires (Iterable[int] | None): wire label(s) that the identity acts on
 
     Resources:
         The Identity gate does not require any resources and thus it cannot be decomposed
@@ -153,7 +153,7 @@ class GlobalPhase(ResourceOperator):
     r"""Resource class for the GlobalPhase gate.
 
     Args:
-        wires (Iterable[Any] | None): the wires the operator acts on
+        wires (Iterable[int] | None): the wires the operator acts on
 
     Resources:
         The GlobalPhase gate does not require any resources and thus it cannot be decomposed

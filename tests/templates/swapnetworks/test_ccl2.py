@@ -103,33 +103,6 @@ class TestDecomposition:
         for op1, op2 in zip(queue, gate_order):
             qp.assert_equal(op1, op2)
 
-    def test_custom_wire_labels(self, tol=1e-8):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-
-        def acquaintances(index, *_, **___):
-            return qp.CNOT(index)
-
-        weights = np.random.random(size=10)
-
-        dev = qp.device("default.qubit", wires=5)
-        dev2 = qp.device("default.qubit", wires=["z", "a", "k", "e", "y"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.templates.TwoLocalSwapNetwork(
-                dev.wires, acquaintances, weights, fermionic=True, shift=False
-            )
-            return qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.templates.TwoLocalSwapNetwork(
-                dev2.wires, acquaintances, weights, fermionic=True, shift=False
-            )
-            return qp.state()
-
-        assert np.allclose(circuit(), circuit2(), atol=tol, rtol=0)
-
     @pytest.mark.parametrize(
         ("num_wires", "acquaintances", "weights", "fermionic", "shift", "exp_state"),
         [

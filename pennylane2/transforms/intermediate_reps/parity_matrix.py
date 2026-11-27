@@ -64,10 +64,10 @@ def parity_matrix(
 
     .. code-block::
 
-        x_0: ────╭●───────╭X─╭●─┤  x_0 ⊕ x_3
-        x_1: ────│──╭X────│──│──┤  x_0 ⊕ x_1 ⊕ x_2 ⊕ x_3
-        x_2: ─╭X─╰X─╰●─╭X─│──╰X─┤  x_2 ⊕ x_3
-        x_3: ─╰●───────╰●─╰●────┤  x_3
+          0: ────╭●───────╭X─╭●─┤  x_0 ⊕ x_3
+          1: ────│──╭X────│──│──┤  x_0 ⊕ x_1 ⊕ x_2 ⊕ x_3
+          2: ─╭X─╰X─╰●─╭X─│──╰X─┤  x_2 ⊕ x_3
+          3: ─╰●───────╰●─╰●────┤  x_3
 
     For more details, see the `compilation page <https://pennylane.ai/compilation/parity-matrix-intermediate-representation>`__ on the parity matrix intermediate representation.
 

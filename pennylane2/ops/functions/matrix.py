@@ -43,7 +43,7 @@ def matrix(  # pylint: disable=too-many-branches
 
     Args:
         op (Operator or QNode or QuantumTape or Callable or PauliWord or PauliSentence): A quantum operator or quantum circuit.
-        wire_order (Sequence[Any], optional): Order of the wires in the quantum circuit.
+        wire_order (Sequence[int], optional): Order of the wires in the quantum circuit.
             The default wire order depends on the type of ``op``:
 
             - If ``op`` is a :class:`~.QNode`, then the wire order is determined by the
@@ -125,7 +125,7 @@ def matrix(  # pylint: disable=too-many-branches
              0.        +0.j        , -0.92387953+0.j        ]])
 
         You can also get the unitary matrix for operations on a subspace of a larger Hilbert space. For
-        example, with the same function ``circuit`` and ``wire_order=["a", 0, "b", 1]`` you obtain the
+        example, with the same function ``circuit`` and ``wire_order=[2, 0, 3, 1]`` you obtain the
         :math:`16\times 16` matrix for the operation :math:`I\otimes Z\otimes I\otimes  R_X(\theta)`.
 
         This unitary matrix can also be used in differentiable calculations. For example, consider the

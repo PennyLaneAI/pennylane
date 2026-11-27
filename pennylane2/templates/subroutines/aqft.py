@@ -40,7 +40,7 @@ class AQFT(Operator2):
 
     Args:
         order (int): the order of approximation
-        wires (int or Iterable[Number, str]]): the wire(s) the operation acts on
+        wires (int or Iterable[int]): the wire(s) the operation acts on
 
     **Example**
 

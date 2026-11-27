@@ -138,29 +138,6 @@ class TestDecomposition:
 
         assert np.isclose(mean_wire, 1, atol=0.05)
 
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        weights = np.random.random(size=(1, 3))
-
-        dev = qp.device("default.qubit", wires=3)
-        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.RandomLayers(weights, wires=range(3))
-            return qp.expval(qp.Identity(0)), qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.RandomLayers(weights, wires=["z", "a", "k"])
-            return qp.expval(qp.Identity("z")), qp.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
-
 
 class TestInputs:  # pylint: disable=too-few-public-methods
     """Test inputs and pre-processing."""

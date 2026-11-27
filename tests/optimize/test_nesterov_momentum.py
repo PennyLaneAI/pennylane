@@ -15,6 +15,7 @@
 Unit tests for the ``NesterovMomentumOptimizer``.
 """
 
+import jax
 import pytest
 
 import pennylane2 as qp
@@ -154,3 +155,11 @@ class TestNesterovMomentumOptimizer:
             shifted_grad_term = gradf(x_onestep - stepsize * momentum_term)
             x_twosteps_target = x_onestep - (shifted_grad_term + momentum_term) * stepsize
             assert np.allclose(x_twosteps, x_twosteps_target, atol=tol)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("grad_fn", [None, lambda x: 2 * x])
+def test_optimizer_rejects_jax_parameters(grad_fn):
+    """JAX parameters require an optimizer that recognizes their trainability."""
+    with pytest.raises(ValueError, match="Optax"):
+        qp.NesterovMomentumOptimizer().step(lambda x: x**2, jax.numpy.array(2.0), grad_fn=grad_fn)

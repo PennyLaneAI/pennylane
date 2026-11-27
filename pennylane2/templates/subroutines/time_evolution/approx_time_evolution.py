@@ -188,7 +188,7 @@ class ApproxTimeEvolution(Operation):
 
         Args:
             *coeffs_and_time (TensorLike): coefficients of the Hamiltonian, appended by the time.
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (int or Iterable[int]): wires that the operator acts on
             hamiltonian (.Hamiltonian): The Hamiltonian defining the
                time-evolution operator. The Hamiltonian must be explicitly written
                in terms of products of Pauli gates (:class:`~.PauliX`, :class:`~.PauliY`,

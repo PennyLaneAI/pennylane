@@ -32,12 +32,12 @@ class TestInitialization:
     @pytest.mark.parametrize(
         ("bitstring_input", "wires_input"),
         [
-            ([0, 1, 1, 0], ("a", "b", "c", "d")),
-            ([False, True, True, False], ("a", "b", "c", "d")),
-            ((False, True, False), ("a", "b", "c")),
+            ([0, 1, 1, 0], (12, 13, 14, 15)),
+            ([False, True, True, False], (12, 13, 14, 15)),
+            ((False, True, False), (12, 13, 14)),
             ([False, True], (0, 1)),
-            (np.array([0, 0]), ["Alice", "Bob"]),
-            (np.array([False, True]), ["Alice", "Bob"]),
+            (np.array([0, 0]), [8, 9]),
+            (np.array([False, True]), [8, 9]),
             (Int[3], Wire[3]),
             (Bool[2], Wire[2]),
         ],
@@ -66,7 +66,7 @@ class TestInitialization:
     def test_canonicalize_inputs_does_not_validate_or_cast(self):
         """Tests that canonicalization changes input containers but does not validate or cast."""
         bitstring = np.array([0.0, 1.0])
-        wires = ("a", "b")
+        wires = (12, 13)
 
         # pylint: disable-next=protected-access
         canonical_bitstring, canonical_wires = qp.MultiX._canonicalize_inputs(bitstring, wires)
@@ -77,9 +77,9 @@ class TestInitialization:
 
     def test_custom_repr_override(self):
         """Tests that the Boolean bitstring is represented with integer values."""
-        op = qp.MultiX([True, False, True], wires=["a", "b", "c"])
+        op = qp.MultiX([True, False, True], wires=[12, 13, 14])
 
-        assert repr(op) == "MultiX([1 0 1], wires=['a', 'b', 'c'])"
+        assert repr(op) == "MultiX([1 0 1], wires=[12, 13, 14])"
 
 
 class TestValidation:
@@ -94,12 +94,12 @@ class TestValidation:
     @pytest.mark.parametrize(
         ("bitstring", "wires", "error_match"),
         [
-            ([0, 1, 1, 0], ["a", "b", "c"], "length"),
+            ([0, 1, 1, 0], [12, 13, 14], "length"),
             (Int[2], Wire[3], "length"),
-            ([0, 1, 2], ["a", "b", "c"], "binary"),
-            ([[0, 1, 0]], ["a", "b", "c"], "dimension"),
+            ([0, 1, 2], [12, 13, 14], "binary"),
+            ([[0, 1, 0]], [12, 13, 14], "dimension"),
             (Int[1, 3], Wire[1], "dimension"),
-            (np.array([0.0, 1.0]), ["a", "b"], "boolean"),
+            (np.array([0.0, 1.0]), [12, 13], "boolean"),
             (Float[3], Wire[3], "boolean"),
             ([0], [], "wire"),
         ],
@@ -246,7 +246,7 @@ class TestOperatorArithmetic:
 
     def test_adjoint(self):
         """Tests that the adjoint is a distinct, equivalent MultiX instance."""
-        op = qp.MultiX([1, 0, 1], wires=["a", "b", "c"])
+        op = qp.MultiX([1, 0, 1], wires=[12, 13, 14])
 
         adjoint_op = op.adjoint()
 
@@ -257,7 +257,7 @@ class TestOperatorArithmetic:
     @pytest.mark.parametrize("exponent", [-5, -3, -1, 1, 3, 5])
     def test_pow_odd_integer(self, exponent):
         """Tests that MultiX raised to an odd integer is equivalent to itself."""
-        op = qp.MultiX([1, 0, 1], wires=["a", "b", "c"])
+        op = qp.MultiX([1, 0, 1], wires=[12, 13, 14])
         pow_ops = op.pow(exponent)
 
         assert len(pow_ops) == 1
@@ -266,7 +266,7 @@ class TestOperatorArithmetic:
     @pytest.mark.parametrize("exponent", [-6, -4, -2, 0, 2, 4, 6])
     def test_pow_even_integer(self, exponent):
         """Tests that MultiX raised to an even integer is the identity."""
-        op = qp.MultiX([1, 0, 1], wires=["a", "b", "c"])
+        op = qp.MultiX([1, 0, 1], wires=[12, 13, 14])
         pow_ops = op.pow(exponent)
 
         assert len(pow_ops) == 0

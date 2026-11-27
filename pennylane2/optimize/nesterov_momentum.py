@@ -63,6 +63,7 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
             objective function output. If ``grad_fn`` is provided, the objective function
             will not be evaluated and instead ``None`` will be returned.
         """
+        self._validate_parameters(args)
         shifted_args = list(args)
 
         trainable_indices = [

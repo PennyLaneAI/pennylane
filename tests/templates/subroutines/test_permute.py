@@ -15,7 +15,6 @@
 Tests for the Permute template.
 """
 
-import numpy as np
 import pytest
 
 import pennylane2 as qp
@@ -78,7 +77,7 @@ class TestDecomposition:
         """Test that identity permutations have no effect on tapes."""
 
         with qp.queuing.AnnotatedQueue() as q:
-            qp.Permute([0, "a", "c", "d"], wires=[0, "a", "c", "d"])
+            qp.Permute([0, 7, 9, 10], wires=[0, 7, 9, 10])
 
         tape = qp.tape.QuantumScript.from_queue(q)
         # expand the Permute operation
@@ -125,7 +124,7 @@ class TestDecomposition:
             ([1, 0, 2, 3], [0, 1, 2, 3], [(0, 1)]),
             ([0, 2, 1, 3], [0, 1, 2, 3], [(1, 2)]),
             ([2, 3, 0, 1], [0, 1, 2, 3], [(0, 2), (1, 3)]),
-            (["a", "b", 0, 1], [0, 1, "a", "b"], [(0, "a"), (1, "b")]),
+            ([7, 8, 0, 1], [0, 1, 7, 8], [(0, 7), (1, 8)]),
         ],
     )
     def test_two_cycle_permutations_tape(self, permutation_order, wire_order, expected_wires):
@@ -174,8 +173,8 @@ class TestDecomposition:
         "permutation_order,wire_order,expected_wires",
         [
             ([1, 2, 0], [0, 1, 2], [(0, 1), (1, 2)]),
-            (["d", "a", "b", "c"], ["a", "b", "c", "d"], [("a", "d"), ("b", "d"), ("c", "d")]),
-            (["b", 0, "d", "a"], ["a", "b", 0, "d"], [("a", "b"), ("b", 0), (0, "d")]),
+            ([10, 7, 8, 9], [7, 8, 9, 10], [(7, 10), (8, 10), (9, 10)]),
+            ([8, 0, 10, 7], [7, 8, 0, 10], [(7, 8), (8, 0), (0, 10)]),
         ],
     )
     def test_cyclic_permutations_tape(self, permutation_order, wire_order, expected_wires):
@@ -225,14 +224,14 @@ class TestDecomposition:
         [
             ([1, 3, 0, 2], [0, 1, 2, 3], [(0, 1), (1, 3), (2, 3)]),
             (
-                ["d", "a", "e", "b", "c"],
-                ["a", "b", "c", "d", "e"],
-                [("a", "d"), ("b", "d"), ("c", "e")],
+                [10, 7, 11, 8, 9],
+                [7, 8, 9, 10, 11],
+                [(7, 10), (8, 10), (9, 11)],
             ),
             (
-                ["p", "f", 4, "q", "z", 0, "c", "d"],
-                ["z", 0, "d", "c", 4, "f", "q", "p"],
-                [("z", "p"), (0, "f"), ("d", 4), ("c", "q"), (4, "p")],
+                [13, 12, 4, 14, 15, 0, 9, 10],
+                [15, 0, 10, 9, 4, 12, 14, 13],
+                [(15, 13), (0, 12), (10, 4), (9, 14), (4, 13)],
             ),
         ],
     )
@@ -286,10 +285,10 @@ class TestDecomposition:
             ([0, 1, 2], [1, 0], [0, 1], [(0, 1)]),
             ([0, 1, 2, 3], [3, 0, 2], [0, 2, 3], [(0, 3), (2, 3)]),
             (
-                [0, 2, "a", "c", 1, 4],
-                [4, "c", 2, "a"],
-                [2, "a", "c", 4],
-                [(2, 4), ("a", "c"), ("c", 4)],
+                [0, 2, 7, 9, 1, 4],
+                [4, 9, 2, 7],
+                [2, 7, 9, 4],
+                [(2, 4), (7, 9), (9, 4)],
             ),
         ],
     )
@@ -311,30 +310,6 @@ class TestDecomposition:
         # Make sure to start comparison after the set of RZs have been applied
         assert all(op.name == "SWAP" for op in tape.operations[len(wire_labels) :])
         assert [op.wires.labels for op in tape.operations[len(wire_labels) :]] == expected_wires
-
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-
-        permutation = [3, 0, 2, 1]
-        permutation2 = ["o", "z", "k", "a"]
-        dev = qp.device("default.qubit", wires=4)
-        dev2 = qp.device("default.qubit", wires=["z", "a", "k", "o"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.Permute(permutation, wires=range(4))
-            return qp.expval(qp.Identity(0)), qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.Permute(permutation2, wires=["z", "a", "k", "o"])
-            return qp.expval(qp.Identity("z")), qp.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
     @pytest.mark.jax
     def test_jax_jit(self):
@@ -382,15 +357,15 @@ class TestInputs:
         "permutation_order,expected_error_message",
         [
             ([0], "Permutations must involve at least 2 qubits."),
-            ([2, "c", "a", 0], "Permutation must specify outcome of all wires."),
-            ([2, "a", "c", "c", 1], "Values in a permutation must all be unique"),
-            ([2, "a", "d", "c", 1], r"not present in wire set"),
+            ([2, 9, 7, 0], "Permutation must specify outcome of all wires."),
+            ([2, 7, 9, 9, 1], "Values in a permutation must all be unique"),
+            ([2, 7, 3, 9, 1], r"not present in wire set"),
         ],
     )
     def test_invalid_inputs_tape(self, permutation_order, expected_error_message):
         """Tests if errors are thrown for invalid permutations with tapes."""
 
-        wire_labels = [0, 2, "a", "c", 1]
+        wire_labels = [0, 2, 7, 9, 1]
 
         with qp.queuing.AnnotatedQueue() as q:
             with pytest.raises(ValueError, match=expected_error_message):

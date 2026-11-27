@@ -68,9 +68,9 @@ class MultiX(Operator2):
     wires. This can be seen directly from the decomposition:
 
     >>> import pennylane2 as qp
-    >>> op = qp.MultiX([1, 0, 1], wires=["a", "b", "c"])
+    >>> op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
     >>> op.decomposition()
-    [X('a'), X('c')]
+    [X(0), X(2)]
 
     Applying the same operation to :math:`|000\rangle` produces the computational basis
     state :math:`|101\rangle`:

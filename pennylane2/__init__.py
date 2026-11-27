@@ -27,7 +27,6 @@ from pennylane2 import _compatibility
 _compatibility.check_classic_import()
 
 from pennylane2 import exceptions
-from pennylane2.boolean_fn import BooleanFn
 from pennylane2 import numpy
 from pennylane2.core import queuing
 from pennylane2.core.apply import apply
@@ -155,15 +154,6 @@ from pennylane2.transforms import (
     gridsynth,
     CompilePipeline,
 )
-from pennylane2.noise import (
-    add_noise,
-    insert,
-    mitigate_with_zne,
-    fold_global,
-    poly_extrapolate,
-    richardson_extrapolate,
-    exponential_extrapolate,
-)
 from pennylane2.ops.functions import (
     dot,
     eigvals,
@@ -201,7 +191,6 @@ from pennylane2.io import (
     from_qasm,
     to_openqasm,
     from_qiskit,
-    from_qiskit_noise,
     from_qiskit_op,
     from_qasm3,
 )
@@ -209,9 +198,6 @@ from pennylane2.io import (
 from pennylane2 import logging
 
 from pennylane2 import data
-
-from pennylane2 import noise
-from pennylane2.noise import NoiseModel
 
 from pennylane2.devices import Tracker
 from pennylane2.devices.device_constructor import device, refresh_devices

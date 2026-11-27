@@ -185,6 +185,7 @@ class TestAnalysisPassConversion:
         example_loop_analysis_pass_result["circuit"]["quantum_operations"]["3"] = {}
         example_loop_analysis_pass_result["circuit"]["quantum_operations"]["3"]["PPR-pi/2"] = 1
         example_loop_analysis_pass_result["circuit"]["quantum_operations"]["3"]["PPM"] = 1
+        example_loop_analysis_pass_result["circuit"]["quantum_operations"]["1"]["PauliMeasure"] = 2
 
         # Force a measurement inside a subroutine
         example_loop_analysis_pass_result["dyn_for_loop_1"]["measurement_processes"] = {}
@@ -199,6 +200,7 @@ class TestAnalysisPassConversion:
             SpecsResources(
                 counts={
                     "Hadamard": 3,
+                    "PPM-w1": 2,
                     "PPM-w3": 1,
                     "PPR-pi/2-w3": 1,
                     "PauliX": Expression({(var,): 2}),

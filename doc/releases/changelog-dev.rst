@@ -4,6 +4,10 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* The new :class:`~.RZLayer` applies :class:`~.RZ` rotations by the same angle to each of its
+  wires. The shared angle allows for more efficient decomposition rules than individual rotations.
+  `(#10508) <https://github.com/PennyLaneAI/pennylane/pull/10508>`__
+
 * Added a lattice-surgery decomposition for :class:`~.MultiX` with one control wire,
   using three Pauli product measurements and one auxiliary qubit.
   `(#10558) <https://github.com/PennyLaneAI/pennylane/pull/10558>`__
@@ -38,8 +42,12 @@ New features since last release
   measurement-based uncomputation from
   Appendix C of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__, which reduces their Toffoli 
   cost to roughly :math:`2\sqrt{L}` for :math:`L` bitstrings, given enough work wires.
+  The same technique gives ``QROMLoad`` a new decomposition, which loads with ``SelectSwap`` and
+  then cleans up the garbage on the work wires with ``Adjoint(QROMLoad)``, instead of repeating
+  the Select-SWAP circuit.
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
   `(#10363) <https://github.com/PennyLaneAI/pennylane/pull/10363>`__
+  `(#10588) <https://github.com/PennyLaneAI/pennylane/pull/10588>`__
 
   For example, we may use ``QROMLoad`` on a zeroed target register, but need ``QROM`` to XOR more
   data onto it afterwards:
@@ -633,10 +641,11 @@ New features since last release
       {'CNOT': 1, 'RX': 1}
 
 * A new function called :func:`~pennylane2.estimate` is available, which provides a quick projection of the
-  resources of a ``qjit``-compiled QNode onto a target gate set, without executing the circuit.
-  Before any specified compilation passes, the original circuit's operations and their possible
-  decomposition pathways to the ``target`` gate set are analyzed and the resulting operations are
-  counted. Note that :func:`~pennylane2.estimate` is only supported with ``qp.qjit(capture=True)``.
+  resources of a ``qjit``-compiled QNode onto a ``target``, without executing the circuit. The
+  ``target`` is a gate set, or a level of the compile pipeline, which defaults to ``"user"``. The
+  original circuit's operations and their possible decomposition pathways to the gates of the
+  ``target`` are analyzed and the resulting operations are counted. Note that
+  :func:`~pennylane2.estimate` is only supported with ``qp.qjit(capture=True)``.
   `(#10296) <https://github.com/PennyLaneAI/pennylane/pull/10296>`__
   `(#10572) <https://github.com/PennyLaneAI/pennylane/pull/10572>`__
 
@@ -680,6 +689,17 @@ New features since last release
       - probs(all wires): 1
       Total wires: 2
       Circuit Depth: Not computed
+
+  The ``target`` can also be a level of the compile pipeline, such as ``"user"`` (the default),
+  ``"device"``, a marker label, or an ``int``. The resources are then projected onto the gates
+  that the circuit can contain at that level, such as the gate set of the last
+  :func:`~.transforms.decompose` transform before it, or the gates supported by the QNode's device.
+  The :func:`~.transforms.decompose` transforms before that level are applied, with their
+  ``fixed_decomps`` and ``exclude_decomps``, while the other transforms are still skipped, as with
+  ``level="top"``. If ``target`` is a gate set, the rules of the compile pipeline are ignored,
+  with a warning. The decomposition rules are counted with the resources that they
+  declare, so the resources can also differ from those of :func:`~.analyze`.
+  `(#10541) <https://github.com/PennyLaneAI/pennylane/pull/10541>`__
 
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
   that can't be resolved at compile time.
@@ -873,9 +893,10 @@ New features since last release
 * Added :class:`~.QubitizationTHC`, the qubitization walk operator of a tensor hypercontracted
   Hamiltonian. It composes the (also newly added) :class:`~.SuperpositionTHC` and
   :class:`~.AliasSamplingTHC` into ``PREPARE``, applies :class:`~.SelectTHC`, and reflects about
-  :math:`|\vec 0\rangle` on the ``PREPARE`` register. Use :func:`~.qubitization_thc_wires` to
-  determine the register sizes, as well as :func:`~.alias_sampling_thc_wires` and
-  :func:`~.select_thc_wires` to determine the register sizes of the respective component.
+  :math:`|\vec 0\rangle` on the ``PREPARE`` wires that end up in superposition. Use
+  :func:`~.qubitization_thc_wires` to determine the register sizes, as well as
+  :func:`~.alias_sampling_thc_wires` and :func:`~.select_thc_wires` to determine the register
+  sizes of the respective component.
   `(#9554) <https://github.com/PennyLaneAI/pennylane/pull/9554>`__
   `(#9940) <https://github.com/PennyLaneAI/pennylane/pull/9940>`__
   `(#10119) <https://github.com/PennyLaneAI/pennylane/pull/10119>`__
@@ -883,6 +904,7 @@ New features since last release
   `(#10158) <https://github.com/PennyLaneAI/pennylane/pull/10158>`__
   `(#10163) <https://github.com/PennyLaneAI/pennylane/pull/10163>`__
   `(#10184) <https://github.com/PennyLaneAI/pennylane/pull/10184>`__
+  `(#10588) <https://github.com/PennyLaneAI/pennylane/pull/10588>`__
 
 * Added :class:`~.OneBodyBlockEncoding`, a block-encoding of a real symmetric one-body operator
   :math:`\hat O`, normalized as :math:`\hat O / \lambda` with :math:`\lambda = \sum_p |\mu_p|`,
@@ -987,6 +1009,14 @@ New features since last release
 
 Improvements 🛠
 ~~~~~~~~~~~~~~
+
+* :func:`~.grad` and :func:`~.jacobian` now use JAX to differentiate functions of JAX arrays
+  outside of :func:`~.qjit`. For example, ``qp.grad(lambda x: x**2)(jax.numpy.array(2.0))``
+  returns a JAX gradient. As within :func:`~.qjit`, JAX inputs follow JAX's ``argnums``
+  convention: by default, only the first positional argument is differentiated.
+  :class:`~.GradientDescentOptimizer` and its subclasses raise an error for JAX parameters
+  and point to native JAX optimizers such as Optax.
+  `(#10560) <https://github.com/PennyLaneAI/pennylane/pull/10560>`__
 
 * :class:`~.ControlledSequence` now has two registered decomposition variants: one uses
   powers that can simplify eagerly for faster execution, while the other uses nested
@@ -1257,12 +1287,21 @@ Improvements 🛠
 * Added decompositions of ``CNOT``, ``CZ``, ``CY``, and ``Hadamard`` directly to PPMs.
   `(#9865) <https://github.com/PennyLaneAI/pennylane/pull/9865>`__
 
+* Added decompositions of :class:`~.SemiAdder` and its controlled versions using Pauli
+  product rotations and measurements, available with capture or an active compiler.
+  `(#10099) <https://github.com/PennyLaneAI/pennylane/pull/10099>`__
+
 * Sorts the gate counts in the display of resources produced from decompositions.
   `(#9916) <https://github.com/PennyLaneAI/pennylane/pull/9916>`__
 
 * Reduced the :class:`~.CNOT` overhead of :class:`~.SemiAdder` if the size of the first addend
   register, ``x_wires``, is smaller than the size of the second addend register, ``y_wires``.
   `(#9807) <https://github.com/PennyLaneAI/pennylane/pull/9807>`__
+
+* Updated the decomposition of a controlled :class:`~.SemiAdder` to use one controlled :class:`~.CNOT`
+  fewer if the first addend register ``x_wires`` is at least as large as the second addend register
+  ``y_wires``. The same improvement is applied to the decomposition of :class:`~.OutSquare`.
+  `(#10599) <https://github.com/PennyLaneAI/pennylane/pull/10599>`__
 
 * Type aliases ``Int``, ``Float``, ``Complex``, ``Bool``, and ``Wire`` have been introduced to allow for intuitive
   abstract type notation.
@@ -1654,6 +1693,17 @@ Breaking changes 💔
   The device test command is now ``pl2-device-test``.
   Serialized objects containing Classic module paths are not migrated automatically.
   Importing PennyLane2 after Classic raises an error; use separate processes or kernels.
+
+* :func:`~.sign_expand` now requires `controls` wires instead of defaulting to ``("Hadamard", "Target")``
+  as string wires will no longer be supported.
+  `(#10592) <https://github.com/PennyLaneAI/pennylane/pull/10592>`__
+
+* The ``pennylane2.noise`` module has been removed, including ``NoiseModel``,
+  ``add_noise``, ``insert``, noise mitigation transforms (``mitigate_with_zne``,
+  ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,
+  ``exponential_extrapolate``), and ``from_qiskit_noise``. Noise channels such as
+  :class:`~.AmplitudeDamping` are unaffected.
+  `(#10593) <https://github.com/PennyLaneAI/pennylane/pull/10593>`__
 
 * Removed the ``pennylane2.queuing`` shim. Import directly from
   ``pennylane2.core.queuing``; ``qp.queuing`` now refers to that module.
@@ -2052,6 +2102,10 @@ Breaking changes 💔
   simplification and separate compilation into blocks.
   `(#10413) <https://github.com/PennyLaneAI/pennylane/pull/10413>`__
 
+* ``qp.BooleanFn``, the ``pennylane2.boolean_fn`` module, and ``qp.operation.is_trainable``
+  have been removed. Legacy device stopping conditions are now ordinary callables.
+  `(#10601) <https://github.com/PennyLaneAI/pennylane/pull/10601>`__
+
 Deprecations 👋
 ~~~~~~~~~~~~~~~
 
@@ -2081,6 +2135,15 @@ Deprecations 👋
 
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
+
+* The helper that inserts the resource analysis passes for :func:`~.analyze` and
+  :func:`~pennylane2.estimate` now inserts the requested analysis pass at every level, instead of
+  ``resource-analysis`` at every level other than 0.
+  `(#10541) <https://github.com/PennyLaneAI/pennylane/pull/10541>`__
+
+* :func:`~.testing.assert_valid_decomp_rule` now checks that decomposition rules accept
+  positional arguments for compatibility with Catalyst.
+  `(#10589) <https://github.com/PennyLaneAI/pennylane/pull/10589>`__
 
 * Added pinned local ``ty`` tooling and a diagnostic baseline for the package. Performs fixes
   to improve ty compatibility.
@@ -2278,6 +2341,7 @@ Internal changes ⚙️
     `(#10495) <https://github.com/PennyLaneAI/pennylane/pull/10495>`__
     `(#10459) <https://github.com/PennyLaneAI/pennylane/pull/10459>`__
     `(#10240) <https://github.com/PennyLaneAI/pennylane/pull/10240>`__
+    `(#10587) <https://github.com/PennyLaneAI/pennylane/pull/10587>`__
 
   - Quantum chemistry operators are ported:
 
@@ -2451,9 +2515,6 @@ Internal changes ⚙️
   - Integration with :func:`pennylane2.apply`.
     `(#9738) <https://github.com/PennyLaneAI/pennylane/pull/9738>`__
 
-  - Integration with :func:`pennylane2.insert`.
-    `(#9685) <https://github.com/PennyLaneAI/pennylane/pull/9685>`__
-
   - Integration with the graph-based decomposition system.
     `(#9723) <https://github.com/PennyLaneAI/pennylane/pull/9723>`__
     `(#9727) <https://github.com/PennyLaneAI/pennylane/pull/9727>`__
@@ -2558,7 +2619,7 @@ Documentation 📝
   `(#10530) <https://github.com/PennyLaneAI/pennylane/pull/10530>`__
 
 * The ``level`` argument of :func:`~.drawer.draw`, :func:`~.drawer.draw_mpl`,
-  :func:`~.workflow.construct_tape` and :func:`~.noise.add_noise` is now documented in
+  :func:`~.workflow.construct_tape` and ``add_noise`` is now documented in
   :func:`~.workflow.construct_batch`.
   `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
 
@@ -2636,6 +2697,13 @@ Documentation 📝
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* Fixed :func:`~.ctrl` to return the original operator or callable when the control wires are empty.
+  `(#10595) <https://github.com/PennyLaneAI/pennylane/pull/10595>`__
+
+* Resource analysis of qjit-compiled circuits now reports :func:`~.pauli_measure` operations
+  as ``PPM-w<n>`` when Catalyst captures them as generic measurements.
+  `(#10598) <https://github.com/PennyLaneAI/pennylane/pull/10598>`__
 
 * Fixed the extra-control-wire test for :class:`~.QROM` to omit work-register sampling
   when no work wires are present, and removed its outdated expected-failure marker.

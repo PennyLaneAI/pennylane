@@ -98,7 +98,7 @@ def _storable_as_array(leaves: list) -> bool:
     """Whether ``leaves`` can be stored as a single array, which is more efficient than a
     list; otherwise they are stored leaf-by-leaf as a list.
 
-    Returns ``False`` for unicode-string leaves (e.g. string wire labels), which an HDF5 array
+    Returns ``False`` for unicode-string leaves (e.g. operator identifiers), which an HDF5 array
     reads back as ``bytes``; for ragged, mixed, or object leaves, which cannot be stacked into
     one array; and for non-numpy leaves such as ``torch``/``jax`` tensors, which ``DatasetArray``
     does not handle. That interface check also guards the ``np.asarray`` calls below, which would

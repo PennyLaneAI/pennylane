@@ -186,7 +186,7 @@ def metric_tensor(  # pylint: disable=too-many-arguments
         allow_nonunitary (bool): Whether non-unitary operations are allowed in circuits
             created by the transform. Only relevant if ``approx`` is ``None``.
             Should be set to ``True`` if possible to reduce cost.
-        aux_wire (None or int or str or Sequence or pennylane2.wires.Wires): Auxiliary wire to
+        aux_wire (None or int or Sequence or pennylane2.wires.Wires): Auxiliary wire to
             be used for Hadamard tests. If ``None`` (the default), a suitable wire is inferred
             from the (number of) used wires in the original circuit and ``device_wires``,
             if the latter are given.
@@ -653,7 +653,7 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire, shots):
         layer_j (list): The second layer of parametrized ops
         allow_nonunitary (bool): Whether non-unitary operations are allowed
             in the circuit; passed to ``_get_gen_op``
-        aux_wire (object or pennylane2.wires.Wires): Auxiliary wire on which to
+        aux_wire (int or pennylane2.wires.Wires): Auxiliary wire on which to
             control the controlled-generator operations
 
     Returns:
@@ -856,10 +856,11 @@ def _get_aux_wire(aux_wire, tape, device_wires):
     r"""Determine an unused wire to be used as auxiliary wire for Hadamard tests.
 
     Args:
-        aux_wire (object): Input auxiliary wire. May be one of a variety of input formats:
+        aux_wire (int or Sequence[int] or Wires or None): Input auxiliary wire. May be one of a variety of
+            input formats:
             If ``None``, try to infer a reasonable choice based on the number of wires used
             in the ``tape``, and based on ``device_wires``, if they are not ``None``.
-            If an ``int``, a ``str`` or a ``Sequence``, convert the input to a ``Wires``
+            If an ``int`` or a ``Sequence[int]``, convert the input to a ``Wires``
             object and take the first entry of the result. This leads to consistent behaviour
             between ``_get_aux_wire`` and the ``Wires`` class.
             If a ``Wires`` instance already, the conversion to such an instance is performed

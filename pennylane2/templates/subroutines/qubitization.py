@@ -41,7 +41,7 @@ class Qubitization(Operation):
 
     Args:
         hamiltonian (Union[.Hamiltonian, .Sum, .Prod, .SProd, .LinearCombination]): The Hamiltonian written as a linear combination of unitaries.
-        control (Iterable[Any], Wires): The control qubits for the Qubitization operator.
+        control (Iterable[int], Wires): The control qubits for the Qubitization operator.
 
     **Example**
 
@@ -144,7 +144,7 @@ class Qubitization(Operation):
 
         Args:
             *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            wires (Iterable[Any], Wires): wires that the operator acts on
+            wires (Iterable[int], Wires): wires that the operator acts on
             **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
 
         Returns:

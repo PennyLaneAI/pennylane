@@ -132,8 +132,8 @@ def resolve_dynamic_wires(
 
     Args:
         tape (QuantumScript): A circuit that may contain dynamic wire allocations and deallocations
-        zeroed (Sequence[Hashable]): a register of wires known to be in the :math:`|0\rangle` state
-        any_state (Sequence[Hashable]): a register of wires with any state
+        zeroed (Sequence[int]): a register of wires known to be in the :math:`|0\rangle` state
+        any_state (Sequence[int]): a register of wires with any state
         min_int (Optional[int]): If not ``None``, new wire labels can be created starting at this
             integer and incrementing whenever a new wire is needed.
         allow_resets (boo): Whether or not mid circuit measurements with ``reset=True`` can be added
@@ -190,20 +190,20 @@ def resolve_dynamic_wires(
     assigned to both wires known to be in the zero state.
 
     >>> from pennylane2.transforms import resolve_dynamic_wires
-    >>> assigned_two_zeroed = resolve_dynamic_wires(circuit, zeroed=("a", "b"))
+    >>> assigned_two_zeroed = resolve_dynamic_wires(circuit, zeroed=(0, 1))
     >>> print(qp.draw(assigned_two_zeroed)())
-    a: ──Y─┤
-    b: ──X─┤
+    0: ──Y─┤
+    1: ──X─┤
 
     If we only provide one zeroed wire, we perform a reset on that wire before reusing for the ``Y`` operation.
 
-    >>> assigned_one_zeroed = resolve_dynamic_wires(circuit, zeroed=("a",))
+    >>> assigned_one_zeroed = resolve_dynamic_wires(circuit, zeroed=(0,))
     >>> print(qp.draw(assigned_one_zeroed)())
-    a: ──X──┤↗│  │0⟩──Y─┤
+    0: ──X──┤↗│  │0⟩──Y─┤
 
     This reset behavior can be turned off with ``allow_resets=False``.
 
-    >>> no_resets = resolve_dynamic_wires(circuit, zeroed=("a",), allow_resets=False)
+    >>> no_resets = resolve_dynamic_wires(circuit, zeroed=(0,), allow_resets=False)
     >>> print(qp.draw(no_resets)())
     Traceback (most recent call last):
         ...
@@ -212,16 +212,16 @@ def resolve_dynamic_wires(
     If we only provide ``any_state`` qubits with unknown states, then they will be reset to zero before being used
     in an operation that requires a zero state.
 
-    >>> assigned_any_state = resolve_dynamic_wires(circuit, any_state=("a", "b"))
+    >>> assigned_any_state = resolve_dynamic_wires(circuit, any_state=(0, 1))
     >>> print(qp.draw(assigned_any_state)())
-    b: ──┤↗│  │0⟩──X──┤↗│  │0⟩──Y─┤
+    1: ──┤↗│  │0⟩──X──┤↗│  │0⟩──Y─┤
 
 
-    Note that the last provided wire with label ``"b"`` is used first.
+    Note that the last provided wire with label ``1`` is used first.
     If the wire allocations had ``state="any"``, no reset operations would occur:
 
     >>> print(qp.draw(assigned_any_state)(state="any"))
-    b: ──X──Y─┤
+    1: ──X──Y─┤
 
     Instead of registers of available wires, a ``min_int`` can be specified instead.  The ``min_int`` indicates
     the first integer to start allocating wires to.  Whenever we have no qubits available to allocate, we increment the integer
@@ -248,14 +248,14 @@ def resolve_dynamic_wires(
     2: ──────────────╰X─┤
 
     If both an explicit register and ``min_int`` are specified, ``min_int`` will be used once all available
-    explicit wires are loaned out. Below, ``"a"`` is extracted and used first, but then wires
-    are extracted starting from ``0``.
+    explicit wires are loaned out. Below, ``2`` is used first, followed by newly allocated
+    wires starting from ``3``.
 
-    >>> zeroed_and_min_int = resolve_dynamic_wires(multiple_allocations, zeroed=("a",), min_int=0)
+    >>> zeroed_and_min_int = resolve_dynamic_wires(multiple_allocations, zeroed=(2,), min_int=3)
     >>> print(qp.draw(zeroed_and_min_int)())
-    a: ──X──┤↗│  │0⟩─╭●─┤
-    0: ──────────────├●─┤
-    1: ──────────────╰X─┤
+    2: ──X──┤↗│  │0⟩─╭●─┤
+    3: ──────────────├●─┤
+    4: ──────────────╰X─┤
 
     """
     manager = _WireManager(

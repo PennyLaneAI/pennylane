@@ -177,7 +177,7 @@ class QubitCarry(Operation):
         .. seealso:: :meth:`~.QubitCarry.decomposition`.
 
         Args:
-            wires (Iterable[Any], Wires): wires that the operator acts on
+            wires (Iterable[int], Wires): wires that the operator acts on
 
         Returns:
             list[Operator]: decomposition of the operator
@@ -335,7 +335,7 @@ class QubitSum(Operation):
         .. seealso:: :meth:`~.QubitSum.decomposition`.
 
         Args:
-            wires (Iterable[Any], Wires): wires that the operator acts on
+            wires (Iterable[int], Wires): wires that the operator acts on
 
         Returns:
             list[Operator]: decomposition of the operator

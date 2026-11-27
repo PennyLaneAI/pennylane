@@ -101,19 +101,6 @@ Utility Functions
 
     ~abstractify
 
-Boolean Functions
-~~~~~~~~~~~~~~~~~
-
-:class:`~.BooleanFn`'s are functions of a single object that return ``True`` or ``False``.
-The ``operation`` module provides the following:
-
-.. currentmodule:: pennylane2.operation
-
-.. autosummary::
-    :toctree: api
-
-    ~is_trainable
-
 Other
 ~~~~~
 

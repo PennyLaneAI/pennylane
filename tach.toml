@@ -197,12 +197,6 @@ cannot_depend_on = ["pennylane2.ftqc", "pennylane2.labs"]
 layer = "core"
 
 [[modules]]
-path = "pennylane2.boolean_fn"
-depends_on = []
-cannot_depend_on = ["pennylane2.ftqc", "pennylane2.labs"]
-layer = "core"
-
-[[modules]]
 path = "pennylane2.typing"
 depends_on = []
 cannot_depend_on = ["pennylane2.ftqc", "pennylane2.labs"]
@@ -339,11 +333,6 @@ cannot_depend_on = ["pennylane2.ftqc", "pennylane2.labs"]
 
 [[modules]]
 path = "pennylane2.drawer"
-layer = "tertiary"
-cannot_depend_on = ["pennylane2.ftqc", "pennylane2.labs"]
-
-[[modules]]
-path = "pennylane2.noise"
 layer = "tertiary"
 cannot_depend_on = ["pennylane2.ftqc", "pennylane2.labs"]
 

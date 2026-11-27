@@ -33,12 +33,12 @@ def test_standard_checks(work_wires):
 
 def test_repr():
     """Test the repr for a flip sign operator."""
-    op = qp.FlipSign([0, 1], wires=("a", "b"))
-    expected = "FlipSign(state=(0, 1), wires=['a', 'b'], work_wires=[])"
+    op = qp.FlipSign([0, 1], wires=(7, 9))
+    expected = "FlipSign(state=(0, 1), wires=[7, 9], work_wires=[])"
     assert repr(op) == expected
 
-    op = qp.FlipSign([0, 1], wires=("a", "b"), work_wires=["c"])
-    expected = "FlipSign(state=(0, 1), wires=['a', 'b'], work_wires=['c'])"
+    op = qp.FlipSign([0, 1], wires=(7, 9), work_wires=[12])
+    expected = "FlipSign(state=(0, 1), wires=[7, 9], work_wires=[12])"
     assert repr(op) == expected
 
 
@@ -142,20 +142,6 @@ class TestFlipSign:
         """Assert error raised when given empty wires"""
         with pytest.raises(ValueError, match="At least one wire is required."):
             qp.FlipSign(state, wires=wires)
-
-    @pytest.mark.parametrize(
-        "state, wires, expected_wires",
-        [
-            (1, "", [""]),
-            (1, [""], [""]),
-            ([1, 0], ["", "a"], ["", "a"]),
-        ],
-    )
-    def test_empty_string_wire_label(self, state, wires, expected_wires):
-        """Test that ``""`` is a valid wire label, as it is for other PennyLane
-        operators. This was not allowed before porting to Operator2."""
-        op = qp.FlipSign(state, wires=wires)
-        assert op.wires == Wires(expected_wires)
 
     @pytest.mark.jax
     def test_jax_jit(self):

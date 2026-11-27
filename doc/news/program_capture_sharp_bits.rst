@@ -302,7 +302,6 @@ errors may occur. Currently, this includes:
 * :func:`~.pennylane2.transforms.zx.push_hadamards`
 * :func:`~.pennylane2.transforms.zx.reduce_non_clifford`
 * :func:`~.pennylane2.transforms.zx.todd`
-* :func:`~.pennylane2.add_noise`
 * :func:`~.pennylane2.transforms.undo_swaps`
 * :func:`~.pennylane2.transforms.rowcol`
 * :func:`~.pennylane2.map_wires`

@@ -158,8 +158,8 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         with qp.tape.QuantumTape() as tape:
             qp.RX(0.432, wires=0)
             qp.RY(0.543, wires=0)
-            qp.CNOT(wires=[0, 'a'])
-            qp.RX(0.133, wires='a')
+            qp.CNOT(wires=[0, 2])
+            qp.RX(0.133, wires=2)
             qp.expval(qp.Z(0))
 
     A ``QuantumTape`` can also be constructed directly from an :class:`~.AnnotatedQueue`:
@@ -169,8 +169,8 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         with qp.queuing.AnnotatedQueue() as q:
             qp.RX(0.432, wires=0)
             qp.RY(0.543, wires=0)
-            qp.CNOT(wires=[0, 'a'])
-            qp.RX(0.133, wires='a')
+            qp.CNOT(wires=[0, 2])
+            qp.RX(0.133, wires=2)
             qp.expval(qp.Z(0))
 
         tape = qp.tape.QuantumTape.from_queue(q)
@@ -179,15 +179,15 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     about the quantum circuit can be queried:
 
     >>> list(tape)
-    [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a']), expval(Z(0))]
+    [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 2]), RX(0.133, wires=[2]), expval(Z(0))]
     >>> tape.operations
-    [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a'])]
+    [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 2]), RX(0.133, wires=[2])]
     >>> tape.observables
     [Z(0)]
     >>> tape.get_parameters()
     [0.432, 0.543, 0.133]
     >>> tape.wires
-    Wires([0, 'a'])
+    Wires([0, 2])
     >>> tape.num_params
     3
 
@@ -200,8 +200,8 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     ...     print(op)
     RX(0.432, wires=[0])
     RY(0.543, wires=[0])
-    CNOT(wires=[0, 'a'])
-    RX(0.133, wires=['a'])
+    CNOT(wires=[0, 2])
+    RX(0.133, wires=[2])
     expval(Z(0))
 
     Tapes can also as sequences and support indexing and the ``len`` function:
@@ -219,7 +219,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     Once constructed, the quantum tape can be executed directly on a supported
     device via the :func:`~.pennylane2.execute` function:
 
-    >>> dev = qp.device("default.qubit", wires=[0, 'a'])
+    >>> dev = qp.device("default.qubit", wires=[0, 2])
     >>> qp.execute([tape], dev, diff_method=None)
     (np.float64(0.7775069381227451),)
 

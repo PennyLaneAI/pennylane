@@ -409,7 +409,7 @@ def excitations_to_wires(singles, doubles, wires=None):
             qubits representing the double excitation
             :math:`\vert s, r, q, p \rangle = \hat{c}_p^\dagger \hat{c}_q^\dagger
             \hat{c}_r \hat{c}_s \vert \mathrm{HF}\rangle`
-        wires (Iterable[Any]): Wires of the quantum device. If None, will use consecutive wires.
+        wires (Iterable[int]): Wires of the quantum device. If None, will use consecutive wires.
 
     The indices :math:`r, s` and :math:`p, q` in these lists correspond, respectively, to the
     occupied and virtual orbitals involved in the generated single and double excitations.
@@ -429,12 +429,12 @@ def excitations_to_wires(singles, doubles, wires=None):
     >>> print(doubles_wires)
     [[[0, 1], [2, 3]]]
 
-    >>> wires=['a0', 'b1', 'c2', 'd3']
+    >>> wires = [0, 1, 2, 3]
     >>> singles_wires, doubles_wires = excitations_to_wires(singles, doubles, wires=wires)
     >>> print(singles_wires)
-    [['a0', 'b1', 'c2'], ['b1', 'c2', 'd3']]
+    [[0, 1, 2], [1, 2, 3]]
     >>> print(doubles_wires)
-    [[['a0', 'b1'], ['c2', 'd3']]]
+    [[[0, 1], [2, 3]]]
     """
 
     if (not singles) and (not doubles):

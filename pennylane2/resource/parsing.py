@@ -129,7 +129,10 @@ def _mlir_resources_to_specs_resources(
     quantum_operations = defaultdict(int)
     for gate_size, ops in resources["quantum_operations"].items():
         for gate_name, count in ops.items():
-            if gate_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
+            if gate_name == "PauliMeasure":
+                # Catalyst reports PauliMeasure captured as a generic measurement by its op name
+                gate_name = f"PPM-w{gate_size}"
+            elif gate_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
                 # Separate out PPMs and PPRs by weight
                 gate_name += f"-w{gate_size}"
 

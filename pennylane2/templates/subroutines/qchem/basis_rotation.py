@@ -80,7 +80,7 @@ class BasisRotation(Operator2):
     .. seealso:: :func:`~.math.decomposition.givens_decomposition` for the underlying matrix factorization.
 
     Args:
-        wires (Iterable[Any]): wires that the operator acts on
+        wires (Iterable[int]): wires that the operator acts on
         unitary_matrix (array): matrix specifying the basis transformation
         check (bool): test unitarity of the provided `unitary_matrix`
 

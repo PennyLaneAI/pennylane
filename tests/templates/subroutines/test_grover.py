@@ -49,8 +49,8 @@ def test_standard_validity():
 
 def test_work_wires():
     """Assert work wires get passed to MultiControlledX"""
-    wires = ("a", "b")
-    work_wire = ("aux",)
+    wires = (8, 10)
+    work_wire = (9,)
 
     op = qp.GroverOperator(wires=wires, work_wires=work_wire)
 
@@ -187,7 +187,7 @@ def test_grover_diffusion_matrix_results():
     assert np.allclose(probs_example, probs_matrix)
 
 
-@pytest.mark.parametrize("wires", ((0, 1, 2), ("a", "c", "b")))
+@pytest.mark.parametrize("wires", ((0, 1, 2), (8, 11, 10)))
 def test_expand(wires):
     """Asserts decomposition uses expected operations and wires"""
     op = qp.GroverOperator(wires=wires)

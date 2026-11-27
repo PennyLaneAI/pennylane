@@ -23,7 +23,6 @@ from functools import lru_cache
 
 import numpy as np
 
-from pennylane2.boolean_fn import BooleanFn
 from pennylane2.core.measurements import MeasurementProcess
 from pennylane2.core.operator import Operation, Operator, StatePrepBase
 from pennylane2.core.qscript import QuantumScript
@@ -71,9 +70,9 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
     """Abstract base class for PennyLane devices.
 
     Args:
-        wires (int or Iterable[Number, str]]): Number of subsystems represented by the device,
-            or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-            or strings (``['auxiliary', 'q1', 'q2']``). Default 1 if not specified.
+        wires (int or Iterable[int]): Number of subsystems represented by the device,
+            or an iterable of unique non-negative integer labels (e.g., ``[0, 2, 5]``). Default 1 if
+            not specified.
         shots (int): Number of circuit evaluations/random samples used to estimate
             expectation values of observables. Defaults to 1000 if not specified.
     """
@@ -291,9 +290,9 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
         **Example**
 
-        >>> dev = device('my.device', wires=['b', 'a'])
+        >>> dev = device("my.device", wires=[2, 3])
         >>> dev.wire_map()
-        OrderedDict( [(Wires(['a']), Wires([0])), (Wires(['b']), Wires([1]))])
+        OrderedDict( [(Wires([3]), Wires([0])), (Wires([2]), Wires([1]))])
         """
         wire_map = {w: i for i, w in enumerate(wires)}
         return OrderedDict(wire_map)
@@ -554,12 +553,11 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
     @property
     def stopping_condition(self):
-        """.BooleanFn: Returns the stopping condition for the device. The returned
+        """Callable: Returns the stopping condition for the device. The returned
         function accepts a queuable object (including a PennyLane operation
         and observable) and returns ``True`` if supported by the device."""
-        return BooleanFn(
-            lambda obj: not isinstance(obj, QuantumScript)
-            and (isinstance(obj, MeasurementProcess) or self.supports_operation(obj.name))
+        return lambda obj: not isinstance(obj, QuantumScript) and (
+            isinstance(obj, MeasurementProcess) or self.supports_operation(obj.name)
         )
 
     def default_expand_fn(self, circuit, max_expansion=10):

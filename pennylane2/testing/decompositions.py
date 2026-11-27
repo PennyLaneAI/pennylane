@@ -17,6 +17,7 @@ This module contains utilities for testing decomposition rules.
 
 from collections import defaultdict
 from functools import partial, singledispatch
+from inspect import Parameter, signature
 
 import jax
 
@@ -137,9 +138,10 @@ def assert_valid_decomp_rule(
 ) -> None:
     """Check that a decomposition rule is consistent with the operator it decomposes.
 
-    The checks are skipped if the rule is not applicable to ``op``. Otherwise, the gate counts
-    declared by the rule's resource function must match the operations the rule produces, and the
-    matrix of the decomposition must match the matrix of ``op``.
+    Rules must accept positional arguments for compatibility with Catalyst. The remaining checks
+    are skipped if the rule is not applicable to ``op``. Otherwise, the gate counts declared by the
+    rule's resource function must match the operations the rule produces, and the matrix of the
+    decomposition must match the matrix of ``op``.
 
     Args:
         op (Operator): the operator to decompose
@@ -174,6 +176,16 @@ def assert_valid_decomp_rule(
     Hadamard :      2  !=  1
 
     """
+
+    accepts_positional_args = any(
+        param.kind
+        in (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD, Parameter.VAR_POSITIONAL)
+        for param in signature(rule).parameters.values()
+    )
+    assert accepts_positional_args, (
+        f"Decomposition rule {rule.name} for {op.name} must accept positional arguments. "
+        "i.e. use *_, **__ instead of a keyword-only signature."
+    )
 
     params, _, _ = _get_decomp_args(op)
 

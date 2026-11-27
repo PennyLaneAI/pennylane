@@ -84,7 +84,7 @@ def expand_matrix(mat, wires: Sequence | int, wire_order=None, sparse_format="cs
 
     >>> matrix_torch = torch.tensor([[1., 2.],
     ...                              [3., 4.]], requires_grad=True)
-    >>> res = expand_matrix(matrix_torch, wires=["b"], wire_order=["a", "b"])
+    >>> res = expand_matrix(matrix_torch, wires=[3], wire_order=[4, 3])
     >>> type(res)
     torch.Tensor
     >>> res.requires_grad

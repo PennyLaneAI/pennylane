@@ -472,7 +472,8 @@ def _build_callables(operation, op_wires=None, op_gen=None):
 
     Args:
         operation (Operation or Callable): qubit operation to be tapered, or a function that applies that operation
-        op_wires (Sequence[Any]): wires for the operation in case any of the provided `operation` or `op_gen` are callables
+        op_wires (Sequence[int]): wires for the operation in case any of the provided `operation` or
+            `op_gen` are callables
         op_gen (Hamiltonian or Callable): generator of the operation, or a function that returns it in case it cannot be computed internally.
 
     Returns:
@@ -518,7 +519,7 @@ def _build_generator(operation, wire_order, op_gen=None):
     or a constant with some arbitrary fixed value.
     Args:
         operation (Operation): qubit operation to be tapered
-        wire_order (Sequence[Any]): order of the wires in the quantum circuit
+        wire_order (Sequence[int]): order of the wires in the quantum circuit
         op_gen (Hamiltonian or PauliSentence): generator of the operation in case it cannot be computed internally.
     Returns:
         Hamiltonian: the generator of the operation
@@ -592,8 +593,9 @@ def taper_operation(  # pylint: disable=too-many-arguments
         generators (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
         paulixops (list[Operation]):  list of single-qubit Pauli-X operators
         paulix_sector (list[int]): eigenvalues of the Pauli-X operators
-        wire_order (Sequence[Any]): order of the wires in the quantum circuit
-        op_wires (Sequence[Any]): wires for the operation in case any of the provided ``operation`` or ``op_gen`` are callables
+        wire_order (Sequence[int]): order of the wires in the quantum circuit
+        op_wires (Sequence[int]): wires for the operation in case any of the provided ``operation``
+            or ``op_gen`` are callables
         op_gen (Hamiltonian or PauliSentence or Callable): generator of the operation, or a function that returns it in case it cannot be computed internally.
 
     Returns:

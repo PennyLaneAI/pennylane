@@ -153,7 +153,7 @@ class FermionicSingleExcitation(Operation):
 
         Args:
             weight (float): angle entering the Z rotation
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (int or Iterable[int]): wires that the operator acts on
 
         Returns:
             list[.Operator]: decomposition of the operator

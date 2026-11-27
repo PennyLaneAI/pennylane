@@ -195,7 +195,7 @@ class RandomLayers(Operation):
 
         Args:
             weights (tensor_like): weight tensor
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (int or Iterable[int]): wires that the operator acts on
             ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
             imprimitive (Type[pennylane2.ops.Operation]): two-qubit gate to use
             rotations (list[Type[pennylane2.ops.Operation]]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates.
@@ -208,14 +208,15 @@ class RandomLayers(Operation):
 
         >>> weights = torch.tensor([[0.1, -2.1, 1.4]])
         >>> rotations=[qp.RY, qp.RX]
-        >>> ops = qp.RandomLayers.compute_decomposition(weights, wires=["a", "b"], ratio_imprim=0.3,
-        ...                                         imprimitive=qp.CNOT, rotations=rotations, seed=42)
+        >>> ops = qp.RandomLayers.compute_decomposition(
+        ...     weights, wires=[0, 1], ratio_imprim=0.3, imprimitive=qp.CNOT, rotations=rotations, seed=42
+        ... )
         >>> from pprint import pprint
         >>> pprint(ops)
-        [RX(0.100..., wires=['a']),
-         RY(-2.0999..., wires=['b']),
-         CNOT(wires=['a', 'b']),
-         RX(1.399..., wires=['b'])]
+        [RX(0.100..., wires=[0]),
+         RY(-2.0999..., wires=[1]),
+         CNOT(wires=[0, 1]),
+         RX(1.399..., wires=[1])]
 
         """
         wires = Wires(wires)

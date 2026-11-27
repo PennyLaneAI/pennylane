@@ -43,7 +43,7 @@ class FABLE(Operation):
     Args:
         input_matrix (tensor_like): a :math:`(2^n \times 2^n)` matrix to be encoded,
             where :math:`n` is an integer
-        wires (Iterable[int, str], Wires): the wires the operation acts on. The number of wires can
+        wires (Iterable[int] or Wires): the wires the operation acts on. The number of wires can
             be computed as :math:`(2 \times n + 1)`.
         tol (float): rotation gates that have an angle value smaller than this tolerance are removed
         id (str or None): string representing the operation (optional)
@@ -154,7 +154,7 @@ class FABLE(Operation):
 
         Args:
             input_matrix (tensor_like): an :math:`(N \times N)` matrix to be encoded
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (int or Iterable[int]): wires that the operator acts on
             tol (float): rotation gates that have an angle value smaller than this tolerance are removed
 
         Returns:

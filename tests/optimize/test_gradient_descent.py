@@ -15,6 +15,7 @@
 Unit tests for the ``GradientDescentOptimizer``.
 """
 
+import jax
 import pytest
 
 import pennylane2 as qp
@@ -198,3 +199,36 @@ class TestGradientDescentOptimizer:
         x_new = sgd_opt.step(f, x_start, grad_fn=df)
         x_correct = x_start - df(x_start) * stepsize
         assert np.allclose(x_new, x_correct, atol=tol)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("grad_fn", [None, lambda x: 2 * x])
+def test_optimizer_rejects_jax_parameters(grad_fn):
+    """JAX parameters require an optimizer that recognizes their trainability."""
+    with pytest.raises(ValueError, match="Optax"):
+        qp.GradientDescentOptimizer().step(lambda x: x**2, jax.numpy.array(2.0), grad_fn=grad_fn)
+
+
+@pytest.mark.jax
+def test_optimizer_with_jax_auxiliary_data():
+    """Mixed inputs require an explicit gradient function instead of automatic dispatch."""
+    optimizer = qp.GradientDescentOptimizer(stepsize=0.1)
+    value = qp.numpy.array(2.0)
+    data = jax.numpy.array([1.0])
+    objective = lambda parameter, aux: parameter**2
+    with pytest.raises(ValueError, match="Autograd and JAX inputs cannot be mixed"):
+        optimizer.step(objective, value, data)
+    updated, unchanged = optimizer.step(objective, value, data, grad_fn=lambda x, aux: 2 * x)
+    assert qp.math.allclose(updated, 1.6)
+    assert unchanged is data
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("grad_fn", [None, lambda params: {"value": 2 * params["value"]}])
+def test_optimizer_rejects_nested_jax_parameters(grad_fn):
+    """Nested JAX parameters cannot silently bypass optimizer validation."""
+    params = {"value": jax.numpy.array(2.0)}
+    with pytest.raises(ValueError, match="Optax"):
+        qp.GradientDescentOptimizer().step(
+            lambda argument: argument["value"] ** 2, params, grad_fn=grad_fn
+        )

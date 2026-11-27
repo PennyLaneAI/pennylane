@@ -118,13 +118,16 @@ def resources_from_analysis_pass(  # pylint: disable=too-many-arguments,too-many
                 level_name = make_level_name_unique(level_name, frozenset(level_to_name.values()))
                 fname_to_level[fname] = i
                 level_to_name[i] = level_name
-                new_compile_pipeline += transform(pass_name="resource-analysis")(
-                    output_json=True, output_fname=fname
+                new_compile_pipeline += transform(pass_name=analysis_pass_name)(
+                    output_json=True, output_fname=fname, **analysis_pass_kwargs
                 )
 
         compile_options = copy.deepcopy(qjit.compile_options)
         if analysis_pass_name == "resource-estimate":
-            compile_options.estimate_decomps = True
+            # Rules without bodies are enough to estimate, but not to apply a decomposition
+            compile_options.estimate_decomps = not any(
+                comp_pass.pass_name == "graph-decomposition" for comp_pass in new_compile_pipeline
+            )
 
         # The Max Legal Level is the device level
         if max_legal_level in level:
@@ -133,8 +136,8 @@ def resources_from_analysis_pass(  # pylint: disable=too-many-arguments,too-many
             level_to_name[max_legal_level] = make_level_name_unique(
                 "Device Preprocessing", frozenset(level_to_name.values())
             )
-            new_post_device_pipeline += transform(pass_name="resource-analysis")(
-                output_json=True, output_fname=fname
+            new_post_device_pipeline += transform(pass_name=analysis_pass_name)(
+                output_json=True, output_fname=fname, **analysis_pass_kwargs
             )
         else:
             # If device level not requested, skip device preprocessing

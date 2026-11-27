@@ -15,6 +15,7 @@
 Unit tests for qp.grad
 """
 
+import jax
 import pytest
 
 import pennylane2 as qp
@@ -150,3 +151,160 @@ def test_value_and_grad_without_qjit():
         match="PennyLane does not support the value_and_grad function without QJIT.",
     ):
         value_and_grad(x)
+
+
+@pytest.mark.jax
+def test_jax_grad_keywords_without_forward_cache():
+    """JAX gradients respect keyword arguments without caching forward values."""
+
+    def cost(first, second, *, scale):
+        return first**2 + scale * first * second
+
+    first, second = jax.numpy.array(2.0), jax.numpy.array(3.0)
+    derivative = qp.grad(cost, argnums=0)
+    assert derivative.forward is None
+    assert qp.math.allclose(derivative(first, second, scale=4.0), 16.0)
+    assert derivative.forward is None
+    assert qp.math.allclose(jax.jit(derivative)(first, second, scale=4.0), 16.0)
+    assert derivative.forward is None
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("argnums", [0, 1, [0], [1], (0, 1)])
+@pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
+def test_jax_argnums(argnums, diff_function):
+    """Explicit argument indices preserve scalar-versus-sequence result structure."""
+
+    def cost(first, second, *, scale):
+        value = scale * first * second
+        if diff_function is qp.jacobian:
+            return qp.math.stack([value, first**2])
+        return value
+
+    first, second = jax.numpy.array(2.0), jax.numpy.array(3.0)
+    derivative = diff_function(cost, argnums=argnums)(first, second, scale=3.0)
+    expected = [9.0, 6.0] if diff_function is qp.grad else [[9.0, 4.0], [6.0, 0.0]]
+    if isinstance(argnums, int):
+        assert not isinstance(derivative, tuple)
+        assert qp.math.allclose(derivative, expected[argnums])
+    else:
+        assert isinstance(derivative, tuple)
+        assert len(derivative) == len(argnums)
+        for index, result in zip(argnums, derivative, strict=True):
+            assert qp.math.allclose(result, expected[index])
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "adjoint"])
+def test_jax_qnode_gradients(diff_method):
+    """qp.grad and qp.jacobian differentiate scalar and vector JAX QNodes."""
+
+    @qp.qnode(qp.device("default.qubit"), interface="jax", diff_method=diff_method)
+    def scalar_circuit(angle):
+        qp.RY(angle, 0)
+        return qp.expval(qp.Z(0))
+
+    @qp.qnode(qp.device("default.qubit"), interface="jax", diff_method=diff_method)
+    def vector_circuit(angle):
+        qp.RY(angle, 0)
+        return qp.expval(qp.Z(0)), qp.expval(qp.X(0))
+
+    angle = jax.numpy.array(0.3)
+    derivative = qp.grad(scalar_circuit)
+    assert qp.math.allclose(derivative(angle), -qp.math.sin(angle))
+    jacobian = qp.jacobian(vector_circuit)(angle)
+    expected = qp.math.stack([-qp.math.sin(angle), qp.math.cos(angle)])
+    assert tuple(qp.math.shape(component) for component in jacobian) == ((), ())
+    assert qp.math.allclose(qp.math.stack(jacobian), expected)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
+def test_jax_higher_derivatives(diff_function):
+    """JAX derivative results can be differentiated again."""
+    derivative = diff_function(lambda value: value**3)
+    assert qp.math.allclose(qp.grad(derivative)(jax.numpy.array(2.0)), 12.0)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
+def test_jax_default_and_jit(diff_function):
+    """JAX defaults to the first argument and remains compatible with JIT."""
+
+    def cost(first, second):
+        return first**2 + first * second
+
+    first, second = jax.numpy.array(2.0), jax.numpy.array(3.0)
+    derivative = diff_function(cost)
+    assert qp.math.allclose(derivative(first, second), 7.0)
+    assert qp.math.allclose(jax.jit(derivative)(first, second), 7.0)
+
+
+@pytest.mark.jax
+def test_jax_pytree_jacobian():
+    """JAX Jacobians support structured inputs and outputs."""
+    argument = {"value": jax.numpy.array(2.0)}
+    result = qp.jacobian(lambda data: {"square": data["value"] ** 2})(argument)
+    assert qp.math.allclose(result["square"]["value"], 4.0)
+
+
+def test_autograd_jacobian_with_iterator_argnums():
+    """Backend selection and repeated calls reuse all indices from a one-shot iterator."""
+    derivative = qp.jacobian(lambda x, y: x**2 + x * y, argnums=iter((0, 1)))
+    x, y = qp.numpy.array(2.0), qp.numpy.array(3.0)
+    assert qp.math.allclose(derivative(x, y), (7.0, 2.0))
+    assert qp.math.allclose(derivative(x, y), (7.0, 2.0))
+
+
+@pytest.mark.jax
+def test_jax_jacobian_output_pytree_with_multiple_arguments():
+    """The output pytree surrounds the tuple of argument derivatives."""
+    derivative = qp.jacobian(lambda x, y: (x**2, x * y), argnums=(0, 1))
+    result = derivative(jax.numpy.array(2.0), jax.numpy.array(3.0))
+    expected = ((4.0, 0.0), (3.0, 2.0))
+    assert jax.tree_util.tree_structure(result) == jax.tree_util.tree_structure(expected)
+    assert qp.math.allclose(result, expected)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
+def test_mixed_autograd_jax_inputs_rejected(diff_function):
+    """Mixed Autograd/JAX inputs are rejected whether passed positionally or by keyword."""
+    first, second = qp.numpy.array(2.0), qp.numpy.array(3.0)
+    data = jax.numpy.array([1.0])
+    derivative = diff_function(lambda x, y, aux: x**2 + y**2)
+    with pytest.raises(ValueError, match="Autograd and JAX inputs cannot be mixed"):
+        derivative(first, second, aux=data)
+    with pytest.raises(ValueError, match="Autograd and JAX inputs cannot be mixed"):
+        derivative(first, second, data)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
+def test_mixed_autograd_jax_inputs_rejected_with_argnums(diff_function):
+    """Explicit argument indices do not permit mixed Autograd/JAX inputs."""
+    derivative = diff_function(lambda data, value: value**2, argnums=1)
+    value = qp.numpy.array(3.0)
+    with pytest.raises(ValueError, match="Autograd and JAX inputs cannot be mixed"):
+        derivative(jax.numpy.array([1.0]), value)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
+def test_nontrainable_autograd_input_rejected_with_jax(diff_function):
+    """Non-trainable Autograd data cannot silently change JAX differentiation."""
+    derivative = diff_function(lambda value, data: value**2)
+    data = qp.numpy.array(3.0, requires_grad=False)
+    with pytest.raises(ValueError, match="Autograd and JAX inputs cannot be mixed"):
+        derivative(jax.numpy.array(2.0), data)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
+def test_jax_with_numpy_auxiliary_data(diff_function):
+    """Ordinary NumPy constants can accompany JAX parameters."""
+    derivative = diff_function(lambda value, data: value**2 + qp.math.sum(data))
+    data = qp.math.array([1.0, 2.0])
+    assert qp.math.get_interface(data) == "numpy"
+    assert qp.math.allclose(derivative(jax.numpy.array(2.0), data), 4.0)
+    assert qp.math.allclose(derivative(jax.numpy.array(2.0), data=data), 4.0)
