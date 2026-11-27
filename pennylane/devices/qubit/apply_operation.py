@@ -148,7 +148,7 @@ def _prepare_batched_params(params, state, state0, state1, axis, n_dim, is_state
 
 
 def apply_operation_einsum(op: LegacyOperator, state, is_state_batched: bool = False):
-    """Apply ``LegacyOperator`` to ``state`` using ``einsum``. This is more efficent at lower qubit
+    """Apply ``Operator`` to ``state`` using ``einsum``. This is more efficent at lower qubit
     numbers.
 
     Args:
@@ -194,7 +194,7 @@ def apply_operation_einsum(op: LegacyOperator, state, is_state_batched: bool = F
 
 
 def apply_operation_tensordot(op: LegacyOperator, state, is_state_batched: bool = False):
-    """Apply ``LegacyOperator`` to ``state`` using ``math.tensordot``. This is more efficent at higher qubit
+    """Apply ``Operator`` to ``state`` using ``math.tensordot``. This is more efficent at higher qubit
     numbers.
 
     Args:

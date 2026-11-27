@@ -244,7 +244,7 @@ class QubitUnitary(Operator):
         # here we issue a warning to check the operation, instead of raising an error outright.
         if unitary_check and not self._unitary_check(U, dim):
             warnings.warn(
-                f"LegacyOperator {U}\n may not be unitary. "
+                f"Operator {U}\n may not be unitary. "
                 "Verify unitarity of operation, or use a datatype with increased precision.",
                 UserWarning,
             )
@@ -534,7 +534,7 @@ class DiagonalQubitUnitary(Operator):
         D = math.asarray(D)
 
         if not math.is_tracer(D) and not math.allclose(D * math.conj(D), math.ones_like(D)):
-            raise ValueError("LegacyOperator must be unitary.")
+            raise ValueError("Operator must be unitary.")
 
         # The diagonal is supposed to have one-dimension. If it is broadcasted, it has two
         if math.ndim(D) == 2:
@@ -572,7 +572,7 @@ class DiagonalQubitUnitary(Operator):
         D = math.asarray(D)
 
         if not (math.is_tracer(D) or math.allclose(D * math.conj(D), math.ones_like(D))):
-            raise ValueError("LegacyOperator must be unitary.")
+            raise ValueError("Operator must be unitary.")
 
         return D
 

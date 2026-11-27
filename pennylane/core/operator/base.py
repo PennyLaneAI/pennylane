@@ -1397,7 +1397,7 @@ class LegacyOperator(abc.ABC, metaclass=ABCCaptureMeta):
         raise PowUndefinedError
 
     def queue(self, context: QueuingManager = QueuingManager):
-        """Append the operator to the LegacyOperator queue."""
+        """Append the operator to the Operator queue."""
         context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
@@ -1493,7 +1493,7 @@ class LegacyOperator(abc.ABC, metaclass=ABCCaptureMeta):
         return NotImplemented  # pragma: no cover
 
     def __truediv__(self, other: TensorLike):
-        """The division between an LegacyOperator and a number."""
+        """The division between an Operator and a number."""
         if isinstance(other, TensorLike):
             return self.__mul__(1 / other)
         return NotImplemented  # pragma: no cover
@@ -1521,11 +1521,11 @@ class LegacyOperator(abc.ABC, metaclass=ABCCaptureMeta):
         return -self + other  # pragma: no cover
 
     def __neg__(self):
-        """The negation operation of an LegacyOperator object."""
+        """The negation operation of an Operator object."""
         return qp.s_prod(scalar=-1, operator=self, lazy=False)
 
     def __pow__(self, other: TensorLike) -> "LegacyOperator":
-        r"""The power operation of an LegacyOperator object."""
+        r"""The power operation of an Operator object."""
         if isinstance(other, TensorLike):
             return qp.pow(self, z=other)
         return NotImplemented

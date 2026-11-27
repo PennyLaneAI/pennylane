@@ -207,7 +207,7 @@ def apply_operation_einsum(
 def apply_operation_tensordot(
     op: qp.operation.LegacyOperator, state, is_state_batched: bool = False, debugger=None, **_
 ):
-    """Apply ``LegacyOperator`` to ``state`` using ``math.tensordot``. This is more efficent at higher qubit
+    """Apply ``Operator`` to ``state`` using ``math.tensordot``. This is more efficent at higher qubit
     numbers.
 
     Args:

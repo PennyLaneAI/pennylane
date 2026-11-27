@@ -96,7 +96,7 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
             work wires can be in any arbitrary state. Defaults to ``"borrowed"``.
 
     Returns:
-        function or :class:`~.operation.LegacyOperator`: If an LegacyOperator is provided, returns a Controlled version of the LegacyOperator.
+        function or :class:`~.operation.LegacyOperator`: If an Operator is provided, returns a Controlled version of the LegacyOperator.
         If a function is provided, returns a function with the same call signature that creates a controlled version of the
         provided function.
 
@@ -323,9 +323,9 @@ def create_controlled_op(op, control, control_values, work_wires, work_wire_type
         )
     if not callable(op):
         raise ValueError(
-            f"The object {op} of type {type(op)} is not an LegacyOperator or callable. "
+            f"The object {op} of type {type(op)} is not an Operator or callable. "
             "This error might occur if you apply ctrl to a list "
-            "of operations instead of a function or LegacyOperator."
+            "of operations instead of a function or Operator."
         )
     return _ctrl_transform(op, control, control_values, work_wires, work_wire_type, one_controlled)
 

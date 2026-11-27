@@ -75,7 +75,7 @@ class GQSP(Operator):
 
         angles = qp.poly_to_angles(poly, "GQSP")
 
-        @qp.prod # transforms the qfunc into an LegacyOperator
+        @qp.prod # transforms the qfunc into an Operator
         def unitary(wires):
             qp.RX(0.3, wires)
 

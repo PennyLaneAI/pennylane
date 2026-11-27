@@ -23,7 +23,7 @@ Queuing
     ~AnnotatedQueue
 
 LegacyOperator Types
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 .. currentmodule:: pennylane.core.operator
 .. autosummary::

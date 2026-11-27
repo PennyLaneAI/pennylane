@@ -322,7 +322,7 @@ def _resources_from_qfunc(  # pylint: disable=too-many-arguments
                     num_algo_qubits = max(num_algo_qubits, op.num_wires)
             else:
                 raise ValueError(
-                    f"Queued object '{op}' is not a ResourceOperator or LegacyOperator, and cannot be processed."
+                    f"Queued object '{op}' is not a ResourceOperator or Operator, and cannot be processed."
                 )
         num_algo_qubits += len(Wires.all_wires(circuit_wires))
         wire_manager.algo_wires = num_algo_qubits

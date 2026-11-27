@@ -32,7 +32,7 @@ class TestMapToResourceOp:
     """Test the class for mapping PennyLane operations to their resource operators."""
 
     def test_all_operators_with_resource_ops_mapped(self):
-        """Test that everything with both an LegacyOperator and a ResourceOperator version
+        """Test that everything with both an Operator and a ResourceOperator version
         have a registered mapping.  Bypasses Qubitization for the moment."""
 
         special_cases = {"Qubitization", "QSVT"}

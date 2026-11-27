@@ -94,7 +94,7 @@ class TestExpectationValueMath:
     @pytest.mark.parametrize("ops,state_vectors", operator_wrong_shape)
     def test_operator_wrong_shape(self, ops, state_vectors):
         """Test that a message is raised when the state does not have the right shape."""
-        with pytest.raises(ValueError, match="LegacyOperator matrix must be of shape"):
+        with pytest.raises(ValueError, match="Operator matrix must be of shape"):
             qp.math.expectation_value(ops, state_vectors, check_operator=True)
 
     operator_non_hermitian = [

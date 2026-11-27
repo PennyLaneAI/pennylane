@@ -51,7 +51,7 @@ class Attribute(set):
     """
 
     def add(self, obj):
-        """Add an LegacyOperator to an attribute."""
+        """Add an Operator to an attribute."""
         if isinstance(obj, str):
             return super().add(obj)
 
@@ -67,11 +67,11 @@ class Attribute(set):
 
         except TypeError as e:
             raise TypeError(
-                "Only an LegacyOperator or string representing an LegacyOperator can be added to an attribute."
+                "Only an Operator or string representing an Operator can be added to an attribute."
             ) from e
 
     def __contains__(self, obj):
-        """Check if the attribute contains a given LegacyOperator."""
+        """Check if the attribute contains a given Operator."""
         if isinstance(obj, str):
             return super().__contains__(obj)
 

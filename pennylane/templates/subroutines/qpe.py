@@ -159,7 +159,7 @@ class QuantumPhaseEstimation(Operator):
     def __init__(self, unitary, estimation_wires):
         if not isinstance(unitary, LegacyOperator):
             raise TypeError(
-                "The unitary of QuantumPhaseEstimation must be an LegacyOperator, got "
+                "The unitary of QuantumPhaseEstimation must be an Operator, got "
                 f"{type(unitary).__name__}. To use a unitary matrix, wrap it in a "
                 "QubitUnitary: qp.QubitUnitary(matrix, wires=target_wires)."
             )

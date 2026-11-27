@@ -128,7 +128,7 @@ def test_exception():
 
     with pytest.raises(
         ValueError,
-        match=r"LegacyOperator must be a RZ or PhaseShift gate",
+        match=r"Operator must be a RZ or PhaseShift gate",
     ):
         rs_decomposition(op, epsilon=1e-4, max_search_trials=1)
 

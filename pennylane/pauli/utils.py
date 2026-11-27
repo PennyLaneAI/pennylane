@@ -248,7 +248,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
     wire_map = wire_map or {w: i for i, w in enumerate(pauli_word.wires)}
 
     if check_is_pauli_word and not is_pauli_word(pauli_word):
-        raise TypeError(f"Expected a Pauli word LegacyOperator instance, instead got {pauli_word}.")
+        raise TypeError(f"Expected a Pauli word Operator instance, instead got {pauli_word}.")
 
     pw = next(iter(pauli_word.pauli_rep))
 
@@ -275,7 +275,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
 
 
 def binary_to_pauli(binary_vector, wire_map=None):
-    """Converts a binary vector of even dimension to an LegacyOperator instance.
+    """Converts a binary vector of even dimension to an Operator instance.
 
     This functions follows the convention that the first half of binary vector components specify
     PauliX placements while the last half specify PauliZ placements.

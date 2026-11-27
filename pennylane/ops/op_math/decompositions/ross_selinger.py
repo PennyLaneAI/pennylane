@@ -250,7 +250,7 @@ def rs_decomposition(
 
         # Check for length of wires in the operation
         if not isinstance(op, (qp.RZ, qp.PhaseShift)):
-            raise ValueError(f"LegacyOperator must be a RZ or PhaseShift gate, got {op}")
+            raise ValueError(f"Operator must be a RZ or PhaseShift gate, got {op}")
 
         angle = -op.data[0] / 2
 

@@ -146,7 +146,7 @@ class LinearCombination(Sum):
     ):
         if isinstance(observables, LegacyOperator):
             raise ValueError(
-                "observables must be an Iterable of LegacyOperator's, and not an LegacyOperator itself."
+                "observables must be an Iterable of Operator's, and not an Operator itself."
             )
         if qp.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
@@ -371,7 +371,7 @@ class LinearCombination(Sum):
         return NotImplemented
 
     def __add__(self, H: numbers.Number | LegacyOperator) -> LegacyOperator:
-        r"""The addition operation between a LinearCombination and an LegacyOperator."""
+        r"""The addition operation between a LinearCombination and an Operator."""
         ops = copy(self.ops)
         self_coeffs = self.coeffs
 
@@ -397,7 +397,7 @@ class LinearCombination(Sum):
         return NotImplemented
 
     def __sub__(self, H: LegacyOperator) -> LegacyOperator:
-        r"""The subtraction operation between a LinearCombination and an LegacyOperator."""
+        r"""The subtraction operation between a LinearCombination and an Operator."""
         if isinstance(H, LegacyOperator):
             return self + qp.s_prod(-1.0, H, lazy=False)
         return NotImplemented

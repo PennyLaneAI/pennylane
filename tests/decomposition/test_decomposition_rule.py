@@ -520,7 +520,7 @@ class TestDecompositionRule:  # pylint: disable=too-many-public-methods
         def custom_decomp_2(*_, **__):
             raise NotImplementedError
 
-        with pytest.raises(TypeError, match="must be a subclass of LegacyOperator"):
+        with pytest.raises(TypeError, match="must be a subclass of Operator"):
             custom_decomp_2 = register_resources({int: 1}, custom_decomp_2, name="custom_decomp_2")
             custom_decomp_2.compute_resources()
 

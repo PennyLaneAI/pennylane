@@ -810,7 +810,7 @@ class CollectedSubroutine(Operation):
     While it contains less information than the corresponding :class:`~.SubroutineOp`,
     it can be useful for testing the captured plxpr.
 
-    The only properties held onto by this "LegacyOperator" are name (a string), wires, and
+    The only properties held onto by this "Operator" are name (a string), wires, and
     decomposition.
 
     """

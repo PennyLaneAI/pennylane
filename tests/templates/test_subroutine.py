@@ -982,7 +982,7 @@ class TestGraphDecomposition:
         qp.assert_equal(new_tape[2], qp.ctrl(qp.RX(3, 3), (4, 5)))
 
     def test_operator_decompose_to_subroutine(self):
-        """Test that an LegacyOperator can decompose to a subroutine, and that the choice
+        """Test that an Operator can decompose to a subroutine, and that the choice
         of decomposition involving a subroutine can be optimally chosen based on the gateset.
 
         Here we have two subroutines, one with RX's and one with RY's.  We chose between the

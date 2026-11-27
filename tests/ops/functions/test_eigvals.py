@@ -45,7 +45,7 @@ def test_invalid_argument():
     """Assert error raised when input is neither a tape, QNode, nor quantum function"""
     with pytest.raises(
         TransformError,
-        match="Input is not an LegacyOperator, tape, QNode, or quantum function",
+        match="Input is not an Operator, tape, QNode, or quantum function",
     ):
         _ = qp.eigvals(None)
 

@@ -62,7 +62,7 @@ Symbolic Classes
     ~ScalarSymbolicOp
 
 Controlled LegacyOperator Classes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. currentmodule:: pennylane
 

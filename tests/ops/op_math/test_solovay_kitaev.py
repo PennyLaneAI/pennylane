@@ -231,7 +231,7 @@ def test_exception():
 
     with pytest.raises(
         ValueError,
-        match=r"LegacyOperator must be a single qubit operation",
+        match=r"Operator must be a single qubit operation",
     ):
         sk_decomposition(op, epsilon=1e-4, max_depth=1)
 

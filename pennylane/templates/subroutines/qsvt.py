@@ -507,7 +507,7 @@ class QSVT(Operator):
         # CompressedResourceOp is added here defensively because `abstractify` may
         # turn an Operator1 subclass into a CompressedResourceOp.
         if not isinstance(UA, (LegacyOperator, CompressedResourceOp)):
-            raise ValueError("Input block encoding must be an LegacyOperator")
+            raise ValueError("Input block encoding must be an Operator")
 
         super().__init__(UA, projectors)
 

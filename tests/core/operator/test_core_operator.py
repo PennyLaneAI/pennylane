@@ -70,7 +70,7 @@ def test_basis_deprecation():
 
 
 def test_operator2_isinstance_operator_operation():
-    """Test that anything that inherits from Operator is an LegacyOperator."""
+    """Test that anything that inherits from Operator is an Operator."""
 
     class NewOp(Operator):
         """dummy operator2"""
@@ -133,7 +133,7 @@ class TestOperator1:
         op = OldOp(wires=0)
         assert isinstance(op, LegacyOperator)
         assert isinstance(op, Operator1)
-        assert not op.has_matrix  # check it has an LegacyOperator thing
+        assert not op.has_matrix  # check it has an Operator thing
 
     def test_instantiating_Operator1_on_its_own(self):
         """Test that an error is raised if someone tries to instantiate Operator1."""
@@ -1029,7 +1029,7 @@ class TestOperationConstruction:
         assert op.control_wires == qp.wires.Wires([])
 
     def test_is_hermitian(self):
-        """Test that is_hermitian defaults to False for an LegacyOperator"""
+        """Test that is_hermitian defaults to False for an Operator"""
 
         class DummyOp(qp.operation.Operation):
             r"""Dummy custom operation"""
@@ -1105,7 +1105,7 @@ class TestOperatorIntegration:  # pylint: disable=too-many-public-methods
     """Integration tests for the LegacyOperator class"""
 
     def test_pow_method_with_non_numeric_power_raises_error(self):
-        """Test that when raising an LegacyOperator to a power that is not a number raises
+        """Test that when raising an Operator to a power that is not a number raises
         a ValueError."""
 
         class DummyOp(qp.operation.Operation):
@@ -1687,7 +1687,7 @@ class TestNewOpMath:
 
         @pytest.mark.parametrize("op", [X2(0), qp.S(0)])
         def test_sub_with_unknown_not_supported(self, op):
-            """Test subtracting an unexpected type from an LegacyOperator."""
+            """Test subtracting an unexpected type from an Operator."""
             with pytest.raises(TypeError, match="unsupported operand type"):
                 _ = op - "foo"
 

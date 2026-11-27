@@ -98,9 +98,9 @@ class TestInitialization:
         assert op.has_diagonalizing_gates is value
 
     def test_base_is_not_operator_error(self, constructor):
-        """Test that Exp raises an error if a base is provided that is not an LegacyOperator"""
+        """Test that Exp raises an error if a base is provided that is not an Operator"""
 
-        with pytest.raises(TypeError, match="base is expected to be of type LegacyOperator"):
+        with pytest.raises(TypeError, match="base is expected to be of type Operator"):
             constructor(2, qp.PauliX(0))
 
 

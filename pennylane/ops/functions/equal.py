@@ -318,7 +318,7 @@ def _equal_operators(
     rtol=1e-5,
     atol=1e-9,
 ):
-    """Default function to determine whether two LegacyOperator objects are equal."""
+    """Default function to determine whether two Operator objects are equal."""
 
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"

@@ -150,7 +150,7 @@ def observable_stopping_condition(obs: qp.operation.LegacyOperator) -> bool:
 
 
 def stopping_condition(op: qp.operation.LegacyOperator) -> bool:
-    """Specify whether an LegacyOperator object is supported by the device."""
+    """Specify whether an Operator object is supported by the device."""
     return op.name in DEFAULT_MIXED_GATES
 
 

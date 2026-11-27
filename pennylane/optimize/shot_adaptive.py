@@ -173,7 +173,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
         For more details, see:
 
-        * Andrew Arrasmith, Lukasz Cincio, Rolando D. Somma, and Patrick J. Coles. "LegacyOperator Sampling
+        * Andrew Arrasmith, Lukasz Cincio, Rolando D. Somma, and Patrick J. Coles. "Operator Sampling
           for Shot-frugal Optimization in Variational Algorithms." `arXiv:2004.06252
           <https://arxiv.org/abs/2004.06252>`__ (2020).
 

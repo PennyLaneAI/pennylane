@@ -64,8 +64,8 @@ class HilbertSchmidt(Operation):
         U (LegacyOperator or Iterable[LegacyOperator]): The operators that represent the unitary `U`.
 
     Raises:
-        ValueError: ``V`` is not an LegacyOperator or an iterable of Operators.
-        ValueError: ``U`` is not an LegacyOperator or an iterable of Operators.
+        ValueError: ``V`` is not an Operator or an iterable of Operators.
+        ValueError: ``U`` is not an Operator or an iterable of Operators.
         ValueError: ``U`` and ``V`` do not have the same number of wires.
         ValueError: Operators in ``U`` must act on distinct wires from those in ``v_wires``.
 
@@ -156,14 +156,14 @@ class HilbertSchmidt(Operation):
         u_ops = (U,) if isinstance(U, LegacyOperator) else tuple(U)
         if not all(isinstance(op, LegacyOperator) for op in u_ops):
             raise ValueError(
-                "The argument 'U' must be an LegacyOperator or an iterable of Operators."
+                "The argument 'U' must be an Operator or an iterable of Operators."
             )
         u_wires = Wires.all_wires([op.wires for op in u_ops])
 
         v_ops = (V,) if isinstance(V, LegacyOperator) else tuple(V)
         if not all(isinstance(op, LegacyOperator) for op in v_ops):
             raise ValueError(
-                "The argument 'V' must be an LegacyOperator or an iterable of Operators."
+                "The argument 'V' must be an Operator or an iterable of Operators."
             )
         v_wires = Wires.all_wires([op.wires for op in v_ops])
 
@@ -295,8 +295,8 @@ class LocalHilbertSchmidt(HilbertSchmidt):  # pylint: disable=abstract-method
         U (LegacyOperator or Iterable[LegacyOperator]): The operators that represent the unitary `U`.
 
     Raises:
-        ValueError: ``V`` is not an LegacyOperator or an iterable of Operators.
-        ValueError: ``U`` is not an LegacyOperator or an iterable of Operators.
+        ValueError: ``V`` is not an Operator or an iterable of Operators.
+        ValueError: ``U`` is not an Operator or an iterable of Operators.
         ValueError: ``U`` and ``V`` do not have the same number of wires.
         ValueError: Operators in ``U`` must act on distinct wires from those in ``v_wires``.
 

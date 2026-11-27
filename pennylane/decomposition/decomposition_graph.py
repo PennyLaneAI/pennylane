@@ -888,7 +888,7 @@ class DecompGraphSolution:
 
         if not solution:
             raise DecompositionError(
-                f"LegacyOperator {op} is unsolved in this decomposition graph."
+                f"Operator {op} is unsolved in this decomposition graph."
             )
 
         op_node_idx = self._all_op_indices[solution]

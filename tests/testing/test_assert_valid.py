@@ -770,7 +770,7 @@ class TestOperator2AssertValid:
             _check_bind_new_parameters(op)
 
     def test_cant_handle_abstract_inputs(self):
-        """Test an LegacyOperator that can't handle AbstractArray inputs."""
+        """Test an Operator that can't handle AbstractArray inputs."""
 
         class NoAAOp(qp.core.Operator):
 
@@ -811,7 +811,7 @@ def test_op1_assert_valid_capture():
 
 
 def create_op_instance(c):
-    """Given an LegacyOperator class, create an instance of it."""
+    """Given an Operator class, create an instance of it."""
     n_wires = c.num_wires
     if n_wires is None:
         n_wires = 1

@@ -449,13 +449,13 @@ def _capture_dispatch(condition, true_fn, false_fn, elifs):
 
     if _is_operator(false_fn):
         raise ValueError(
-            f"Cannot provide an LegacyOperator as false_fn if true_fn is a callable. Got {false_fn}"
+            f"Cannot provide an Operator as false_fn if true_fn is a callable. Got {false_fn}"
         )
 
     for _, elif_fn in elifs:
         if _is_operator(elif_fn):
             raise ValueError(
-                f"Cannot provide an LegacyOperator as elif_fn if true_fn is a callable. Got {elif_fn}"
+                f"Cannot provide an Operator as elif_fn if true_fn is a callable. Got {elif_fn}"
             )
 
     return CondCallable(condition, true_fn, false_fn, elifs)

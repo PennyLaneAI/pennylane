@@ -41,7 +41,7 @@ _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺
 
 
 def pow(base, z=1, lazy=True) -> LegacyOperator:
-    """Raise an LegacyOperator to a power.
+    """Raise an Operator to a power.
 
     Args:
         base (~.operation.LegacyOperator): the operator to be raised to a power

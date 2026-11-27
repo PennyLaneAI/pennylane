@@ -71,7 +71,7 @@ Contents
 .. currentmodule:: pennylane.core.operator
 
 LegacyOperator Types
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 .. currentmodule:: pennylane.core.operator
 
@@ -84,7 +84,6 @@ LegacyOperator Types
     ~Channel
     ~StatePrepBase
     ~Operator1
-    ~Operator
 
 .. currentmodule:: pennylane.core.operator
 

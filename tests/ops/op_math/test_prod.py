@@ -514,7 +514,7 @@ class TestInitialization:  # pylint: disable=too-many-public-methods
             Prod(x)
 
     def test_prod_fails_with_non_callable_arg(self):
-        """Tests that prod explicitly checks that a single-arg is either an LegacyOperator or callable."""
+        """Tests that prod explicitly checks that a single-arg is either an Operator or callable."""
         with pytest.raises(TypeError, match="Unexpected argument of type int passed to qp.prod"):
             prod(1)
 

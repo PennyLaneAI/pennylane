@@ -645,26 +645,26 @@ class TestCondOperatorInstances:
             jax.make_jaxpr(f)(True)
 
     def test_callable_true_fn_with_operator_false_fn_raises(self):
-        """Test that an LegacyOperator false_fn is rejected with a callable true_fn."""
+        """Test that an Operator false_fn is rejected with a callable true_fn."""
 
         def f(pred):
             qp.cond(pred, lambda: None, qp.Z(0))
 
         with pytest.raises(
             ValueError,
-            match="Cannot provide an LegacyOperator as false_fn if true_fn is a callable",
+            match="Cannot provide an Operator as false_fn if true_fn is a callable",
         ):
             jax.make_jaxpr(f)(True)
 
     def test_callable_true_fn_with_operator_elif_raises(self):
-        """Test that an LegacyOperator elif is rejected with a callable true_fn."""
+        """Test that an Operator elif is rejected with a callable true_fn."""
 
         def f(pred):
             qp.cond(pred, lambda: None, lambda: None, elifs=((False, qp.Y(0)),))
 
         with pytest.raises(
             ValueError,
-            match="Cannot provide an LegacyOperator as elif_fn if true_fn is a callable",
+            match="Cannot provide an Operator as elif_fn if true_fn is a callable",
         ):
             jax.make_jaxpr(f)(True)
 
@@ -679,7 +679,7 @@ class TestCondOperatorInstances:
 
         with pytest.raises(
             ValueError,
-            match="Cannot provide an LegacyOperator as false_fn if true_fn is a callable",
+            match="Cannot provide an Operator as false_fn if true_fn is a callable",
         ):
             jax.make_jaxpr(f)(True)
 
@@ -694,7 +694,7 @@ class TestCondOperatorInstances:
 
         with pytest.raises(
             ValueError,
-            match="Cannot provide an LegacyOperator as elif_fn if true_fn is a callable",
+            match="Cannot provide an Operator as elif_fn if true_fn is a callable",
         ):
             jax.make_jaxpr(f)(True)
 

@@ -421,7 +421,7 @@ class DecompositionRule:  # pylint: disable=too-many-instance-attributes
             ):
                 raise TypeError(
                     "The keys of the dictionary returned by the resource function must be a "
-                    "subclass of LegacyOperator or a CompressedResourceOp constructed with "
+                    "subclass of Operator or a CompressedResourceOp constructed with "
                     "qp.resource_rep, or an Operator constructed with abstract inputs."
                 )
             op = abstractify(op)

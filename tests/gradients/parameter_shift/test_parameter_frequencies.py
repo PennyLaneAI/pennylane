@@ -113,7 +113,7 @@ class TestParameterFrequencies:
         assert math.allclose(parameter_frequencies(op), freqs_from_eigvals)
 
     def test_parameter_frequencies_given_an_op(self):
-        """Test that parameter_frequencies retrieves the parameter frequencies defined on an LegacyOperator."""
+        """Test that parameter_frequencies retrieves the parameter frequencies defined on an Operator."""
         op = Exp(PauliZ(1), 1j)
         assert parameter_frequencies(op) == [(2,)]
 

@@ -771,7 +771,7 @@ def _check_hermitian_operator(operators):
         or not np.log2(dim).is_integer()
     ):
         raise ValueError(
-            "LegacyOperator matrix must be of shape (2**wires,2**wires) "
+            "Operator matrix must be of shape (2**wires,2**wires) "
             "or (batch_dim, 2**wires, 2**wires)."
         )
 

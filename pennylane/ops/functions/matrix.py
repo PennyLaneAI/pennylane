@@ -190,11 +190,11 @@ def matrix(  # pylint: disable=too-many-branches
                 raise ValueError("wire_order is required by qp.matrix() for quantum functions.")
 
         else:
-            raise TransformError("Input is not an LegacyOperator, tape, QNode, or quantum function")
+            raise TransformError("Input is not an Operator, tape, QNode, or quantum function")
 
         return _matrix_transform(op, wire_order=wire_order)
 
-    # Starting from now, op is an LegacyOperator
+    # Starting from now, op is an Operator
     # Validate wire_order
     if wire_order and not set(op.wires).issubset(wire_order):
         raise TransformError(
@@ -211,7 +211,7 @@ def matrix(  # pylint: disable=too-many-branches
             ops = op.decomposition()
         return matrix(QuantumScript(ops), wire_order=wire_order or op.wires)
     raise MatrixUndefinedError(
-        "LegacyOperator must define a matrix, sparse matrix, or decomposition for use with qp.matrix."
+        "Operator must define a matrix, sparse matrix, or decomposition for use with qp.matrix."
     )
 
 

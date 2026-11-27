@@ -111,7 +111,7 @@ def eigvals(op: qp.operation.LegacyOperator, k=1, which="SA") -> TensorLike:
     """
     if not isinstance(op, qp.operation.LegacyOperator):
         if not isinstance(op, (qp.tape.QuantumScript, qp.QNode)) and not callable(op):
-            raise TransformError("Input is not an LegacyOperator, tape, QNode, or quantum function")
+            raise TransformError("Input is not an Operator, tape, QNode, or quantum function")
         return _eigvals_transform(op, k=k, which=which)
 
     if isinstance(op, qp.SparseHamiltonian):

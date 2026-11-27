@@ -737,7 +737,7 @@ class TestPreprocessingIntegration:
 
         program = qp.device("default.qubit").preprocess_transforms()
 
-        with pytest.raises(DeviceError, match="LegacyOperator NoMatNoDecompOp"):
+        with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
             with pytest.warns(DecompositionWarning):
                 program(tapes)
 

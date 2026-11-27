@@ -117,7 +117,7 @@ def legacy_device_batch_transform(tape, device):
 
 
 def adjoint_ops(op: LegacyOperator) -> bool:
-    """Specify whether or not an LegacyOperator is supported by adjoint differentiation."""
+    """Specify whether or not an Operator is supported by adjoint differentiation."""
     if isinstance(op, ops.QubitUnitary) and not any(requires_grad(d) for d in op.data):
         return True
     return not isinstance(op, MidMeasure) and (

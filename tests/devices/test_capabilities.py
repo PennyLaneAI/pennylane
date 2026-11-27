@@ -313,7 +313,7 @@ class TestTOML:
         document = load_toml_file(request.node.toml_file)
         with pytest.raises(
             InvalidCapabilitiesError,
-            match=re.escape("LegacyOperator 'PauliX' has unknown properties: ['invalid_property']"),
+            match=re.escape("Operator 'PauliX' has unknown properties: ['invalid_property']"),
         ):
             _get_operations(document)
 

@@ -70,7 +70,7 @@ def _map_to_resource_op(op: Operation) -> ResourceOperator:
     """
 
     if not isinstance(op, Operation):
-        raise TypeError(f"LegacyOperator of type {type(op)} is not a valid operation.")
+        raise TypeError(f"Operator of type {type(op)} is not a valid operation.")
 
     if op.has_decomposition:
         decomp = op.decomposition()

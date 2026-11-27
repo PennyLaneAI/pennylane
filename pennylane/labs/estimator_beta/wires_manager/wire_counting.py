@@ -192,7 +192,7 @@ def _process_circuit_lst(
 
     Raises:
         ValueError: If incompatible type of object is encountered. Circuit must contain only instances
-            of 'ResourceOperator', 'LegacyOperator', 'MeasurementProcess' and 'MarkQubits'.
+            of 'ResourceOperator', 'Operator', 'MeasurementProcess' and 'MarkQubits'.
         ValueError: if attempts to mark qubits that don't otherwise exist in the circuit wires
     """
     circuit_wires = Wires([])
@@ -203,7 +203,7 @@ def _process_circuit_lst(
     for op in circuit_as_lst:
         if not isinstance(op, (ResourceOperator, LegacyOperator, MeasurementProcess, MarkQubits)):
             raise ValueError(
-                f"Circuit must contain only instances of 'ResourceOperator', 'LegacyOperator', 'MeasurementProcess' and 'MarkQubits', got {type(op)}"
+                f"Circuit must contain only instances of 'ResourceOperator', 'Operator', 'MeasurementProcess' and 'MarkQubits', got {type(op)}"
             )
 
         if isinstance(op, LegacyOperator):

@@ -155,7 +155,7 @@ def _AI_ps(op: PauliSentence) -> bool:
 
 @_AI.register(LegacyOperator)
 def _AI_op(op: LegacyOperator) -> bool:
-    r"""LegacyOperator implementation of the canonical form of the AI involution
+    r"""Operator implementation of the canonical form of the AI involution
     :math:`\theta: x \mapsto x^\ast`.
     """
     return _AI_ps(op.pauli_rep)
@@ -219,7 +219,7 @@ def _AII_ps(op: PauliSentence, wire: int | None = None) -> bool:
 
 @_AII.register(LegacyOperator)
 def _AII_op(op: LegacyOperator, wire: int | None = None) -> bool:
-    r"""LegacyOperator implementation of the canonical form of the AII involution
+    r"""Operator implementation of the canonical form of the AII involution
     :math:`\theta: x \mapsto Y_0 x^\ast Y_0`.
     """
     return _AII_ps(op.pauli_rep, wire)
@@ -303,7 +303,7 @@ def _AIII_ps(op: PauliSentence, p: int = None, q: int = None, wire: int | None =
 
 @_AIII.register(LegacyOperator)
 def _AIII_op(op: LegacyOperator, p: int = None, q: int = None, wire: int | None = None) -> bool:
-    r"""LegacyOperator implementation of the canonical form of the AIII involution
+    r"""Operator implementation of the canonical form of the AIII involution
     :math:`\theta: x \mapsto I_{p,q} x I_{p,q}`.
     """
     return _AIII_ps(op.pauli_rep, p, q, wire)
@@ -417,7 +417,7 @@ def _DIII_ps(op: PauliSentence, wire: int | None = None) -> bool:
 
 @_DIII.register(LegacyOperator)
 def _DIII_op(op: LegacyOperator, wire: int | None = None) -> bool:
-    r"""LegacyOperator implementation of the canonical form of the DIII involution
+    r"""Operator implementation of the canonical form of the DIII involution
     :math:`\theta: x \mapsto Y_0 x Y_0`.
     """
     return _DIII_ps(op.pauli_rep, wire)
@@ -548,7 +548,7 @@ def _CII_ps(op: PauliSentence, p: int = None, q: int = None, wire: int | None = 
 
 @_CII.register(LegacyOperator)
 def _CII_op(op: LegacyOperator, p: int = None, q: int = None, wire: int | None = None) -> bool:
-    r"""LegacyOperator implementation of the canonical form of the CII involution
+    r"""Operator implementation of the canonical form of the CII involution
     :math:`\theta: x \mapsto K_{p,q} x K_{p,q}`.
     """
     return _CII_ps(op.pauli_rep, p, q, wire)

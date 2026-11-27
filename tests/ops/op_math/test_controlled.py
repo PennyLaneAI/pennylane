@@ -1587,7 +1587,7 @@ class TestCtrl:
     def test_invalid_input_error(self):
         """Test that a ValueError is raised upon invalid inputs."""
         with pytest.raises(
-            ValueError, match=r"<class 'int'> is not an LegacyOperator or callable."
+            ValueError, match=r"<class 'int'> is not an Operator or callable."
         ):
             qp.ctrl(1, control=2)
 

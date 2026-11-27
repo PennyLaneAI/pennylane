@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 This module contains the CircuitGraph class which is used to generate a DAG (directed acyclic graph)
-representation of a quantum circuit from an LegacyOperator queue.
+representation of a quantum circuit from an Operator queue.
 """
 
 from collections import defaultdict, namedtuple
@@ -235,7 +235,7 @@ class CircuitGraph:  # pylint: disable=too-many-instance-attributes
         return self._graph
 
     def wire_indices(self, wire):
-        """LegacyOperator indices on the given wire.
+        """Operator indices on the given wire.
 
         Args:
             wire (int): wire to examine
@@ -417,7 +417,7 @@ class CircuitGraph:  # pylint: disable=too-many-instance-attributes
         """
         # NOTE Does not alter the graph edges in any way. variable_deps is not changed, Dangerous!
         if new.wires != old.wires:
-            raise ValueError("The new LegacyOperator must act on the same wires as the old one.")
+            raise ValueError("The new Operator must act on the same wires as the old one.")
 
         self._inds_for_objs[_WrappedObj(new)] = self._inds_for_objs.pop(_WrappedObj(old))
 

@@ -52,9 +52,9 @@ class CompressedResourceOp:
 
     def __init__(self, op_type: type[LegacyOperator], params: dict | None = None):
         if not isinstance(op_type, type):
-            raise TypeError(f"op_type must be an LegacyOperator type, got {type(op_type)}")
+            raise TypeError(f"op_type must be an Operator type, got {type(op_type)}")
         if not issubclass(op_type, qp.operation.LegacyOperator):
-            raise TypeError(f"op_type must be a subclass of LegacyOperator, got {op_type}")
+            raise TypeError(f"op_type must be a subclass of Operator, got {op_type}")
         self.op_type = op_type
         self.params = params or {}
         self._hashable_params = _make_hashable(params) if params else ()
@@ -193,7 +193,7 @@ def _validate_resource_rep(op_type, params):
     """Validates the resource representation of an operator."""
 
     if not issubclass(op_type, qp.operation.LegacyOperator):
-        raise TypeError(f"op_type must be a type of LegacyOperator, got {op_type}")
+        raise TypeError(f"op_type must be a type of Operator, got {op_type}")
 
     if not isinstance(op_type.resource_keys, Set):
         raise TypeError(

@@ -103,7 +103,7 @@ def _find_equal_generator(base, coeff):
 
 
 def exp(op, coeff: float = 1.0):
-    """Take the exponential of an LegacyOperator times a coefficient.
+    """Take the exponential of an Operator times a coefficient.
 
     Args:
         base (~.operation.LegacyOperator): The LegacyOperator to be exponentiated
@@ -132,7 +132,7 @@ def exp(op, coeff: float = 1.0):
         >>> qp.exp([qp.RX(1, wires=0), qp.RX(2, wires=0)], coeff=4)
         Traceback (most recent call last):
             ...
-        TypeError: base is expected to be of type LegacyOperator, but received <class 'list'>
+        TypeError: base is expected to be of type Operator, but received <class 'list'>
 
     **Example**
 
@@ -238,7 +238,7 @@ class Exp(ScalarSymbolicOp, Operation):
     def __init__(self, base, coeff=1.0):
         if not isinstance(base, LegacyOperator):
             raise TypeError(
-                f"base is expected to be of type LegacyOperator, but received {type(base)}"
+                f"base is expected to be of type Operator, but received {type(base)}"
             )
         super().__init__(base, scalar=coeff)
         self.grad_recipe = [None]

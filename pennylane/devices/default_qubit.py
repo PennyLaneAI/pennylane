@@ -136,7 +136,7 @@ _special_operator_support = {
 
 
 def stopping_condition(op: LegacyOperator, allow_mcms=True) -> bool:
-    """Specify whether or not an LegacyOperator object is supported by the device."""
+    """Specify whether or not an Operator object is supported by the device."""
     if constraint := _special_operator_support.get(op.name):
         return constraint(op)
     if op.__class__.__name__[:3] == "Pow" and any(math.requires_grad(d) for d in op.data):
@@ -272,7 +272,7 @@ def adjoint_state_measurements(  # pylint: disable=unused-argument
 
 
 def adjoint_ops(op: LegacyOperator) -> bool:
-    """Specify whether or not an LegacyOperator is supported by adjoint differentiation."""
+    """Specify whether or not an Operator is supported by adjoint differentiation."""
     return not isinstance(op, (Conditional, MidMeasure)) and (
         op.num_params == 0
         or not any(math.requires_grad(d) for d in op.data)

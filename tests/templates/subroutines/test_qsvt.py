@@ -99,7 +99,7 @@ class TestQSVTBasics:
     def test_init_error(self):
         """Test that an error is raised if a non-operation object is passed
         for the block-encoding."""
-        with pytest.raises(ValueError, match="Input block encoding must be an LegacyOperator"):
+        with pytest.raises(ValueError, match="Input block encoding must be an Operator"):
             qp.QSVT(1.23, [qp.Identity(wires=0)])
 
     def test_decomposition_queues_its_contents(self):

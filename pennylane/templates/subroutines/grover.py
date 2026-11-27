@@ -27,7 +27,7 @@ from pennylane.wires import Wires, WiresLike
 
 
 class GroverOperator(Operation):
-    r"""Performs the Grover Diffusion LegacyOperator.
+    r"""Performs the Grover Diffusion Operator.
 
     .. math::
 
@@ -61,7 +61,7 @@ class GroverOperator(Operation):
 
     **Example**
 
-    The Grover Diffusion LegacyOperator amplifies the magnitude of the basis state with
+    The Grover Diffusion Operator amplifies the magnitude of the basis state with
     a negative phase.  For example, if the solution to the search problem is the :math:`|111\rangle`
     state, we require an oracle that flips its phase; this could be implemented using a `CCZ` gate:
 

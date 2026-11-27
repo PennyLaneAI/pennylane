@@ -286,17 +286,17 @@ def _get_operators(section: dict) -> dict[str, OperatorProperties]:
     for o, attributes in iterator:
         if unknowns := set(attributes) - {"properties", "conditions"}:
             raise InvalidCapabilitiesError(
-                f"LegacyOperator '{o}' has unknown attributes: {list(unknowns)}"
+                f"Operator '{o}' has unknown attributes: {list(unknowns)}"
             )
         properties = attributes.get("properties", {})
         if unknowns := set(properties) - {"invertible", "controllable", "differentiable"}:
             raise InvalidCapabilitiesError(
-                f"LegacyOperator '{o}' has unknown properties: {list(unknowns)}"
+                f"Operator '{o}' has unknown properties: {list(unknowns)}"
             )
         condition_strs = attributes.get("conditions", [])
         if unknowns := set(condition_strs) - VALID_CONDITION_STRINGS:
             raise InvalidCapabilitiesError(
-                f"LegacyOperator '{o}' has unknown conditions: {list(unknowns)}"
+                f"Operator '{o}' has unknown conditions: {list(unknowns)}"
             )
         conditions = [ExecutionCondition(c) for c in condition_strs]
         _validate_conditions(conditions, o)

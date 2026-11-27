@@ -518,7 +518,7 @@ class Operator(metaclass=OperatorMeta):  # pylint: disable=too-many-public-metho
 
     @property
     def name(self) -> str:
-        """LegacyOperator name."""
+        """Operator name."""
         return self.__class__.__name__
 
     @property
@@ -635,12 +635,12 @@ class Operator(metaclass=OperatorMeta):  # pylint: disable=too-many-public-metho
 
     @property
     def pauli_rep(self) -> "PauliSentence | None":
-        """A :class:`~.PauliSentence` representation of the LegacyOperator, or ``None``
+        """A :class:`~.PauliSentence` representation of the Operator, or ``None``
         if it doesn't have one."""
         return self._pauli_rep
 
     # ------------------------------------------------------------------------
-    # -------------- Legacy LegacyOperator compatibility views ----------------------
+    # -------------- Legacy Operator compatibility views ----------------------
     # ------------------------------------------------------------------------
     # The following properties provide backwards-compatible read-only views
     # matching the legacy ``LegacyOperator`` API (data, parameters, hyperparameters).
@@ -648,7 +648,7 @@ class Operator(metaclass=OperatorMeta):  # pylint: disable=too-many-public-metho
     # ``dynamic_args``, ``static_args``, etc. for new code.
 
     _grad_recipe = None
-    """Legacy LegacyOperator compatibility default for parameter-shift recipes."""
+    """Legacy Operator compatibility default for parameter-shift recipes."""
 
     @property
     def grad_recipe(self):
@@ -686,17 +686,17 @@ class Operator(metaclass=OperatorMeta):  # pylint: disable=too-many-public-metho
 
     @property
     def data(self) -> tuple:
-        """Legacy LegacyOperator compatibility view of dynamic numerical arguments."""
+        """Legacy Operator compatibility view of dynamic numerical arguments."""
         return tuple(self.arguments[name] for name in self.dynamic_argnames)
 
     @property
     def parameters(self) -> list:
-        """Legacy LegacyOperator compatibility view of dynamic numerical arguments as a list."""
+        """Legacy Operator compatibility view of dynamic numerical arguments as a list."""
         return list(self.data)
 
     @property
     def hyperparameters(self) -> dict:
-        """Legacy LegacyOperator compatibility view of non-dynamic, non-wire constructor arguments."""
+        """Legacy Operator compatibility view of non-dynamic, non-wire constructor arguments."""
         return {
             name: value
             for name, value in self.arguments.items()
@@ -820,7 +820,7 @@ class Operator(metaclass=OperatorMeta):  # pylint: disable=too-many-public-metho
         raise PowUndefinedError
 
     def queue(self, context: QueuingManager = QueuingManager):
-        """Append the operator to the LegacyOperator queue."""
+        """Append the operator to the Operator queue."""
         for h in self.hybrid_args.values():
             leaves, _ = flatten(h, is_leaf=_is_op)
             _ = [context.remove(l) for l in leaves if isinstance(l, LegacyOperator)]
@@ -833,7 +833,7 @@ class Operator(metaclass=OperatorMeta):  # pylint: disable=too-many-public-metho
     @classproperty
     @classmethod
     def has_adjoint(cls) -> bool:
-        """Bool: Whether or not the LegacyOperator can compute its own adjoint.
+        """Bool: Whether or not the Operator can compute its own adjoint.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
@@ -930,7 +930,7 @@ class Operator(metaclass=OperatorMeta):  # pylint: disable=too-many-public-metho
     @classproperty
     @classmethod
     def has_matrix(cls) -> bool:
-        """Bool: Whether or not the LegacyOperator returns a defined matrix.
+        """Bool: Whether or not the Operator returns a defined matrix.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
@@ -994,7 +994,7 @@ class Operator(metaclass=OperatorMeta):  # pylint: disable=too-many-public-metho
     @classproperty
     @classmethod
     def has_sparse_matrix(cls) -> bool:
-        """Bool: Whether the LegacyOperator returns a defined sparse matrix.
+        """Bool: Whether the Operator returns a defined sparse matrix.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
@@ -1060,7 +1060,7 @@ class Operator(metaclass=OperatorMeta):  # pylint: disable=too-many-public-metho
     @classproperty
     @classmethod
     def has_decomposition(cls) -> bool:
-        """Bool: Whether or not the LegacyOperator returns a defined decomposition.
+        """Bool: Whether or not the Operator returns a defined decomposition.
 
         This is a class-level check (no per-instance dispatch): ``True`` if
         ``compute_decomposition`` or ``decomposition`` is overridden, or if graph decomposition
@@ -1190,7 +1190,7 @@ class Operator(metaclass=OperatorMeta):  # pylint: disable=too-many-public-metho
     @classproperty
     @classmethod
     def has_diagonalizing_gates(cls) -> bool:
-        """Bool: Whether or not the LegacyOperator returns defined diagonalizing gates.
+        """Bool: Whether or not the Operator returns defined diagonalizing gates.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
@@ -1236,7 +1236,7 @@ class Operator(metaclass=OperatorMeta):  # pylint: disable=too-many-public-metho
     @classproperty
     @classmethod
     def has_generator(cls) -> bool:
-        """Bool: Whether or not the LegacyOperator returns a defined generator.
+        """Bool: Whether or not the Operator returns a defined generator.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
@@ -1379,7 +1379,7 @@ class Operator(metaclass=OperatorMeta):  # pylint: disable=too-many-public-metho
     # ------------------------------------------------------------------------
 
     def __add__(self, other: LegacyOperator | TensorLike) -> LegacyOperator:
-        """The addition operation of LegacyOperator-LegacyOperator objects and LegacyOperator-scalar."""
+        """The addition operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, LegacyOperator):
             return qp.sum(self, other, lazy=False)
         if isinstance(other, TensorLike):
@@ -1401,7 +1401,7 @@ class Operator(metaclass=OperatorMeta):  # pylint: disable=too-many-public-metho
         return NotImplemented
 
     def __truediv__(self, other: TensorLike):
-        """The division between an LegacyOperator and a number."""
+        """The division between an Operator and a number."""
         if isinstance(other, TensorLike):
             return self.__mul__(1 / other)
         return NotImplemented
@@ -1409,7 +1409,7 @@ class Operator(metaclass=OperatorMeta):  # pylint: disable=too-many-public-metho
     __rmul__ = __mul__
 
     def __matmul__(self, other: LegacyOperator) -> LegacyOperator:
-        """The product operation between LegacyOperator objects."""
+        """The product operation between Operator objects."""
         return (
             qp.prod(self, other, lazy=False)
             if isinstance(other, LegacyOperator)
@@ -1417,7 +1417,7 @@ class Operator(metaclass=OperatorMeta):  # pylint: disable=too-many-public-metho
         )
 
     def __sub__(self, other: LegacyOperator | TensorLike) -> LegacyOperator:
-        """The subtraction operation of LegacyOperator-LegacyOperator objects and LegacyOperator-scalar."""
+        """The subtraction operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, LegacyOperator):
             return self + qp.s_prod(-1, other, lazy=False)
         if isinstance(other, TensorLike):
@@ -1425,15 +1425,15 @@ class Operator(metaclass=OperatorMeta):  # pylint: disable=too-many-public-metho
         return NotImplemented
 
     def __rsub__(self, other: LegacyOperator | TensorLike) -> LegacyOperator:
-        """The reverse subtraction operation of LegacyOperator-LegacyOperator objects and LegacyOperator-scalar."""
+        """The reverse subtraction operation of Operator-Operator objects and Operator-scalar."""
         return -self + other
 
     def __neg__(self) -> LegacyOperator:
-        """The negation operation of an LegacyOperator object."""
+        """The negation operation of an Operator object."""
         return qp.s_prod(scalar=-1, operator=self, lazy=False)
 
     def __pow__(self, other: TensorLike) -> LegacyOperator:
-        r"""The power operation of an LegacyOperator object."""
+        r"""The power operation of an Operator object."""
         if isinstance(other, TensorLike):
             return qp.pow(self, z=other)
         return NotImplemented
@@ -2119,7 +2119,7 @@ def _is_wires(val: Any) -> bool:
 
 
 def _is_op(val: Any) -> bool:
-    """Check whether a value is an LegacyOperator (legacy or new)."""
+    """Check whether a value is an Operator (legacy or new)."""
     return isinstance(val, LegacyOperator)
 
 
@@ -2172,7 +2172,7 @@ def _to_int_wires(wires):
 
     if any(_is_abstract_array(w) for w in wires):
         raise ValueError(
-            "LegacyOperator instances cannot be constructed with a combination of both concrete"
+            "Operator instances cannot be constructed with a combination of both concrete"
             " wires and abstract values like ShapedArray, AbstractArray,"
             " AbstractWires, AbstractQubits"
         )

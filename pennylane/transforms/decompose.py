@@ -527,7 +527,7 @@ def _tape_decompose(  # pylint: disable=too-many-arguments
         ]
     except RecursionError as e:
         raise RecursionError(
-            "Reached recursion limit trying to decompose operations. LegacyOperator decomposition may "
+            "Reached recursion limit trying to decompose operations. Operator decomposition may "
             "have entered an infinite loop. Setting max_expansion will terminate the decomposition "
             "at a fixed recursion depth."
         ) from e
@@ -615,7 +615,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
                 decomp = custom_decomposer(op)
             except DecompositionUndefinedError as e:
                 raise DecompositionUndefinedError(
-                    f"LegacyOperator {op} not supported and does not provide a decomposition."
+                    f"Operator {op} not supported and does not provide a decomposition."
                 ) from e
 
         elif isinstance(op, GlobalPhase):
@@ -633,7 +633,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
 
         elif strict:
             raise DecompositionUndefinedError(
-                f"LegacyOperator {op} not supported and does not provide a decomposition."
+                f"Operator {op} not supported and does not provide a decomposition."
             )
 
         else:

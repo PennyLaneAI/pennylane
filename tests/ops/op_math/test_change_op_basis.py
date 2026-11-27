@@ -151,7 +151,7 @@ def test_change_op_basis_with_none():
 def test_convert_to_prod_raises():
     """Test that _convert_to_prod raises for inputs that are neither Operators nor Callables."""
     with pytest.raises(
-        TypeError, match="The parameters to change_op_basis must be LegacyOperator or Callable"
+        TypeError, match="The parameters to change_op_basis must be Operator or Callable"
     ):
         _convert_to_prod(5)
 
@@ -160,7 +160,7 @@ def test_change_op_basis_raises():
     """Tests that we appropriately raise from change_op_basis."""
 
     with pytest.raises(
-        TypeError, match="The parameters to change_op_basis must be LegacyOperator or Callable"
+        TypeError, match="The parameters to change_op_basis must be Operator or Callable"
     ):
         qp.change_op_basis("X", "Y")
 
@@ -186,7 +186,7 @@ def test_non_operator_capture(position, invalid):
         operands[position] = invalid
         qp.change_op_basis(*operands)
 
-    with pytest.raises(TypeError, match="must be of type LegacyOperator"):
+    with pytest.raises(TypeError, match="must be of type Operator"):
         qp.capture.make_plxpr(circuit)()
 
 
@@ -200,7 +200,7 @@ def test_missing_required_operator_capture(position):
         operands[position] = None
         qp.change_op_basis(*operands)
 
-    with pytest.raises(TypeError, match="must be of type LegacyOperator"):
+    with pytest.raises(TypeError, match="must be of type Operator"):
         qp.capture.make_plxpr(circuit)()
 
 

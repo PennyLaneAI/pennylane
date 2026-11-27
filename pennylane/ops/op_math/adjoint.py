@@ -43,7 +43,7 @@ def adjoint(fn: LegacyOperator) -> LegacyOperator: ...
 @overload
 def adjoint(fn: Callable) -> Callable: ...
 def adjoint(fn):
-    """Create the adjoint of an LegacyOperator or a function that applies the adjoint of the provided function.
+    """Create the adjoint of an Operator or a function that applies the adjoint of the provided function.
     :func:`~.qjit` compatible.
 
     Args:
@@ -51,7 +51,7 @@ def adjoint(fn):
             applies quantum operations.
 
     Returns:
-        (function or :class:`~.operation.LegacyOperator`): If an LegacyOperator is provided, returns an LegacyOperator that is the adjoint.
+        (function or :class:`~.operation.LegacyOperator`): If an Operator is provided, returns an Operator that is the adjoint.
         If a function is provided, returns a function with the same call signature that returns the Adjoint of the
         provided function.
 

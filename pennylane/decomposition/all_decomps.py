@@ -39,7 +39,7 @@ def all_decomps(
     op: Operator,
     skip_ops: set[Operator] | None = None,
 ) -> dict[Operator, list[DecompositionRule]]:
-    """Collect all decomposition rules downstream of an LegacyOperator.
+    """Collect all decomposition rules downstream of an Operator.
 
     Args:
         op (Operator): an operator that we will want to decompose:

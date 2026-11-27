@@ -76,7 +76,7 @@ def _convert_to_prod(op_or_func):
     if isinstance(op_or_func, LegacyOperator):
         return op_or_func
     raise TypeError(
-        f"The parameters to change_op_basis must be LegacyOperator or Callable, not {type(op_or_func)}"
+        f"The parameters to change_op_basis must be Operator or Callable, not {type(op_or_func)}"
     )
 
 
@@ -208,7 +208,7 @@ def change_op_basis(
                 )
             if not (isinstance(op, LegacyOperator) or _is_abstract_operator(op)):
                 raise TypeError(
-                    "The parameters to change_op_basis must be of type LegacyOperator when using program "
+                    "The parameters to change_op_basis must be of type Operator when using program "
                     f"capture, not {type(op)}"
                 )
         compute, target, uncompute = compute_op, target_op, uncompute_op
@@ -241,7 +241,7 @@ class ChangeOpBasis(CompositeOp):
             Default is uncompute_op=qp.adjoint(compute_op).
 
     Returns:
-        (LegacyOperator): Returns an LegacyOperator which is the change_op_basis of the provided Operators: compute_op, target_op, uncompute_op.
+        (LegacyOperator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, uncompute_op.
 
     .. note::
         When a ``ChangeOpBasis`` operator is iterated over, its factors are iterated in the reverse order. This is to

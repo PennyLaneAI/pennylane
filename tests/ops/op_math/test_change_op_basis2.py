@@ -164,7 +164,7 @@ def test_change_op_basis_raises():
     """Tests that we appropriately raise from change_op_basis."""
 
     with pytest.raises(
-        TypeError, match="The parameters to change_op_basis must be LegacyOperator or Callable"
+        TypeError, match="The parameters to change_op_basis must be Operator or Callable"
     ):
         qp.change_op_basis("X", "Y")
 
