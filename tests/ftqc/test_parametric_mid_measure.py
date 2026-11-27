@@ -169,12 +169,12 @@ class TestParametricMidMeasure:
             ("ZX", -3 * np.pi / 4, -qp.X(0) - qp.Z(0)),
             # YZ measurements
             ("YZ", 0, qp.Z(0)),
-            ("YZ", np.pi / 4, -qp.Y(0) + qp.Z(0)),
-            ("YZ", np.pi / 2, -qp.Y(0)),
-            ("YZ", 3 * np.pi / 4, -qp.Y(0) - qp.Z(0)),
+            ("YZ", np.pi / 4, qp.Y(0) + qp.Z(0)),
+            ("YZ", np.pi / 2, qp.Y(0)),
+            ("YZ", 3 * np.pi / 4, qp.Y(0) - qp.Z(0)),
             ("YZ", np.pi, -qp.Z(0)),
-            ("YZ", 5 * np.pi / 4, qp.Y(0) - qp.Z(0)),
-            ("YZ", -3 * np.pi / 4, qp.Y(0) - qp.Z(0)),
+            ("YZ", 5 * np.pi / 4, -qp.Y(0) - qp.Z(0)),
+            ("YZ", -3 * np.pi / 4, -qp.Y(0) - qp.Z(0)),
         ],
     )
     def test_diagonalizing_gates(self, plane, measurement_angle, corresponding_obs):
@@ -201,6 +201,30 @@ class TestParametricMidMeasure:
             expected_res = expected_res / np.sqrt(2)
 
         assert np.allclose(res, expected_res)
+
+    @pytest.mark.parametrize("angle", [0.7, np.pi / 2, -1.2])
+    @pytest.mark.parametrize(
+        "plane, basis_state",
+        [
+            ("XY", lambda a: np.array([1, np.exp(1j * a)]) / np.sqrt(2)),
+            ("YZ", lambda a: np.array([np.cos(a / 2), 1j * np.sin(a / 2)])),
+            ("ZX", lambda a: np.array([np.cos(a / 2), np.sin(a / 2)])),
+        ],
+    )
+    def test_documented_basis_state_measures_zero(self, plane, basis_state, angle):
+        """Test that measuring the basis state given in the docstring of
+        ``measure_arbitrary_basis`` returns 0 with certainty"""
+
+        dev = qp.device("default.qubit")
+
+        @diagonalize_mcms
+        @qp.qnode(dev, mcm_method="tree-traversal")
+        def circ():
+            qp.StatePrep(basis_state(angle), wires=0)
+            m = measure_arbitrary_basis(0, angle=angle, plane=plane)
+            return qp.probs(op=m)
+
+        assert np.allclose(circ(), [1, 0])
 
     def test_invalid_plane_raises_error(self):
         """Test that an error is raised at diagonalization if a plane other than

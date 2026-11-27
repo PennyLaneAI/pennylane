@@ -2699,6 +2699,11 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed the diagonalizing gate of :func:`~.ftqc.measure_arbitrary_basis` measurements in the ``"YZ"``
+  plane, which measured in the basis for ``-angle`` instead of the documented
+  :math:`\cos(\theta/2)|0\rangle + i \sin(\theta/2)|1\rangle`.
+  `(#10611) <https://github.com/PennyLaneAI/pennylane/pull/10611>`__
+
 * Fixed :func:`~.ctrl` to return the original operator or callable when the control wires are empty.
   `(#10595) <https://github.com/PennyLaneAI/pennylane/pull/10595>`__
 
@@ -3084,6 +3089,7 @@ Thomas C. Fraser,
 Connor Gambla,
 Vellala Gowthami,
 Pragati Gupta,
+Andy He,
 Sengthai Heng,
 Austin Huang,
 Harshal Janjani,

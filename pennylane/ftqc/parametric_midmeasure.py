@@ -415,7 +415,7 @@ class ParametricMidMeasure(MidMeasure):
         if self.plane == "ZX":
             return [RY(-self.angle, self.wires)]
         if self.plane == "YZ":
-            return [RX(-self.angle, self.wires)]
+            return [RX(self.angle, self.wires)]
 
         raise NotImplementedError(
             f"{self.plane} plane not implemented. Available plans are 'XY' 'ZX' and 'YZ'."
