@@ -2274,17 +2274,4 @@ class ControlledPhaseShift(Controlled2):
         return math.exp(product)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 CPhase = ControlledPhaseShift

@@ -22,8 +22,8 @@ from scipy import sparse
 import pennylane as qp
 from pennylane import math
 from pennylane.decomposition.decomposition_rule import _fix_decomp
-from pennylane.decomposition_rules.op_math import controlled_qubit_unitary
 from pennylane.decomposition_rules import ctrl_decomp_bisect, ctrl_decomp_zyz
+from pennylane.decomposition_rules.op_math import controlled_qubit_unitary
 from pennylane.decomposition_rules.op_math.controlled_qubit_unitary import (
     _bisect_compute_a,
     _bisect_compute_b,

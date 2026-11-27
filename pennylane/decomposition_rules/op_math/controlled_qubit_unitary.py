@@ -110,6 +110,7 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
 
     return q.queue
 
+
 def ctrl_decomp_zyz(
     target_operation: Operator,
     control_wires: Wires,
@@ -335,9 +336,7 @@ def _controlled_unitary_multi_control_zyz_resources(  # pylint: disable=unused-a
 @register_resources(
     _controlled_unitary_multi_control_zyz_resources, exact=False, name="multi_control_zyz"
 )
-def controlled_unitary_multi_control_zyz(
-    U, wires, control_values, work_wires, work_wire_type, **_
-):
+def controlled_unitary_multi_control_zyz(U, wires, control_values, work_wires, work_wire_type, **_):
     """The decomposition rule for ControlledQubitUnitary from Lemma 7.9 of
     https://arxiv.org/pdf/quant-ph/9503016"""
 

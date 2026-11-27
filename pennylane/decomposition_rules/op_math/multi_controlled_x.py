@@ -14,7 +14,6 @@
 
 """Decomposition rules for multi controlled x."""
 
-
 import numpy as np
 
 from pennylane import allocation, capture, compiler, control_flow, math, ops, templates
@@ -26,10 +25,11 @@ from pennylane.decomposition.decomposition_rule import (
 )
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
-from pennylane.ops.op_math.pow2 import pow_involutory
 from pennylane.ops.op_math.controlled_ops import MultiControlledX
+from pennylane.ops.op_math.pow2 import pow_involutory
 from pennylane.typing import Bool, Complex, Float, Wire
 from pennylane.wires import concatenate_wires
+
 from .controlled_qubit_unitary import _ctrl_decomp_bisect_md
 
 
@@ -108,7 +108,12 @@ def mcx_to_cnot_or_toffoli(wires, control_values, *_, **__):
 
 def _mcx_two_controls_elbows_resources(wires, *_, **__):
     num_ctrl_wires = len(wires) - 1
-    return {templates.Elbow: 1, ops.CNOT: 1, ops.adjoint(templates.Elbow(Wire[3])): 1, ops.X: num_ctrl_wires}
+    return {
+        templates.Elbow: 1,
+        ops.CNOT: 1,
+        ops.adjoint(templates.Elbow(Wire[3])): 1,
+        ops.X: num_ctrl_wires,
+    }
 
 
 # pylint: disable-next=unused-argument
@@ -325,7 +330,9 @@ def mcx_two_work_wires(wires, control_values, work_wires, work_wire_type="borrow
     # Uncompute the first ladder
     ops.adjoint(_build_log_n_depth_ccx_ladder)(wires[:-1])
 
-    right_elbow = ops.Toffoli if work_wire_type == "borrowed" else ops.adjoint(templates.TemporaryAND)
+    right_elbow = (
+        ops.Toffoli if work_wire_type == "borrowed" else ops.adjoint(templates.TemporaryAND)
+    )
     right_elbow([wires[0], wires[1], work0])
 
     if work_wire_type == "borrowed":
@@ -392,7 +399,9 @@ def _mcx_one_worker_no_flips(wires, work_wires, work_wire_type, _skip_toggle_det
     ops.Toffoli([work_wires[0], wires[final_ctrl_index], wires[-1]])
     ops.adjoint(_build_linear_depth_ladder)(wires[:-1])
 
-    adj_toffoli_type = ops.adjoint(templates.TemporaryAND) if work_wire_type == "zeroed" else ops.Toffoli
+    adj_toffoli_type = (
+        ops.adjoint(templates.TemporaryAND) if work_wire_type == "zeroed" else ops.Toffoli
+    )
     adj_toffoli_type([wires[0], wires[1], work_wires[0]])
 
     if not _skip_toggle_detection:

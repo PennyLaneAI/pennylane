@@ -17,13 +17,14 @@
 from __future__ import annotations
 
 from pennylane import math, ops
-from pennylane.core.queuing import QueuingManager
 from pennylane.core.operator import Operator
+from pennylane.core.queuing import QueuingManager
 from pennylane.ops.op_math.controlled import (
     Controlled,
     _decompose_custom_ops,
     _is_single_qubit_special_unitary,
 )
+
 from .controlled_qubit_unitary import ctrl_decomp_bisect, ctrl_decomp_zyz
 
 
@@ -52,6 +53,8 @@ def _decompose_no_control_values(op: Controlled) -> list[Operator] | None:
         base_decomp = op.base.decomposition()
 
     return [
-        ops.ctrl(newop, op.control_wires, work_wires=op.work_wires, work_wire_type=op.work_wire_type)
+        ops.ctrl(
+            newop, op.control_wires, work_wires=op.work_wires, work_wire_type=op.work_wire_type
+        )
         for newop in base_decomp
     ]
