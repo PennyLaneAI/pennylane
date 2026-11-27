@@ -887,9 +887,7 @@ class DecompGraphSolution:
         solution = min(all_solutions, key=_resource, default=None)
 
         if not solution:
-            raise DecompositionError(
-                f"Operator {op} is unsolved in this decomposition graph."
-            )
+            raise DecompositionError(f"Operator {op} is unsolved in this decomposition graph.")
 
         op_node_idx = self._all_op_indices[solution]
         return op_node_idx

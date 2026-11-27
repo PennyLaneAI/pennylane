@@ -54,7 +54,8 @@ class TestDotSum:
     def test_error_if_ops_operator(self):
         """Test that dot raises an error if ops is an operator itself."""
         with pytest.raises(
-            ValueError, match=r"ops must be an Iterable of LegacyOperator's, not a LegacyOperator itself."
+            ValueError,
+            match=r"ops must be an Iterable of LegacyOperator's, not a LegacyOperator itself.",
         ):
             qp.dot([1, 1], qp.X(0) @ qp.Y(1))
 

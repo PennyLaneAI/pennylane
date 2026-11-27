@@ -155,16 +155,12 @@ class HilbertSchmidt(Operation):
     ) -> None:
         u_ops = (U,) if isinstance(U, LegacyOperator) else tuple(U)
         if not all(isinstance(op, LegacyOperator) for op in u_ops):
-            raise ValueError(
-                "The argument 'U' must be an Operator or an iterable of Operators."
-            )
+            raise ValueError("The argument 'U' must be an Operator or an iterable of Operators.")
         u_wires = Wires.all_wires([op.wires for op in u_ops])
 
         v_ops = (V,) if isinstance(V, LegacyOperator) else tuple(V)
         if not all(isinstance(op, LegacyOperator) for op in v_ops):
-            raise ValueError(
-                "The argument 'V' must be an Operator or an iterable of Operators."
-            )
+            raise ValueError("The argument 'V' must be an Operator or an iterable of Operators.")
         v_wires = Wires.all_wires([op.wires for op in v_ops])
 
         self._hyperparameters = {

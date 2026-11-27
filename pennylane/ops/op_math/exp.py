@@ -237,9 +237,7 @@ class Exp(ScalarSymbolicOp, Operation):
 
     def __init__(self, base, coeff=1.0):
         if not isinstance(base, LegacyOperator):
-            raise TypeError(
-                f"base is expected to be of type Operator, but received {type(base)}"
-            )
+            raise TypeError(f"base is expected to be of type Operator, but received {type(base)}")
         super().__init__(base, scalar=coeff)
         self.grad_recipe = [None]
 

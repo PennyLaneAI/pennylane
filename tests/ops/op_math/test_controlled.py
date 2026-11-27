@@ -1586,9 +1586,7 @@ class TestCtrl:
 
     def test_invalid_input_error(self):
         """Test that a ValueError is raised upon invalid inputs."""
-        with pytest.raises(
-            ValueError, match=r"<class 'int'> is not an Operator or callable."
-        ):
+        with pytest.raises(ValueError, match=r"<class 'int'> is not an Operator or callable."):
             qp.ctrl(1, control=2)
 
     def test_None_input_error(self):

@@ -524,9 +524,7 @@ class TestLinearCombination:  # pylint: disable=too-many-public-methods
     def test_error_if_observables_operator(self):
         """Test thatt an error is raised if an operator is provided to observables."""
 
-        with pytest.raises(
-            ValueError, match=r"observables must be an Iterable of Operator's"
-        ):
+        with pytest.raises(ValueError, match=r"observables must be an Iterable of Operator's"):
             qp.ops.LinearCombination([1, 1], qp.X(0) @ qp.Y(1))
 
     PAULI_REPS = (
