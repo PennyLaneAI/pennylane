@@ -23,7 +23,6 @@ import pennylane as qp
 from pennylane.core.operator import Operator
 from pennylane.core.qscript import QuantumScript
 from pennylane.decomposition import gate_sets
-from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.transforms import transform
 from pennylane.wires import Wires
@@ -326,6 +325,9 @@ def to_zx(tape, expand_measurements=False):
     from packaging.version import Version
     from pyzx.circuit.gates import TargetMapper
     from pyzx.graph import Graph
+
+    # The rule package is initialized after transforms during PennyLane import.
+    from pennylane.decomposition_rules import null_decomp
 
     _pyzx_010 = Version(pyzx.__version__) >= Version("0.10")
 

@@ -1202,32 +1202,6 @@ def _count_gates(op: Operator, rule: DecompositionRule) -> tuple[dict, dict]:
     return dict(actual_gate_counts), dict(allocations)
 
 
-@register_resources({}, name="null_decomp")
-def null_decomp(*_, **__):
-    """A decomposition rule that can be assigned to an operator so that the operator decomposes to nothing.
-
-    **Example**
-
-    .. code-block:: python
-
-        import pennylane as qp
-        from pennylane.decomposition import null_decomp
-
-        @qp.transforms._tape_decompose(
-            gate_set={qp.RZ},
-            fixed_decomps={qp.GlobalPhase: null_decomp}
-        )
-        @qp.qnode(qp.device("default.qubit"))
-        def circuit():
-            qp.Z(0)
-
-    >>> print(qp.draw(circuit)())
-    0: ──RZ(3.14)─┤
-
-    """
-    return
-
-
 def _is_abstract_and_fixed(val, is_leaf=False):
     """Checks whether `val` is (or only contains) abstract data of fixed shapes."""
     if isinstance(val, (AbstractArray, AbstractWires)):

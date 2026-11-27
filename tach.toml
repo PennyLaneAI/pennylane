@@ -247,6 +247,11 @@ path = "pennylane.optimize"
 layer = "auxiliary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
+[[modules]]
+path = "pennylane.decomposition_rules"
+layer = "auxiliary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
 # TEMPLATES MODULE
 
 [[modules]]

@@ -40,6 +40,7 @@ from pennylane.decomposition.decomposition_rule import (
 )
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
+from pennylane.decomposition.utils import _to_op_list
 from pennylane.ops.identity import GlobalPhase
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
@@ -1998,19 +1999,6 @@ def _setup_inputs_mcx(
         "work_wires": work_wires,
         "work_wire_type": work_wire_type,
     }
-
-
-def _to_op_list(rule):
-
-    def _inner(*args, **kwargs):
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(*args, **kwargs)
-        if qp.queuing.QueuingManager.recording():
-            for op in q.queue:
-                qp.apply(op)
-        return q.queue
-
-    return _inner
 
 
 @_list_decomps.register
