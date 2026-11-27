@@ -25,7 +25,7 @@ from pennylane.core import queuing
 from pennylane.core.apply import apply
 from pennylane.core.operator import LegacyOperator, Operation
 from pennylane.decomposition import register_condition, register_resources
-from pennylane.ops.op_math.decompositions.unitary_decompositions import _qubit_unitary_two_qubit
+from pennylane.decomposition.decomposition_rule import _get_registered_decomps
 from pennylane.typing import Complex, Float, Wire
 from pennylane.wires import Wires, concatenate_wires
 
@@ -317,8 +317,8 @@ def _multi_ctrl_decomp_zyz_condition(U, wires, *_, **__):
     return num_target_wires == 1 and num_control_wires > 1
 
 
-def _controlled_unitary_multi_control_zyz_resources(
-    U, wires, control_values, work_wires, work_wire_type, **_  # pylint: disable=unused-argument
+def _controlled_unitary_multi_control_zyz_resources(  # pylint: disable=unused-argument
+    U, wires, control_values, work_wires, work_wire_type, **_
 ):
     num_ctrl_wires = len(wires) - 1
     num_work_wires = len(work_wires)
@@ -370,13 +370,15 @@ def _controlled_unitary_multi_control_zyz(
     _x_flips()  # pylint: disable=no-value-for-parameter
 
 
-def _controlled_unitary_two_qubit_resources(
-    U, wires, control_values, work_wires, work_wire_type, **_  # pylint: disable=unused-argument
+def _controlled_unitary_two_qubit_resources(  # pylint: disable=unused-argument
+    U, wires, control_values, work_wires, work_wire_type, **_
 ):
+    base_rule = _get_registered_decomps("QubitUnitary")["two_qubit"]
+
     num_target_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
     num_control_wires = len(wires) - num_target_wires
     num_work_wires = len(work_wires)
-    base_resources = _qubit_unitary_two_qubit.compute_resources(num_wires=num_target_wires)
+    base_resources = base_rule.compute_resources(num_wires=num_target_wires)
     gate_counts = {
         qp.ctrl(
             base_op_rep,
@@ -401,6 +403,10 @@ def _controlled_unitary_two_qubit_resources(
 def _controlled_unitary_two_qubit(U, wires, control_values, work_wires, work_wire_type, **_):
     """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""
 
+    # Fetch the built-in rule even when QubitUnitary has exclusions or a fixed rule.
+    # This preserves the direct dependency without importing the rule library from ops.
+    base_rule = _get_registered_decomps("QubitUnitary")["two_qubit"]
+
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
         control_values = math.array(control_values, like="jax")
@@ -411,7 +417,7 @@ def _controlled_unitary_two_qubit(U, wires, control_values, work_wires, work_wir
 
     _x_flips()  # pylint: disable=no-value-for-parameter
     ops.ctrl(
-        _qubit_unitary_two_qubit._impl,  # pylint: disable=protected-access
+        base_rule._impl,  # pylint: disable=protected-access
         control=wires[:-2],
         work_wires=work_wires,
         work_wire_type=work_wire_type,
@@ -572,7 +578,6 @@ def _mcx_many_work_wires(wires, control_values, work_wires, work_wire_type="borr
     """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
     https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
     work wires"""
-    # pylint: disable=no-value-for-parameter
 
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
@@ -602,14 +607,14 @@ def _mcx_many_work_wires(wires, control_values, work_wires, work_wire_type="borr
     def loop_down(i):
         down_gate(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
 
-    _x_flips()
+    _x_flips()  # pylint: disable=no-value-for-parameter
 
     if work_wire_type == "borrowed":
         ops.Toffoli(wires=[control_wires[0], work_wires[0], target_wire])
-        loop_up()
+        loop_up()  # pylint: disable=no-value-for-parameter
 
     down_gate(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
-    loop_down()
+    loop_down()  # pylint: disable=no-value-for-parameter
 
     _wires = [control_wires[0], work_wires[0], target_wire]
     ops.MultiControlledX(
@@ -618,13 +623,13 @@ def _mcx_many_work_wires(wires, control_values, work_wires, work_wire_type="borr
         work_wire_type=work_wire_type,
     )
 
-    loop_up()
+    loop_up()  # pylint: disable=no-value-for-parameter
     up_gate(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
 
     if work_wire_type == "borrowed":
-        loop_down()
+        loop_down()  # pylint: disable=no-value-for-parameter
 
-    _x_flips()
+    _x_flips()  # pylint: disable=no-value-for-parameter
 
 
 # pylint: disable-next=unused-argument

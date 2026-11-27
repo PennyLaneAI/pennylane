@@ -27,6 +27,7 @@ from scipy import sparse
 import pennylane as qp
 from pennylane import numpy as npp
 from pennylane.core.operator import Operator, Operator1
+from pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit import controlled_ising_zz
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.qubit import RX as old_loc_RX
 from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
@@ -736,8 +737,6 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         self, angle, control_values, work_wires, work_wire_type
     ):
         """Test the controlled IsingZZ rule's gates, matrix, and resource counts."""
-        from pennylane.ops.qubit.parametric_ops_multi_qubit import controlled_ising_zz
-
         control_wires = list(range(len(control_values)))
         op = qp.ctrl(
             qp.IsingZZ(angle, wires=[3, 2]),

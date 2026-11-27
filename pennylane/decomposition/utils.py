@@ -22,7 +22,9 @@ from functools import singledispatch
 from types import MappingProxyType, NoneType
 from typing import overload
 
+from pennylane.core.apply import apply
 from pennylane.core.operator import LegacyOperator, Operator, Operator1, abstractify
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires
 
@@ -88,6 +90,20 @@ def _operator_to_name(op: LegacyOperator):
 @to_name.register
 def _str_to_name(op: str):
     return translate_op_alias(op)
+
+
+def _to_op_list(rule):
+    """Collect a quantum function's operations and apply them to any outer queue."""
+
+    def _inner(*args, **kwargs):
+        with AnnotatedQueue() as q:
+            rule(*args, **kwargs)
+        if QueuingManager.recording():
+            for op in q.queue:
+                apply(op)
+        return q.queue
+
+    return _inner
 
 
 def _get_decomp_args(op: LegacyOperator):

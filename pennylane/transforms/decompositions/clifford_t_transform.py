@@ -277,7 +277,7 @@ def _one_qubit_decompose(op):
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
-        sd_ops = qp.ops.one_qubit_decomposition(
+        sd_ops = qp.decomposition_rules.one_qubit_decomposition(
             qp.matrix(op), op.wires, "ZXZ", return_global_phase=True
         )
     # Get the global phase
@@ -297,7 +297,7 @@ def _two_qubit_decompose(op):
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
-        td_ops = qp.ops.two_qubit_decomposition(qp.matrix(op), op.wires)
+        td_ops = qp.decomposition_rules.two_qubit_decomposition(qp.matrix(op), op.wires)
 
     d_ops = []
     for td_op in td_ops:

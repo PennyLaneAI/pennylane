@@ -240,6 +240,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qp_compiler
    code/qp_data
    code/qp_decomposition
+   code/qp_decomposition_rules
    code/qp_debugging
    code/qp_drawer
    code/qp_estimator
