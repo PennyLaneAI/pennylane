@@ -1689,7 +1689,7 @@ Breaking changes 💔
 
 * :class:`~.QuantumTape` has now been removed. :class:`pennylane.core.QuantumScript` use is now fully
   required.
-   `(#10573)<https://github.com/PennyLaneAI/pennylane/pull/10573/>`__
+  `(#10573) <https://github.com/PennyLaneAI/pennylane/pull/10573/>`__
 
   .. code-block:: pycon
 
