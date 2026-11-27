@@ -625,8 +625,10 @@ class TestMetricTensor:
 
         weights = getattr(mod, array_cls)([0.1, 0.2, 0.3, 0.5])
 
-        with qp.tape.QuantumTape() as tape:
+        with qp.core.queuing.AnnotatedQueue() as tape_queue:
             circuit(weights)
+
+        tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
 
         tapes, proc_fn = qp.metric_tensor(tape)
         res = qp.execute(tapes, dev, None)
@@ -679,8 +681,10 @@ class TestMetricTensor:
 
         weights = np.array([0.1, 0.2, 0.3, 0.5], requires_grad=True)
 
-        with qp.tape.QuantumTape() as tape:
+        with qp.core.queuing.AnnotatedQueue() as tape_queue:
             circuit(weights)
+
+        tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
 
         error_msg = (
             "Some parameters specified in argnum are not in the "
@@ -1484,7 +1488,8 @@ def test_error_generator_not_registered(allow_nonunitary):
     x = np.array(0.5, requires_grad=True)
     z = np.array(0.1, requires_grad=True)
 
-    class RX(qp.RX):  # pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods
+    class RX(qp.RX):
         def generator(self):
             return qp.Hadamard(self.wires)
 

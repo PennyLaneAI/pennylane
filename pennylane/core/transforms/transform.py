@@ -117,7 +117,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
     ``transform`` should be applied to a function that transforms tapes. Once validated,
     the result will be an object that is able to transform PennyLane's range of circuit-like
-    objects: :class:`~.QuantumTape`, quantum function and :class:`~.QNode`. A circuit-like
+    objects: :class:`~.QuantumScript`, quantum function and :class:`~.QNode`. A circuit-like
     object can be transformed either via decoration or by passing it functionally through
     the created transform.
 
@@ -273,7 +273,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
             H = qp.PauliY(2) @ qp.PauliZ(1) + 0.5 * qp.PauliZ(2) + qp.PauliZ(1)
             measurement = [qp.expval(H)]
             operations = [qp.Hadamard(0), qp.RX(0.2, 0), qp.RX(0.6, 0), qp.CNOT((0, 1))]
-            tape = qp.tape.QuantumTape(operations, measurement)
+            tape = qp.core.QuantumScript(operations, measurement)
 
             batch1, function1 = qp.transforms.split_non_commuting(tape)
             batch2, function2 = qp.transforms.merge_rotations(batch1)
@@ -288,7 +288,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         and a processing function ``function2``.
 
         >>> batch2
-        (<QuantumTape: wires=[0, 1, 2], params=1>, <QuantumTape: wires=[0, 1, 2], params=1>)
+        (<QuantumScript: wires=[0, 1, 2], params=1>, <QuantumScript: wires=[0, 1, 2], params=1>)
 
         >>> type(function2)
         <class 'function'>

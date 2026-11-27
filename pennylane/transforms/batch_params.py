@@ -100,12 +100,12 @@ def batch_params(
         the error.
 
     Args:
-        tape (QNode or QuantumTape or Callable): a quantum circuit to add a batch dimension to
+        tape (QNode or QuantumScript or Callable): a quantum circuit to add a batch dimension to
         all_operations (bool): If ``True``, a batch dimension will be added to *all* operations
             in the QNode, rather than just trainable QNode parameters.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
 
         The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the batched results, with the first dimension treated as the batch dimension.

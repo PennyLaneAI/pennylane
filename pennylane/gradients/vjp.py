@@ -261,7 +261,7 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
     the Jacobian of the current node of interest.
 
     Args:
-        tape (.QuantumTape): quantum tape to differentiate
+        tape (.core.QuantumScript): quantum tape to differentiate
         dy (tensor_like): Gradient-output vector. Must have shape
             matching the output shape of the corresponding tape.
         gradient_fn (callable): the gradient transform to use to differentiate
@@ -294,7 +294,7 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
             qp.RZ(x[1, 2], wires=1)
         ]
         measurements = [qp.expval(qp.Z(0)), qp.probs(wires=1)]
-        tape = qp.tape.QuantumTape(ops, measurements)
+        tape = qp.core.QuantumScript(ops, measurements)
 
     We can use the ``vjp`` function to compute the vector-Jacobian product,
     given a gradient-output vector ``dy``:
@@ -401,7 +401,7 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
     the Jacobian of the current node of interest.
 
     Args:
-        tapes (Sequence[.QuantumTape]): sequence of quantum tapes to differentiate
+        tapes (Sequence[.core.QuantumScript]): sequence of quantum tapes to differentiate
         dys (Sequence[tensor_like]): Sequence of gradient-output vectors ``dy``. Must be the
             same length as ``tapes``. Each ``dy`` tensor should have shape
             matching the output shape of the corresponding tape.
@@ -438,10 +438,10 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
             qp.RZ(x[1, 2], wires=1)
         ]
         measurements1 = [qp.expval(qp.Z(0)), qp.probs(wires=1)]
-        tape1 = qp.tape.QuantumTape(ops, measurements1)
+        tape1 = qp.core.QuantumScript(ops, measurements1)
 
         measurements2 = [qp.expval(qp.Z(0) @ qp.Z(1))]
-        tape2 = qp.tape.QuantumTape(ops, measurements2)
+        tape2 = qp.core.QuantumScript(ops, measurements2)
 
         tapes = [tape1, tape2]
 

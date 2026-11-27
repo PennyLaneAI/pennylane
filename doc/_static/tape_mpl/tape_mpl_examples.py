@@ -39,10 +39,12 @@ def default(tape):
 
 def decimals():
 
-    with qp.tape.QuantumTape() as tape2:
+    with qp.core.queuing.AnnotatedQueue() as tape2_queue:
         qp.RX(1.23456, wires=0)
         qp.Rot(1.2345, 2.3456, 3.456, wires=0)
         qp.expval(qp.PauliZ(0))
+
+    tape2 = qp.core.qscript.QuantumScript.from_queue(tape2_queue)
 
     fig, ax = tape_mpl(tape2, decimals=2)
     plt.savefig(folder / "decimals.png")
@@ -150,7 +152,7 @@ def mid_measure():
 
 if __name__ == "__main__":
 
-    with qp.tape.QuantumTape() as tape:
+    with qp.core.queuing.AnnotatedQueue() as tape_queue:
         qp.QFT(wires=(0, 1, 2, 3))
         qp.IsingXX(1.234, wires=(0, 2))
         qp.Toffoli(wires=(0, 1, 2))
@@ -158,6 +160,8 @@ if __name__ == "__main__":
         qp.RX(1.2345, wires=0)
         qp.CRZ(1.2345, wires=(3, 0))
         qp.expval(qp.PauliZ(0))
+
+    tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
 
     default(tape)
     decimals()

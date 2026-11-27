@@ -37,7 +37,7 @@ def _cache_transform(tape: QuantumScript, cache: MutableMapping):
 
     .. note::
 
-        This function makes use of :attr:`.QuantumTape.hash` to identify unique tapes.
+        This function makes use of :attr:`.QuantumScript.hash` to identify unique tapes.
     """
 
     def cache_hit_postprocessing(_results: ResultBatch) -> Result:

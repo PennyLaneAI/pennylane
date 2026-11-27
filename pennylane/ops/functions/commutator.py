@@ -86,10 +86,12 @@ def commutator(op1, op2, pauli=False):
 
         .. code-block:: python3
 
-            with qp.tape.QuantumTape() as tape:
+            with qp.core.queuing.AnnotatedQueue() as queue:
                 a = qp.X(0)      # gets recorded
                 b = PauliWord({0:"Y"}) # does not get recorded
                 comm = qp.commutator(a, b) # does not get recorded
+
+            tape = qp.core.QuantumScript.from_queue(queue)
 
         In this example, we obtain ``tape.operations = [qp.X(0)]``. When desired, we can still record the result of
         the commutator by using :func:`~apply`, i.e. ``qp.apply(comm)`` inside the recording context.
@@ -98,8 +100,10 @@ def commutator(op1, op2, pauli=False):
 
         .. code-block:: python3
 
-            with qp.tape.QuantumTape() as tape:
+            with qp.core.queuing.AnnotatedQueue() as queue:
                 comm = qp.commutator(qp.X(0), qp.Y(0))
+
+            tape = qp.core.QuantumScript.from_queue(queue)
 
         In this example, both :class:`~PauliX` and :class:`PauliY` get recorded because they were created inside the
         recording context. To avoid this, create the input to ``qp.commutator`` outside the recording context / qnode

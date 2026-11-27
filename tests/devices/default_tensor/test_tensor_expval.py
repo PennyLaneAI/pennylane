@@ -156,13 +156,15 @@ class TestExpval:
     def test_hermitian_expectation(self, theta, phi, tol, dev):
         """Tests an Hermitian operator."""
 
-        with qp.tape.QuantumTape() as tape:
+        with qp.core.queuing.AnnotatedQueue() as tape_queue:
             qp.RX(theta, wires=0)
             qp.RX(phi, wires=1)
             qp.RX(theta + phi, wires=2)
 
             for idx in range(3):
                 qp.expval(qp.Hermitian([[1, 0], [0, -1]], wires=[idx]))
+
+        tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
 
         calculated_val = execute(dev, tape)
         reference_val = calculate_reference(tape)
@@ -182,12 +184,14 @@ class TestExpval:
             ],
         )
 
-        with qp.tape.QuantumTape() as tape:
+        with qp.core.queuing.AnnotatedQueue() as tape_queue:
             qp.RX(theta, wires=0)
             qp.RX(phi, wires=1)
             qp.RX(theta + phi, wires=2)
 
             qp.expval(ham)
+
+        tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
 
         calculated_val = execute(dev, tape)
         reference_val = calculate_reference(tape)
@@ -210,11 +214,13 @@ class TestExpval:
             wires=[0, 1],
         )
 
-        with qp.tape.QuantumTape() as tape:
+        with qp.core.queuing.AnnotatedQueue() as tape_queue:
             qp.RX(theta, wires=0)
             qp.RX(phi, wires=1)
 
             qp.expval(ham)
+
+        tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
 
         calculated_val = execute(dev, tape)
         reference_val = calculate_reference(tape)
@@ -282,13 +288,15 @@ class TestTensorExpval:
     def test_PauliX_PauliY(self, theta, phi, varphi, dev):
         """Tests a tensor product involving PauliX and PauliY."""
 
-        with qp.tape.QuantumTape() as tape:
+        with qp.core.queuing.AnnotatedQueue() as tape_queue:
             qp.RX(theta, wires=[0])
             qp.RX(phi, wires=[1])
             qp.RX(varphi, wires=[2])
             qp.CNOT(wires=[0, 1])
             qp.CNOT(wires=[1, 2])
             qp.expval(qp.PauliX(0) @ qp.PauliY(2))
+
+        tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
 
         calculated_val = execute(dev, tape)
         reference_val = calculate_reference(tape)
@@ -300,7 +308,7 @@ class TestTensorExpval:
     def test_PauliZ_identity(self, theta, phi, varphi, dev):
         """Tests a tensor product involving PauliZ and Identity."""
 
-        with qp.tape.QuantumTape() as tape:
+        with qp.core.queuing.AnnotatedQueue() as tape_queue:
             qp.Identity(wires=[0])
             qp.RX(theta, wires=[0])
             qp.RX(phi, wires=[1])
@@ -308,6 +316,8 @@ class TestTensorExpval:
             qp.CNOT(wires=[0, 1])
             qp.CNOT(wires=[1, 2])
             qp.expval(qp.PauliZ(0) @ qp.Identity(1) @ qp.PauliZ(2))
+
+        tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
 
         calculated_val = execute(dev, tape)
         reference_val = calculate_reference(tape)
@@ -319,13 +329,15 @@ class TestTensorExpval:
     def test_PauliZ_hadamard_PauliY(self, theta, phi, varphi, dev):
         """Tests a tensor product involving PauliY, PauliZ and Hadamard."""
 
-        with qp.tape.QuantumTape() as tape:
+        with qp.core.queuing.AnnotatedQueue() as tape_queue:
             qp.RX(theta, wires=[0])
             qp.RX(phi, wires=[1])
             qp.RX(varphi, wires=[2])
             qp.CNOT(wires=[0, 1])
             qp.CNOT(wires=[1, 2])
             qp.expval(qp.PauliZ(0) @ qp.Hadamard(1) @ qp.PauliY(2))
+
+        tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
 
         calculated_val = execute(dev, tape)
         reference_val = calculate_reference(tape)

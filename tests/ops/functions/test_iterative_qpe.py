@@ -272,7 +272,8 @@ class TestCaptureIQPE:
     def test_legacy_op_can_be_used_as_base(self):
         """Ensure a legacy operator still works fine under capture."""
 
-        class DummyOp(qp.core.Operator):  # pylint: disable=too-few-public-methods
+        # pylint: disable=too-few-public-methods
+        class DummyOp(qp.core.Operator):
             pass
 
         def circuit(phi):

@@ -120,7 +120,7 @@ classes. These classes are subclassed to implement measurements in PennyLane.
   that converts the given quantum tape into a batch of quantum tapes and executes them using the
   device. This method should always have the same arguments:
 
-  * tape (QuantumTape): quantum tape to transform
+  * tape (QuantumScript): quantum tape to transform
   * device (Device): device used to transform the quantum tape
 
   The main difference between a :class:`MeasurementTransform` and a

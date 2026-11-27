@@ -23,5 +23,3 @@ from pennylane.core.qscript import (
     make_qscript,
     process_queue,
 )
-
-from .tape import QuantumTape, QuantumTapeBatch

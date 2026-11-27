@@ -57,7 +57,7 @@ def compile(
       (:func:`~pennylane.transforms.merge_rotations`)
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit (QNode or quantum function).
+        tape (QNode or QuantumScript or Callable): A quantum circuit (QNode or quantum function).
         pipeline (Sequence[transform]): A list of
             tape and/or quantum function transforms to apply.
             The default ``pipeline`` applies the following transforms:
@@ -78,7 +78,7 @@ def compile(
             such passes can be adjusted.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The compiled circuit. The output type is explained in :func:`qp.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]: The compiled circuit. The output type is explained in :func:`qp.transform <pennylane.transform>`.
 
     **Example**
 
@@ -219,7 +219,7 @@ def compile(
 
     def null_postprocessing(results):
         """A postprocessing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
+        into a result for a single ``QuantumScript``.
         """
         return results[0]
 

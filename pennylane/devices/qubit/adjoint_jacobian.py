@@ -42,7 +42,7 @@ def _adjoint_jacobian_state(tape: QuantumScript):
     """Calculate the full jacobian for a circuit that returns the state.
 
     Args:
-        tape (QuantumTape): the circuit we wish to differentiate
+        tape (QuantumScript): the circuit we wish to differentiate
 
     Returns:
         TensorLike: the full jacobian.
@@ -90,7 +90,7 @@ def adjoint_jacobian(tape: QuantumScript, state=None):
         * Observable being measured must have a matrix.
 
     Args:
-        tape (QuantumTape): circuit that the function takes the gradient of
+        tape (QuantumScript): circuit that the function takes the gradient of
         state (TensorLike): the final state of the circuit; if not provided,
             the final state will be computed by executing the tape
 
@@ -166,7 +166,7 @@ def adjoint_jvp(tape: QuantumScript, tangents: tuple[Number], state=None):
         * Observable being measured must have a matrix.
 
     Args:
-        tape (QuantumTape): circuit that the function takes the gradient of
+        tape (QuantumScript): circuit that the function takes the gradient of
         tangents (Tuple[Number]): gradient vector for input parameters.
         state (TensorLike): the final state of the circuit; if not provided,
             the final state will be computed by executing the tape
@@ -226,7 +226,7 @@ def _get_vjp_bras(tape, cotangents, ket):  # pylint: disable=too-many-branches
     cotangents, as well as a list of indices for which the cotangents are zero.
 
     Args:
-        tape (QuantumTape): circuit that the function takes the gradient of.
+        tape (QuantumScript): circuit that the function takes the gradient of.
         tangents (Tuple[Number]): gradient vector for input parameters.
         ket (TensorLike): the final state of the circuit.
 
@@ -340,7 +340,7 @@ def adjoint_vjp(tape: QuantumScript, cotangents: tuple[Number, ...], state=None)
         * Observable being measured must have a matrix.
 
     Args:
-        tape (QuantumTape): circuit that the function takes the gradient of
+        tape (QuantumScript): circuit that the function takes the gradient of
         cotangents (Tuple[Number]): gradient vector for output parameters. For computing
             the full Jacobian, the cotangents can be batched to vectorize the computation.
             In this case, the cotangents can have the following shapes. ``batch_size``

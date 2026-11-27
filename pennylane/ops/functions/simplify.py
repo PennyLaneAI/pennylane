@@ -37,12 +37,12 @@ def simplify(input: Operator | MeasurementProcess | QuantumScript | QNode | Call
     or number of rotation parameters.
 
     Args:
-        input (.Operator, .MeasurementProcess, pennylane.QNode, .QuantumTape, or Callable): an
+        input (.Operator, .MeasurementProcess, pennylane.QNode, .QuantumScript, or Callable): an
             operator, quantum node, tape or function that applies quantum operations
 
     Returns:
         (Operator or MeasurementProcess or qnode (QNode) or quantum function (Callable)
-        or tuple[List[QuantumTape], function]): Simplified input. If an operator or measurement
+        or tuple[List[QuantumScript], function]): Simplified input. If an operator or measurement
         process is provided as input, the simplified input is returned directly. Otherwise, the
         transformed circuit is returned as described in :func:`qp.transform <pennylane.transform>`.
 

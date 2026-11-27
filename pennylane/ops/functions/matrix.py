@@ -42,7 +42,7 @@ def matrix(  # pylint: disable=too-many-branches
         This method always returns a dense matrix. For workflows with sparse objects, consider using :func:`~pennylane.operation.Operator.sparse_matrix`.
 
     Args:
-        op (Operator or QNode or QuantumTape or Callable or PauliWord or PauliSentence): A quantum operator or quantum circuit.
+        op (Operator or QNode or QuantumScript or Callable or PauliWord or PauliSentence): A quantum operator or quantum circuit.
         wire_order (Sequence[int], optional): Order of the wires in the quantum circuit.
             The default wire order depends on the type of ``op``:
 
@@ -55,7 +55,7 @@ def matrix(  # pylint: disable=too-many-branches
             - See the usage details for more information.
 
     Returns:
-        TensorLike or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+        TensorLike or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
 
         If an operator, :class:`~PauliWord` or :class:`~PauliSentence` is provided as input, the matrix is returned directly in the form of a tensor.
         Otherwise, the transformed circuit is returned as described in :func:`qp.transform <pennylane.transform>`.

@@ -17,13 +17,11 @@ from copy import copy
 from functools import singledispatch
 
 import pennylane as qp
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import QuantumFunctionError
+from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
 from pennylane.ops import CompositeOp, CompositeOp2, LinearCombination, SymbolicOp
 from pennylane.pauli import diagonalize_qwc_pauli_words
-from pennylane.tape.tape import (
-    _validate_computational_basis_sampling,
-    rotations_and_diagonal_measurements,
-)
 from pennylane.transforms.core import transform
 
 _default_supported_obs = (qp.Z, qp.Identity)
@@ -31,9 +29,97 @@ _default_supported_obs = (qp.Z, qp.Identity)
 
 def null_postprocessing(results):
     """A postprocessing function returned by a transform that only converts the batch of results
-    into a result for a single ``QuantumTape``.
+    into a result for a single ``QuantumScript``.
     """
     return results[0]
+
+
+def _err_msg_for_some_meas_not_qwc(measurements):
+    """Error message for the case when some operators measured on the same wire are not qubit-wise commuting."""
+    return (
+        "Only observables that are qubit-wise commuting "
+        "Pauli words can be returned on the same wire, "
+        f"some of the following measurements do not commute:\n{measurements}"
+    )
+
+
+def _validate_computational_basis_sampling(tape):
+    """Auxiliary function for validating computational basis state sampling with other measurements considering the
+    qubit-wise commutativity relation."""
+
+    measurements = tape.measurements
+    n_meas = len(measurements)
+    n_mcms = sum(qp.transforms.is_mcm(op) for op in tape.operations)
+    non_comp_basis_sampling_obs = []
+    comp_basis_sampling_obs = []
+    comp_basis_indices = []
+    for i, o in enumerate(measurements):
+        if o.samples_computational_basis:
+            comp_basis_sampling_obs.append(o)
+            comp_basis_indices.append(i)
+        else:
+            non_comp_basis_sampling_obs.append(o)
+
+    if non_comp_basis_sampling_obs:
+        all_wires = []
+        empty_wires = qp.wires.Wires([])
+        for idx, (cb_obs, global_idx) in enumerate(
+            zip(comp_basis_sampling_obs, comp_basis_indices, strict=True)
+        ):
+            if global_idx < n_meas - n_mcms:
+                if cb_obs.wires == empty_wires:
+                    all_wires = qp.wires.Wires.all_wires([m.wires for m in measurements])
+                    break
+                all_wires.append(cb_obs.wires)
+            if idx == len(comp_basis_sampling_obs) - 1:
+                all_wires = qp.wires.Wires.all_wires(all_wires)
+
+        with (
+            QueuingManager.stop_recording()
+        ):  # stop recording operations - the constructed operator is just aux
+            pauliz_for_cb_obs = (
+                qp.Z(all_wires)
+                if len(all_wires) == 1
+                else qp.ops.Prod(*[qp.Z(w) for w in all_wires])
+            )
+
+        for obs in non_comp_basis_sampling_obs:
+            # Cover e.g., qp.probs(wires=wires) case by checking obs attr
+            if obs.obs is not None and not qp.pauli.utils.are_pauli_words_qwc(
+                [obs.obs, pauliz_for_cb_obs]
+            ):
+                raise QuantumFunctionError(_err_msg_for_some_meas_not_qwc(measurements))
+
+
+def rotations_and_diagonal_measurements(tape):
+    """Compute the rotations for overlapping observables, and return them along with the diagonalized observables."""
+    if not tape.obs_sharing_wires:
+        return [], tape.measurements
+
+    with (
+        QueuingManager.stop_recording()
+    ):  # stop recording operations to active context when computing qwc groupings
+        try:
+            rotations, diag_obs = qp.pauli.diagonalize_qwc_pauli_words(tape.obs_sharing_wires)
+        except (TypeError, ValueError) as e:
+            if any(isinstance(m, (ProbabilityMP, SampleMP, CountsMP)) for m in tape.measurements):
+                raise QuantumFunctionError(
+                    "Only observables that are qubit-wise commuting "
+                    "Pauli words can be returned on the same wire.\n"
+                    "Try removing all probability, sample and counts measurements "
+                    "this will allow for splitting of execution and separate measurements "
+                    "for each non-commuting observable."
+                ) from e
+
+            raise QuantumFunctionError(_err_msg_for_some_meas_not_qwc(tape.measurements)) from e
+
+        measurements = copy(tape.measurements)
+
+        for o, i in zip(diag_obs, tape.obs_sharing_wires_id, strict=True):
+            new_m = tape.measurements[i].__class__(obs=o)
+            measurements[i] = new_m
+
+    return rotations, measurements
 
 
 @transform

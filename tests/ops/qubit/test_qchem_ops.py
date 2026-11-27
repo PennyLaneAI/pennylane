@@ -140,9 +140,11 @@ class TestSingleExcitation:
         decomp2 = qp.SingleExcitation.compute_decomposition(phi, wires=[0, 1])
 
         for decomp in [decomp1, decomp2]:
-            with qp.tape.QuantumTape() as tape:
+            with qp.core.queuing.AnnotatedQueue() as tape_queue:
                 for op in decomp:
                     qp.apply(op)
+
+            tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
 
             decomposed_matrix = qp.matrix(tape, wire_order=[0, 1])
             assert np.allclose(decomposed_matrix, exp)

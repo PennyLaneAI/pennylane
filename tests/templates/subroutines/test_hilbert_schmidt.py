@@ -355,8 +355,10 @@ class TestHilbertSchmidt:
     )
     def test_queuing_ops(self, U, V, results):
         """Test that qp.HilbertSchmidt queues operations in the correct order."""
-        with qp.tape.QuantumTape() as tape:
+        with qp.core.queuing.AnnotatedQueue() as tape_queue:
             qp.HilbertSchmidt(V, U)
+
+        tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
 
         [tape], _ = decompose(tape, max_expansion=1, gate_set=gate_sets.ALL_QUBIT_OPS)
         for idx, val in enumerate(tape.operations):

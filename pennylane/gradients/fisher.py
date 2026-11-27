@@ -100,7 +100,7 @@ def classical_fisher(qnode, argnums=0):
     for :math:`N` qubits.
 
     Args:
-        tape (:class:`.QNode` or qp.QuantumTape): A :class:`.QNode` or quantum tape that may have arbitrary return types.
+        tape (:class:`.QNode` or qp.core.QuantumScript): A :class:`.QNode` or quantum tape that may have arbitrary return types.
         argnums (Optional[int or List[int]]): Arguments to be differentiated in case interface ``jax`` is used.
 
     Returns:
@@ -287,11 +287,11 @@ def quantum_fisher(
         :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.adjoint_metric_tensor`, :func:`~.pennylane.gradient.transforms.classical_fisher`
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit that may have arbitrary return types.
+        tape (QNode or QuantumScript or Callable): A quantum circuit that may have arbitrary return types.
         *args: In case finite shots are used, further arguments according to :func:`~.pennylane.metric_tensor` may be passed.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
 
         The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the quantum Fisher information in the form of a tensor.

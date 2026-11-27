@@ -965,28 +965,4 @@ class TestShowMatrices:
         )
 
         assert tape_text(tape_matrices, show_matrices=True, cache=cache) == expected
-
-
-def test_nested_tapes():
-    """Test nested tapes inside the qnode."""
-
-    def circ():
-        with qp.tape.QuantumTape():
-            qp.PauliX(0)
-            with qp.tape.QuantumTape():
-                qp.PauliY(0)
-        with qp.tape.QuantumTape():
-            qp.PauliZ(0)
-            with qp.tape.QuantumTape():
-                qp.PauliX(0)
-        return qp.expval(qp.PauliZ(0))
-
-    expected = (
-        "0: ──Tape:0──Tape:1─┤  <Z>\n\n"
-        "Tape:0\n0: ──X──Tape:2─┤\n\n"
-        "Tape:2\n0: ──Y─┤\n\n"
-        "Tape:1\n0: ──Z──Tape:3─┤\n\n"
-        "Tape:3\n0: ──X─┤"
-    )
-
-    assert qp.draw(circ)() == expected
+        assert set(cache) == {"matrices"}

@@ -21,7 +21,7 @@ from pennylane.typing import PostprocessingFn
 
 def null_postprocessing(results):
     """A postprocessing function returned by a transform that only converts the batch of results
-    into a result for a single ``QuantumTape``.
+    into a result for a single ``QuantumScript``.
     """
     return results[0]
 
@@ -32,10 +32,10 @@ def undo_swaps(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingF
     circuit changing the position of the qubits accordingly.
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit (QNode or quantum function).
+        tape (QNode or QuantumScript or Callable): A quantum circuit (QNode or quantum function).
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     **Example**
 

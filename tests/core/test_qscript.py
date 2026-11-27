@@ -42,7 +42,8 @@ def test_adjoint_deprecated():
         qs.adjoint()
 
 
-class Op2(Operator2):  # pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods
+class Op2(Operator2):
     """A simple ``Operator2`` subclass for testing."""
 
     dynamic_argnames = ("phi",)
@@ -1229,7 +1230,8 @@ class TestFromQueue:
     def test_from_queue_child_class_preserved(self):
         """Test that a child of QuantumScript gets its own type when calling from_queue."""
 
-        class MyScript(QuantumScript):  # pylint: disable=too-few-public-methods
+        # pylint: disable=too-few-public-methods
+        class MyScript(QuantumScript):
             pass
 
         with qp.queuing.AnnotatedQueue() as q:
@@ -1241,7 +1243,8 @@ class TestFromQueue:
     def test_from_queue_child_with_different_init_fails(self):
         """Test that if a child class overrides init to take different arguments, from_queue will fail."""
 
-        class ScriptWithNewInit(QuantumScript):  # pylint: disable=too-few-public-methods
+        # pylint: disable=too-few-public-methods
+        class ScriptWithNewInit(QuantumScript):
             """An arbitrary class that has a different constructor from QuantumScript."""
 
             def __init__(self, ops, measurements, prep, bonus):
@@ -1363,13 +1366,12 @@ class TestDiagonalizingGates:
         assert isinstance(qs.diagonalizing_gates[-1], qp.QubitUnitary)
 
 
-@pytest.mark.parametrize("qscript_type", (QuantumScript, qp.tape.QuantumTape))
-def test_flatten_unflatten(qscript_type):
+def test_flatten_unflatten():
     """Test the flatten and unflatten methods."""
     ops = [qp.RX(0.1, wires=0), qp.U3(0.2, 0.3, 0.4, wires=0)]
     mps = [qp.expval(qp.PauliZ(0)), qp.state()]
 
-    tape = qscript_type(ops, mps, shots=100)
+    tape = qp.core.qscript.QuantumScript(ops, mps, shots=100)
     tape.trainable_params = {0}
 
     data, metadata = tape._flatten()  # pylint: disable=protected-access
@@ -1379,7 +1381,7 @@ def test_flatten_unflatten(qscript_type):
     assert metadata[1] == (0,)
     assert hash(metadata)
 
-    new_tape = qscript_type._unflatten(data, metadata)  # pylint: disable=protected-access
+    new_tape = QuantumScript._unflatten(data, metadata)  # pylint: disable=protected-access
     assert all(o1 is o2 for o1, o2 in zip(new_tape.operations, tape.operations))
     assert all(o1 is o2 for o1, o2 in zip(new_tape.measurements, tape.measurements))
     assert new_tape.shots == qp.measurements.Shots(100)
@@ -1387,8 +1389,7 @@ def test_flatten_unflatten(qscript_type):
 
 
 @pytest.mark.jax
-@pytest.mark.parametrize("qscript_type", (QuantumScript, qp.tape.QuantumTape))
-def test_jax_pytree_integration(qscript_type):
+def test_jax_pytree_integration():
     """Test that QuantumScripts are integrated with jax pytress."""
 
     eye_mat = np.eye(4)
@@ -1398,7 +1399,7 @@ def test_jax_pytree_integration(qscript_type):
         qp.expval(qp.Hermitian(eye_mat, wires=(0, 1))),
     ]
 
-    tape = qscript_type(ops, mps, shots=100)
+    tape = qp.core.qscript.QuantumScript(ops, mps, shots=100)
     tape.trainable_params = [2]
 
     import jax
@@ -1413,3 +1414,227 @@ def test_jax_pytree_integration(qscript_type):
     assert data[6] == 2.0
     assert data[7] == 0  # the wire of `PauliX`
     assert qp.math.allclose(data[8], eye_mat)
+
+
+# pylint: disable=protected-access
+class TestParameters:
+    """Tests for parameter processing, setting, and manipulation"""
+
+    @pytest.fixture
+    def make_tape(self):
+        params = [0.432, 0.123, 0.546, 0.32, 0.76]
+
+        ops = [
+            qp.RX(params[0], wires=0),
+            qp.Rot(*params[1:4], wires=0),
+            qp.CNOT(wires=[0, 8]),
+            qp.RX(params[4], wires=4),
+        ]
+        tape = QuantumScript(ops, [qp.expval(qp.X(0)), qp.probs(wires=[0, 8])])
+
+        return tape, params
+
+    @pytest.fixture
+    def make_tape_with_hermitian(self):
+        params = [0.432, 0.123, 0.546, 0.32, 0.76]
+        hermitian = qp.numpy.eye(2, requires_grad=False)
+
+        ops = [
+            qp.RX(params[0], wires=0),
+            qp.Rot(*params[1:4], wires=0),
+            qp.CNOT(wires=[0, 8]),
+            qp.RX(params[4], wires=4),
+        ]
+        tape = QuantumScript(ops, [qp.expval(qp.Hermitian(hermitian, wires=8))])
+
+        return tape, params, hermitian
+
+    def test_parameter_processing(self, make_tape):
+        """Test that parameters are correctly counted and processed"""
+        tape, params = make_tape
+        assert tape.num_params == len(params)
+        assert tape.trainable_params == list(range(len(params)))
+        assert tape.get_parameters() == params
+
+    @pytest.mark.parametrize("operations_only", [False, True])
+    def test_parameter_processing_operations_only(self, make_tape_with_hermitian, operations_only):
+        """Test the operations_only flag for getting the parameters on a tape with
+        qp.Hermitian is measured"""
+        tape, circuit_params, hermitian = make_tape_with_hermitian
+        num_all_params = len(circuit_params) + 1  # + 1 for hermitian
+        assert tape.num_params == num_all_params
+        assert tape.trainable_params == list(range(num_all_params))
+        assert (
+            tape.get_parameters(operations_only=operations_only) == circuit_params
+            if operations_only
+            else circuit_params + [hermitian]
+        )
+
+    def test_set_trainable_params(self, make_tape):
+        """Test that setting trainable parameters works as expected"""
+        tape, params = make_tape
+        trainable = [0, 2, 3]
+        tape.trainable_params = trainable
+        assert tape._trainable_params == trainable
+        assert tape.num_params == 3
+        assert tape.get_parameters() == [params[i] for i in tape.trainable_params]
+
+        # add additional trainable parameters
+        trainable = {1, 2, 3, 4}
+        tape.trainable_params = trainable
+        assert tape._trainable_params == [1, 2, 3, 4]
+        assert tape.num_params == 4
+        assert tape.get_parameters() == [params[i] for i in tape.trainable_params]
+
+        # set trainable_params in wrong order
+        trainable = {3, 4, 1}
+        tape.trainable_params = trainable
+        assert tape._trainable_params == [1, 3, 4]
+        assert tape.num_params == 3
+        assert tape.get_parameters() == [params[i] for i in tape.trainable_params]
+
+    def test_changing_params(self, make_tape):
+        """Test that changing trainable parameters works as expected"""
+        tape, params = make_tape
+        trainable = (0, 2, 3)
+        tape.trainable_params = trainable
+        assert tape._trainable_params == list(trainable)
+        assert tape.num_params == 3
+        assert tape.get_parameters() == [params[i] for i in tape.trainable_params]
+        assert tape.get_parameters(trainable_only=False) == params
+
+    def test_set_trainable_params_error(self, make_tape):
+        """Test that exceptions are raised if incorrect parameters
+        are set as trainable"""
+        tape, _ = make_tape
+
+        with pytest.raises(ValueError, match="must be non-negative integers"):
+            tape.trainable_params = [-1, 0]
+
+        with pytest.raises(ValueError, match="must be non-negative integers"):
+            tape.trainable_params = (0.5,)
+
+        with pytest.raises(ValueError, match="only has 5 parameters"):
+            tape.trainable_params = {0, 7}
+
+    def test_setting_parameters(self, make_tape):
+        """Test that parameters are correctly modified after construction"""
+        tape, params = make_tape
+        new_params = [0.6543, -0.654, 0, 0.3, 0.6]
+
+        new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3, 4])
+
+        for pinfo, pval in zip(new_tape.par_info, new_params):
+            assert pinfo["op"].data[pinfo["p_idx"]] == pval
+
+        assert new_tape.get_parameters() == new_params
+        assert tape.get_parameters() == params
+
+    def test_setting_free_parameters(self, make_tape):
+        """Test that free parameters are correctly modified after construction"""
+        tape, params = make_tape
+        new_params = [-0.654, 0.3]
+
+        tape.trainable_params = [1, 3]
+        new_tape = tape.bind_new_parameters(new_params, tape.trainable_params)
+
+        count = 0
+        for idx, pinfo in enumerate(new_tape.par_info):
+            if idx in tape.trainable_params:
+                assert pinfo["op"].data[pinfo["p_idx"]] == new_params[count]
+                count += 1
+            else:
+                assert pinfo["op"].data[pinfo["p_idx"]] == params[idx]
+
+        assert new_tape.get_parameters(trainable_only=False) == [
+            params[0],
+            new_params[0],
+            params[2],
+            new_params[1],
+            params[4],
+        ]
+        assert tape.get_parameters(trainable_only=False) == params
+
+    def test_setting_parameters_unordered(self, make_tape):
+        """Test that an 'unordered' trainable_params set does not affect
+        the setting of parameter values"""
+        tape, params = make_tape
+        new_params = [-0.654, 0.3]
+
+        tape.trainable_params = [3, 1]
+        new_tape = tape.bind_new_parameters(new_params, tape.trainable_params)
+
+        assert new_tape.get_parameters(trainable_only=True) == new_params
+        assert new_tape.get_parameters(trainable_only=False) == [
+            params[0],
+            new_params[0],
+            params[2],
+            new_params[1],
+            params[4],
+        ]
+        assert tape.get_parameters(trainable_only=False) == params
+
+    def test_setting_all_parameters(self, make_tape):
+        """Test that all parameters are correctly modified after construction"""
+        tape, params = make_tape
+        new_params = [0.6543, -0.654, 0, 0.3, 0.6]
+
+        tape.trainable_params = [1, 3]
+        new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3, 4])
+
+        for pinfo, pval in zip(new_tape.par_info, new_params):
+            assert pinfo["op"].data[pinfo["p_idx"]] == pval
+
+        assert new_tape.get_parameters(trainable_only=False) == new_params
+        assert tape.get_parameters(trainable_only=False) == params
+
+    def test_setting_parameters_error(self, make_tape):
+        """Test that exceptions are raised if incorrect parameters
+        are attempted to be set"""
+        tape, _ = make_tape
+
+        with pytest.raises(ValueError, match="Number of provided parameters does not match"):
+            tape.bind_new_parameters([0.54], [0, 1, 2, 3, 4])
+
+        with pytest.raises(ValueError, match="Number of provided parameters does not match"):
+            tape.bind_new_parameters([0.54, 0.54, 0.123], [0, 1])
+
+    def test_array_parameter(self):
+        """Test that array parameters integrate properly"""
+        a = np.array([1, 1, 0, 0]) / np.sqrt(2)
+        params = [a, 0.32, 0.76, 1.0]
+
+        op_ = qp.StatePrep(params[0], wires=[0, 1])
+        tape = QuantumScript([op_, qp.Rot(params[1], params[2], params[3], wires=0)])
+
+        assert tape.num_params == len(params)
+        assert tape.get_parameters() == params
+
+        b = np.array([0.0, 1.0, 0.0, 0.0])
+        new_params = [b, 0.543, 0.654, 0.123]
+        new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3])
+        assert new_tape.get_parameters() == new_params
+        assert tape.get_parameters() == params
+
+        assert np.all(op_.data[0] == a)
+        assert np.all(new_tape[0].data[0] == b)
+
+    def test_measurement_parameter(self):
+        """Test that measurement parameters integrate properly"""
+        H = np.array([[1, 0], [0, -1]])
+        params = [0.32, 0.76, 1.0, H]
+
+        obs = qp.Hermitian(params[3], wires=0)
+        tape = QuantumScript([qp.Rot(params[0], params[1], params[2], wires=0)], [qp.expval(obs)])
+
+        assert tape.num_params == len(params)
+        assert tape.get_parameters() == params
+
+        H2 = np.array([[0, 1], [1, 1]])
+        new_params = [0.543, 0.654, 0.123, H2]
+        new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3])
+        assert new_tape.get_parameters() == new_params
+        assert tape.get_parameters() == params
+
+        assert np.all(obs.data[0] == H)
+        assert np.all(new_tape[1].obs.data[0] == H2)

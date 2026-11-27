@@ -464,7 +464,7 @@ def clifford_t_decomposition(  # pylint: disable=too-many-branches,too-many-stat
         :func:`~.transforms.gridnsynth` .
 
     Args:
-        tape (QNode or QuantumTape or Callable): The quantum circuit to be decomposed.
+        tape (QNode or QuantumScript or Callable): The quantum circuit to be decomposed.
         epsilon (float): The maximum permissible operator norm error of the complete circuit decomposition. Defaults to ``0.0001``.
         method (str): Method to be used for Clifford+T decomposition. Default value is ``"gridsynth"`` for the Ross-Selinger algorithm.
             Alternatively, use the value ``"sk"`` for the Solovay-Kitaev algorithm.
@@ -474,7 +474,7 @@ def clifford_t_decomposition(  # pylint: disable=too-many-branches,too-many-stat
         **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]: The transformed circuit as described
         in the :func:`qp.transform <pennylane.transform>`.
 
     **Keyword Arguments**
@@ -638,7 +638,7 @@ def clifford_t_decomposition(  # pylint: disable=too-many-branches,too-many-stat
 
     def null_postprocessing(results):
         """A postprocessing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
+        into a result for a single ``QuantumScript``.
         """
         return results[0]
 

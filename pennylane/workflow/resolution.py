@@ -172,7 +172,7 @@ def _resolve_diff_method(
     Args:
         initial_config (ExecutionConfig): The initial execution configuration.
         device (Device): A PennyLane device.
-        tape (Optional[qp.tape.QuantumTape]): The circuit that will be differentiated. Should include shots information.
+        tape (Optional[qp.core.QuantumScript]): The circuit that will be differentiated. Should include shots information.
 
     Returns:
         ExecutionConfig: Updated execution configuration with the resolved differentiation method.

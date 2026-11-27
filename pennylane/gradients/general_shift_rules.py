@@ -437,7 +437,7 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=Fals
     trainable parameter has been shifted by the provided shift values.
 
     Args:
-        tape (.QuantumTape): input quantum tape
+        tape (.QuantumScript): input quantum tape
         index (int): index of the trainable parameter to shift
         shifts (Sequence[float or int]): sequence of shift values.
             The length determines how many parameter-shifted tapes are created.
@@ -449,7 +449,7 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=Fals
             with the shifted parameters.
 
     Returns:
-        list[QuantumTape]: List of quantum tapes. In each tape the parameter indicated
+        list[QuantumScript]: List of quantum tapes. In each tape the parameter indicated
             by ``index`` has been shifted by the values in ``shifts``. The number of tapes
             matches the length of ``shifts`` and ``multipliers`` (if provided).
             If ``broadcast=True`` was used, the list contains a single broadcasted tape
@@ -477,7 +477,7 @@ def generate_multishifted_tapes(tape, indices, shifts, multipliers=None):
     parameters have been shifted by the provided shift values.
 
     Args:
-        tape (.QuantumTape): input quantum tape
+        tape (.QuantumScript): input quantum tape
         indices (Sequence[int]): indices of the trainable parameters to shift
         shifts (Sequence[Sequence[float or int]]): Nested sequence of shift values.
             The length of the outer Sequence determines how many parameter-shifted
@@ -489,7 +489,7 @@ def generate_multishifted_tapes(tape, indices, shifts, multipliers=None):
             If not provided, the parameters will not be scaled.
 
     Returns:
-        list[QuantumTape]: List of quantum tapes. Each tape has the marked parameters
+        list[QuantumScript]: List of quantum tapes. Each tape has the marked parameters
             indicated by ``indices`` shifted by the values of ``shifts``. The number
             of tapes will match the summed lengths of all inner sequences in ``shifts``
             and ``multipliers`` (if provided).

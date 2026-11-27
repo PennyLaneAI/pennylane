@@ -268,6 +268,13 @@ class TestDiagonalizeObservable:
 class TestDiagonalizeTapeMeasurements:
     """Tests the diagonalize_measurements transform"""
 
+    def test_no_observables_mp_on_all_wires(self):
+        """Test a circuit on a measurement on all wires without an observable."""
+
+        tape = qp.core.QuantumScript([], [qp.probs()])
+        out = qp.transforms.diagonalize_measurements(tape)[0][0]
+        qp.assert_equal(out.measurements[0], qp.probs())
+
     @pytest.mark.parametrize("to_eigvals", [True, False])
     def test_diagonalize_all_measurements(self, to_eigvals):
         """Test that the diagonalize_measurements transform diagonalizes the measurements on the tape"""

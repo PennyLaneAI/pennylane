@@ -480,7 +480,7 @@ class DefaultClifford(Device):  # pylint: disable=abstract-method
                 parameters needed to fully describe the execution.
 
         Returns:
-            CompilePipeline, ExecutionConfig: A compile pipeline that when called returns QuantumTapes that the device
+            CompilePipeline, ExecutionConfig: A compile pipeline that when called returns QuantumScripts that the device
             can natively execute as well as a postprocessing function to be called after execution, and a configuration with
             unset specifications filled in.
 
@@ -556,7 +556,7 @@ class DefaultClifford(Device):  # pylint: disable=abstract-method
         """Simulate a single quantum script.
 
         Args:
-            circuit (QuantumTape): The single circuit to simulate
+            circuit (QuantumScript): The single circuit to simulate
             debugger (_Debugger): The debugger to use
 
         Returns:

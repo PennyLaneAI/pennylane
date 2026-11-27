@@ -467,7 +467,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         circuits on a backend, for example using parallel and/or asynchronous executions.
 
         Args:
-            circuits (list[.tape.QuantumTape]): circuits to execute on the device
+            circuits (list[.tape.QuantumScript]): circuits to execute on the device
 
         Returns:
             list[array[float]]: list of measured value(s)
@@ -501,7 +501,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         Jacobians.
 
         Args:
-            circuits (list[.tape.QuantumTape]): circuits to execute on the device
+            circuits (list[.tape.QuantumScript]): circuits to execute on the device
             method (str): the device method to call to compute the Jacobian of a single circuit
             **kwargs: keyword argument to pass when calling ``method``
 
@@ -537,7 +537,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         backend, for example using parallel and/or asynchronous executions.
 
         Args:
-            circuits (list[.tape.QuantumTape]): circuits to execute on the device
+            circuits (list[.tape.QuantumScript]): circuits to execute on the device
             method (str): the device method to call to compute the Jacobian of a single circuit
             **kwargs: keyword argument to pass when calling ``method``
 
@@ -573,7 +573,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         - multiple observables are measured on the same wire.
 
         Args:
-            circuit (.QuantumTape): the circuit to expand.
+            circuit (.QuantumScript): the circuit to expand.
             max_expansion (int): The number of times the circuit should be
                 expanded. Expansion occurs when an operation or measurement is not
                 supported, and results in a gate decomposition. If any operations
@@ -581,7 +581,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 expansion occurs.
 
         Returns:
-            .QuantumTape: The expanded/decomposed circuit, such that the device
+            .QuantumScript: The expanded/decomposed circuit, such that the device
             will natively support all operations.
         """
 
@@ -620,7 +620,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         details.
 
         Args:
-            circuit (.QuantumTape): the circuit to expand.
+            circuit (.QuantumScript): the circuit to expand.
             max_expansion (int): The number of times the circuit should be
                 expanded. Expansion occurs when an operation or measurement is not
                 supported, and results in a gate decomposition. If any operations
@@ -628,7 +628,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 expansion occurs.
 
         Returns:
-            .QuantumTape: The expanded/decomposed circuit, such that the device
+            .QuantumScript: The expanded/decomposed circuit, such that the device
             will natively support all operations.
         """
         return self.default_expand_fn(circuit, max_expansion=max_expansion)
@@ -652,10 +652,10 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             if required.
 
         Args:
-            circuit (.QuantumTape): the circuit to preprocess
+            circuit (.QuantumScript): the circuit to preprocess
 
         Returns:
-            tuple[Sequence[.QuantumTape], callable]: Returns a tuple containing
+            tuple[Sequence[.QuantumScript], callable]: Returns a tuple containing
             the sequence of circuits to be executed, and a post-processing function
             to be applied to the list of evaluated circuit results.
         """

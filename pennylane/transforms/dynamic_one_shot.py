@@ -51,7 +51,7 @@ def is_mcm(operation):
 
 def null_postprocessing(results):
     """A postprocessing function returned by a transform that only converts the batch of results
-    into a result for a single ``QuantumTape``.
+    into a result for a single ``QuantumScript``.
     """
     return results[0]
 
@@ -210,14 +210,14 @@ def _dynamic_one_shot_qnode(self, qnode, targs, tkwargs):
     )
 
 
-def init_auxiliary_tape(circuit: qp.tape.QuantumScript):
+def init_auxiliary_tape(circuit: qp.core.qscript.QuantumScript):
     """Creates an auxiliary circuit to perform one-shot mid-circuit measurement calculations.
 
     Measurements are replaced by SampleMP measurements on wires and observables found in the
     original measurements.
 
     Args:
-        circuit (QuantumTape): The original QuantumScript
+        circuit (QuantumScript): The original QuantumScript
 
     Returns:
         QuantumScript: A copy of the circuit with modified measurements
@@ -268,7 +268,7 @@ def _get_is_valid_has_valid(mcm_samples, all_mcms, interface):
 
 
 def parse_native_mid_circuit_measurements(
-    circuit: qp.tape.QuantumScript,
+    circuit: qp.core.qscript.QuantumScript,
     _removed_arg=None,  # need to not break catalyst
     results: None | TensorLike = None,
     postselect_mode=None,
@@ -276,9 +276,9 @@ def parse_native_mid_circuit_measurements(
     """Combines, gathers and normalizes the results of native mid-circuit measurement runs.
 
     Args:
-        circuit (QuantumTape): The original ``QuantumScript``.
+        circuit (QuantumScript): The original ``QuantumScript``.
         _removed_arg : a placeholder for an argument that used to exist. Can be removed pending update to catalyst.
-        aux_tapes (List[QuantumTape]): List of auxiliary ``QuantumScript`` objects.
+        aux_tapes (List[QuantumScript]): List of auxiliary ``QuantumScript`` objects.
         results (TensorLike): Array of measurement results.
         postselect_mode (None | str): how to handle postselection.
 

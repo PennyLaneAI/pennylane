@@ -30,7 +30,6 @@ from functools import singledispatch
 from pennylane.allocation import Allocate, Deallocate, DynamicWire
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator
-from pennylane.core.qscript import QuantumScript
 from pennylane.measurements import (
     CountsMP,
     DensityMatrixMP,
@@ -165,14 +164,12 @@ def _add_subroutine_mcm_grouping_symbols(op, layer_str, config):
 
 
 @singledispatch
-def _add_obj(
-    obj, layer_str: list[str], config, tape_cache=None, skip_grouping_symbols=False
-) -> list[str]:
+def _add_obj(obj, layer_str: list[str], config, skip_grouping_symbols=False) -> list[str]:
     raise NotImplementedError(f"unable to draw object {obj}")
 
 
 @_add_obj.register(Allocate)
-def _(obj, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
+def _(obj, layer_str, config, skip_grouping_symbols=False):
     label = "|0>├" if obj.state.value == "zero" else "├"
     for w in obj.wires:
         layer_str[config.wire_map[w]] += label
@@ -180,22 +177,20 @@ def _(obj, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
 
 
 @_add_obj.register(Deallocate)
-def _(obj, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
+def _(obj, layer_str, config, skip_grouping_symbols=False):
     for w in obj.wires:
         layer_str[config.wire_map[w]] += "┤"
     return layer_str
 
 
 @_add_obj.register
-def _add_cond(obj: Conditional, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
+def _add_cond(obj: Conditional, layer_str, config, skip_grouping_symbols=False):
     layer_str = _add_cond_grouping_symbols(obj, layer_str, config)
     return _add_obj(obj.base, layer_str, config)
 
 
 @_add_obj.register
-def _add_controlled(
-    obj: Controlled, layer_str, config, tape_cache=None, skip_grouping_symbols=False
-):
+def _add_controlled(obj: Controlled, layer_str, config, skip_grouping_symbols=False):
     if (elbow := unwrap_temporary_and(obj)) is not None:
         return _add_elbow(elbow, layer_str, config)
     if isinstance(obj.base, (GlobalPhase, Identity)):
@@ -242,18 +237,14 @@ def _add_elbow(elbow, layer_str, config):
 
 
 @_add_obj.register
-def _add_left_elbow(
-    obj: TemporaryAND, layer_str, config, tape_cache=None, skip_grouping_symbols=False
-):
+def _add_left_elbow(obj: TemporaryAND, layer_str, config, skip_grouping_symbols=False):
     """Updates ``layer_str`` with ``op`` operation of type ``TemporaryAND``,
     also known as left elbow."""
     return _add_elbow(unwrap_temporary_and(obj), layer_str, config)
 
 
 @_add_obj.register
-def _add_select_pauli_rot(
-    obj: SelectPauliRot, layer_str, config, tape_cache=None, skip_grouping_symbols=False
-):
+def _add_select_pauli_rot(obj: SelectPauliRot, layer_str, config, skip_grouping_symbols=False):
     """Updates ``layer_str`` with ``op`` operation of type ``SelectPauliRot``."""
     if not skip_grouping_symbols:
         layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
@@ -276,7 +267,6 @@ def _add_qrom(
     obj: QROM | QROMLoad | SelectSwap,
     layer_str,
     config,
-    tape_cache=None,
     skip_grouping_symbols=False,
 ):
     """Updates ``layer_str`` with ``op`` operation of type ``QROM``, ``QROMLoad`` or
@@ -304,7 +294,7 @@ def _add_qrom_core(obj, qrom, layer_str, config, skip_grouping_symbols=False):
 
 
 @_add_obj.register
-def _add_adjoint(obj: Adjoint, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
+def _add_adjoint(obj: Adjoint, layer_str, config, skip_grouping_symbols=False):
     """Updates ``layer_str`` with ``op`` operation of type Adjoint. Currently
     only differs from ``_add_op`` if the base of the adjoint op is a ``TemporaryAND``,
     making the overall object a right elbow, or a ``QROM``, ``QROMLoad`` or ``SelectSwap``."""
@@ -312,11 +302,11 @@ def _add_adjoint(obj: Adjoint, layer_str, config, tape_cache=None, skip_grouping
         return _add_elbow(elbow, layer_str, config)
     if isinstance(obj.base, (QROM, QROMLoad, SelectSwap)):
         return _add_qrom_core(obj, obj.base, layer_str, config, skip_grouping_symbols)
-    return _add_op(obj, layer_str, config, tape_cache, skip_grouping_symbols)
+    return _add_op(obj, layer_str, config, skip_grouping_symbols=skip_grouping_symbols)
 
 
 @_add_obj.register
-def _add_op(obj: Operator, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
+def _add_op(obj: Operator, layer_str, config, skip_grouping_symbols=False):
     """Updates ``layer_str`` with ``op`` operation."""
     if not skip_grouping_symbols:
         layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
@@ -333,12 +323,10 @@ def _add_op(obj: Operator, layer_str, config, tape_cache=None, skip_grouping_sym
 
 
 @_add_obj.register
-def _add_subroutine(
-    obj: SubroutineOp, layer_str, config, tape_cache=None, skip_grouping_symbols=False
-):
+def _add_subroutine(obj: SubroutineOp, layer_str, config, skip_grouping_symbols=False):
     """Updates ``layer_str`` with ``op`` operation."""
     layer_str = _add_subroutine_mcm_grouping_symbols(obj, layer_str, config)
-    return _add_op(obj, layer_str, config, tape_cache, skip_grouping_symbols)
+    return _add_op(obj, layer_str, config, skip_grouping_symbols=skip_grouping_symbols)
 
 
 @_add_obj.register(Identity)
@@ -347,7 +335,6 @@ def _add_global_op(
     obj: GlobalPhase | Identity,
     layer_str,
     config,
-    tape_cache=None,
     skip_grouping_symbols=False,
 ):
     active_wires = [w for w, row in config.wire_map.items() if config.wire_filler(row) == "─"]
@@ -364,7 +351,7 @@ def _add_global_op(
 
 @_add_obj.register
 def _add_mid_measure_op(
-    op: MidMeasure | PauliMeasure, layer_str, config, tape_cache=None, skip_grouping_symbols=False
+    op: MidMeasure | PauliMeasure, layer_str, config, skip_grouping_symbols=False
 ):
     """Updates ``layer_str`` with ``op`` operation when ``op`` is a
     ``qp.ops.MidMeasure`` or a ``qp.ops.PauliMeasure``."""
@@ -376,16 +363,6 @@ def _add_mid_measure_op(
             label_kwargs["wire"] = w
         label = op.label(**label_kwargs).replace("\n", "")
         layer_str[config.wire_map[w]] += label
-    return layer_str
-
-
-@_add_obj.register
-def _add_tape(obj: QuantumScript, layer_str, config, tape_cache, skip_grouping_symbols=False):
-    layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
-    label = f"Tape:{config.cache['tape_offset'] + len(tape_cache)}"
-    for w in obj.wires:
-        layer_str[config.wire_map[w]] += label
-    tape_cache.append(obj)
     return layer_str
 
 
@@ -437,7 +414,6 @@ def _add_measurement(
     m: MeasurementProcess,
     layer_str,
     config,
-    tape_cache=None,
     skip_grouping_symbols=False,
 ):
     """Updates ``layer_str`` with the ``m`` measurement."""

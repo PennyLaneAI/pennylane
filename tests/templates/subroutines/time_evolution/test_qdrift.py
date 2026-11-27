@@ -134,8 +134,10 @@ class TestDecomposition:
         ops_to_coeffs = dict(zip(ops, coeffs))
         normalization = qnp.sum(qnp.abs(coeffs))
 
-        with qp.tape.QuantumTape() as tape:
+        with qp.core.queuing.AnnotatedQueue() as tape_queue:
             decomp = _sample_decomposition(coeffs, ops, time, n, seed)
+
+        tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
 
         assert len(decomp) == n
         assert len(tape.operations) == 0  # no queuing
@@ -165,15 +167,19 @@ class TestDecomposition:
 
         expected_decomp = _sample_decomposition(coeffs, ops, 1.23, 10, seed=seed)
 
-        with qp.tape.QuantumTape() as tape:
+        with qp.core.queuing.AnnotatedQueue() as tape_queue:
             decomp = op.compute_decomposition(*op.parameters, **op.hyperparameters)
+
+        tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
 
         assert decomp == tape.operations  # queue matches decomp with circuit ordering
         assert decomp == list(expected_decomp)  # sample the same ops
 
         # Decompositions of an instance are maintained across calls to `compute_decomposition`
-        with qp.tape.QuantumTape() as second_tape:
+        with qp.core.queuing.AnnotatedQueue() as second_tape_queue:
             second_decomp = op.compute_decomposition(*op.parameters, **op.hyperparameters)
+
+        second_tape = qp.core.qscript.QuantumScript.from_queue(second_tape_queue)
 
         assert second_tape.operations == tape.operations
         assert second_decomp == decomp

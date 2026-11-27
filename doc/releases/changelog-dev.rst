@@ -1687,6 +1687,27 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* :class:`~.QuantumTape` has now been removed. :class:`pennylane.core.QuantumScript` use is now fully
+  required.
+  `(#10573) <https://github.com/PennyLaneAI/pennylane/pull/10573/>`__
+
+  .. code-block:: pycon
+
+      # before
+      >>> with qp.tape.QuantumTape() as tape:  # doctest: +SKIP
+      ...     qp.X(0)
+      ...     qp.probs()
+
+  .. code-block:: python
+
+      # after
+      qp.core.QuantumScript([qp.X(0)], [qp.probs()])
+
+      with qp.core.queuing.AnnotatedQueue() as queue:
+          qp.X(0)
+          qp.probs()
+      qp.core.QuantumScript.from_queue(queue)
+
 * The public decomposition functions ``one_qubit_decomposition``,
   ``two_qubit_decomposition``, and ``multi_qubit_decomposition`` have moved from
   ``pennylane.ops`` to ``pennylane.decomposition_rules``.

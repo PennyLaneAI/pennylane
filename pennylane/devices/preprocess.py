@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module contains functions for preprocessing `QuantumTape` objects to ensure
+"""This module contains functions for preprocessing `QuantumScript` objects to ensure
 that they are supported for execution by a device."""
 
 # pylint: disable=protected-access
@@ -54,7 +54,7 @@ from pennylane.wires import Wires
 
 def null_postprocessing(results):
     """A postprocessing function returned by a transform that only converts the batch of results
-    into a result for a single ``QuantumTape``.
+    into a result for a single ``QuantumScript``.
     """
     return results[0]
 
@@ -69,11 +69,11 @@ def no_sampling(
     """Raises an error if the tape has finite shots.
 
     Args:
-        tape (QuantumTape or .QNode or Callable): a quantum circuit
+        tape (QuantumScript or .QNode or Callable): a quantum circuit
         name (str): name to use in error message.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumScript], function]:
 
         The unaltered input circuit. The output type is explained in :func:`qp.transform <pennylane.transform>`.
 
@@ -92,10 +92,10 @@ def no_analytic(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Raises an error if the tape does not have finite shots.
     Args:
-        tape (QuantumTape or .QNode or Callable): a quantum circuit
+        tape (QuantumScript or .QNode or Callable): a quantum circuit
         name (str): name to use in error message.
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumScript], function]:
         The unaltered input circuit. The output type is explained in :func:`qp.transform <pennylane.transform>`.
 
 
@@ -116,13 +116,13 @@ def validate_device_wires(
     across all available wires.
 
     Args:
-        tape (QuantumTape or QNode or Callable): a quantum circuit.
+        tape (QuantumScript or QNode or Callable): a quantum circuit.
         wires=None (Optional[Wires]): the allowed wires. Wires of ``None`` allows any wires
             to be present in the tape.
         name="device" (str): the name of the device to use in error messages.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
 
         The unaltered input circuit. The output type is explained in :func:`qp.transform <pennylane.transform>`.
 
@@ -192,12 +192,12 @@ def validate_multiprocessing_workers(
     threads per worker.
 
     Args:
-        tape (QuantumTape or .QNode or Callable): a quantum circuit.
+        tape (QuantumScript or .QNode or Callable): a quantum circuit.
         max_workers (int): Maximal number of multiprocessing workers
         device (pennylane.devices.Device): The device to be checked.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]:
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumScript], function]:
 
         The unaltered input circuit. The output type is explained in :func:`qp.transform <pennylane.transform>`.
 
@@ -442,7 +442,7 @@ def validate_observables(
     """Validates the observables and measurements for a circuit.
 
     Args:
-        tape (QuantumTape or QNode or Callable): a quantum circuit.
+        tape (QuantumScript or QNode or Callable): a quantum circuit.
         stopping_condition (callable): a function that specifies whether an observable is accepted.
         stopping_condition_shots (callable): a function that specifies whether an observable is
             accepted in finite-shots mode. This replaces ``stopping_condition`` if and only if the
@@ -450,7 +450,7 @@ def validate_observables(
         name (str): the name of the device to use in error messages.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumScript], function]:
 
         The unaltered input circuit. The output type is explained in :func:`qp.transform <pennylane.transform>`.
 
@@ -485,7 +485,7 @@ def validate_measurements(
     """Validates the supported state and sample based measurement processes.
 
     Args:
-        tape (QuantumTape, .QNode, Callable): a quantum circuit.
+        tape (QuantumScript, .QNode, Callable): a quantum circuit.
         analytic_measurements (Callable[[MeasurementProcess], bool]): a function from a measurement process
             to whether or not it is accepted in analytic simulations.
         sample_measurements (Callable[[MeasurementProcess], bool]): a function from a measurement process
@@ -493,7 +493,7 @@ def validate_measurements(
         name (str): the name to use in error messages.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]:
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumScript], function]:
 
         The unaltered input circuit. The output type is explained in :func:`qp.transform <pennylane.transform>`.
 
@@ -579,10 +579,10 @@ def measurements_from_samples(tape):
         transform can be applied.
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit.
+        tape (QNode or QuantumScript or Callable): A quantum circuit.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]: The
         transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     **Example**
@@ -674,10 +674,10 @@ def measurements_from_counts(tape):
         transform can be applied.
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit.
+        tape (QNode or QuantumScript or Callable): A quantum circuit.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]: The
         transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     **Example**

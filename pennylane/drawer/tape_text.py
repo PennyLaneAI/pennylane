@@ -250,10 +250,10 @@ def tape_text(  # pylint: disable=too-many-arguments
     show_wire_labels=True,
     cache=None,
 ):
-    """Text based diagram for a Quantum Tape.
+    """Draw a text diagram of a quantum circuit.
 
     Args:
-        tape (QuantumTape): the operations and measurements to draw
+        tape (QuantumScript): the operations and measurements to draw
 
     Keyword Args:
         wire_order (Sequence[int]): the order (from top to bottom) to print the wires of the circuit
@@ -264,8 +264,7 @@ def tape_text(  # pylint: disable=too-many-arguments
             begin anew beneath the previous lines.
         show_matrices=True (bool): show matrix valued parameters below all circuit diagrams
         show_wire_labels (bool): Whether or not to show the wire labels.
-        cache (dict): Used to store information between recursive calls. Necessary keys are ``'tape_offset'``
-            and ``'matrices'``.
+        cache (dict): matrix parameters stored under ``'matrices'`` and shared between drawings
 
     Returns:
         str : String based graphic of the circuit.
@@ -282,7 +281,7 @@ def tape_text(  # pylint: disable=too-many-arguments
             qp.Toffoli(wires=(0, 1, 3)),
         ]
         measurements = [qp.expval(qp.Z(3)), qp.var(qp.Z(0) @ qp.Z(1)), qp.probs(wires=(0, 1, 2, 3))]
-        tape = qp.tape.QuantumTape(ops, measurements)
+        tape = qp.core.QuantumScript(ops, measurements)
 
     >>> print(qp.drawer.tape_text(tape))
     0: ─╭QFT──RX─╭●─┤ ╭Var[Z@Z] ╭Probs
@@ -362,7 +361,7 @@ def tape_text(  # pylint: disable=too-many-arguments
             qp.QubitUnitary(np.eye(2), wires=1),
         ]
         measurements = [qp.expval(qp.Hermitian(np.eye(4), wires=(0, 1)))]
-        tape = qp.tape.QuantumTape(ops, measurements)
+        tape = qp.core.QuantumScript(ops, measurements)
 
     >>> print(qp.drawer.tape_text(tape))
     0: ──U(M0)─┤ ╭<𝓗(M1)>
@@ -377,8 +376,7 @@ def tape_text(  # pylint: disable=too-many-arguments
      [0. 0. 0. 1.]]
 
     An existing matrix cache can be passed via the ``cache`` keyword. Note that the dictionary
-    passed to ``cache`` will be modified during execution to contain any new matrices and the
-    tape offset.
+    passed to ``cache`` will be modified during execution to contain any new matrices.
 
     >>> cache = {"matrices": [-np.eye(3)]}
     >>> print(qp.drawer.tape_text(tape, cache=cache))
@@ -403,35 +401,12 @@ def tape_text(  # pylint: disable=too-many-arguments
            [0., 1.]]), array([[1., 0., 0., 0.],
            [0., 1., 0., 0.],
            [0., 0., 1., 0.],
-           [0., 0., 0., 1.]])], 'tape_offset': 0}
-
-    When the provided tape has nested tapes inside, this function is called recursively.
-    To maintain numbering of tapes to arbitrary levels of nesting, the ``cache`` keyword
-    uses the ``"tape_offset"`` value to determine numbering. Note that the value is updated
-    during the call.
-
-    .. code-block:: python
-
-        with qp.tape.QuantumTape() as tape:
-            with qp.tape.QuantumTape() as tape_inner:
-                qp.X(0)
-
-        cache = {"tape_offset": 3}
-
-    >>> print(qp.drawer.tape_text(tape, cache=cache))
-    0: ──Tape:3─┤
-    <BLANKLINE>
-    Tape:3
-    0: ──X─┤
-    >>> print("New tape offset: ", cache["tape_offset"])
-    New tape offset:  4
+           [0., 0., 0., 1.]])]}
 
     """
     tape = transform_deferred_measurements_tape(tape)
     cache = cache or {}
-    cache.setdefault("tape_offset", 0)
     cache.setdefault("matrices", [])
-    tape_cache = []
 
     _, wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
     bit_map = default_bit_map(tape)
@@ -465,7 +440,7 @@ def tape_text(  # pylint: disable=too-many-arguments
         layer_str = _initialize_layer_str(config)
 
         for op in layer:
-            layer_str = _add_obj(op, layer_str, config, tape_cache)
+            layer_str = _add_obj(op, layer_str, config)
 
         layer_str = _left_justify(layer_str, config)
         cur_max_length = max_length - len_suffix if cur_layer < len(layers) - 1 else max_length
@@ -476,25 +451,9 @@ def tape_text(  # pylint: disable=too-many-arguments
         if config.cur_layer == config.num_op_layers - 1:
             totals = _finalize_layers(totals, config)
 
-    # Recursively handle nested tapes #
     tape_totals = "\n".join(totals.finished_lines + totals.wire_totals + totals.bit_totals)
     # Rows that hold no content in the last columns are padded to the full width above
     tape_totals = "\n".join(line.rstrip() for line in tape_totals.split("\n"))
-    current_tape_offset = cache["tape_offset"]
-    cache["tape_offset"] += len(tape_cache)
-    for i, nested_tape in enumerate(tape_cache):
-        label = f"\nTape:{i+current_tape_offset}"
-        tape_str = tape_text(
-            nested_tape,
-            wire_order,
-            show_all_wires=show_all_wires,
-            decimals=decimals,
-            max_length=max_length,
-            show_matrices=False,
-            cache=cache,
-        )
-        tape_totals = "\n".join([tape_totals, label, tape_str])
-
     if show_matrices:
         mat_str = "".join(f"\nM{i} = \n{mat}" for i, mat in enumerate(cache["matrices"]))
         return tape_totals + mat_str

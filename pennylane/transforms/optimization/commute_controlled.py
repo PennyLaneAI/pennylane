@@ -123,14 +123,14 @@ def commute_controlled(
     """Quantum transform to move commuting gates past control and target qubits of controlled operations.
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit.
+        tape (QNode or QuantumScript or Callable): A quantum circuit.
         direction (str): The direction in which to move single-qubit gates.
             Options are "right" (default), or "left". Single-qubit gates will
             be pushed through controlled operations as far as possible in the
             specified direction.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
 
     **Example**
@@ -224,7 +224,7 @@ def commute_controlled(
 
     def null_postprocessing(results):
         """A postprocessing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
+        into a result for a single ``QuantumScript``.
         """
         return results[0]
 

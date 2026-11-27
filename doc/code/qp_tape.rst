@@ -3,11 +3,13 @@ qp.tape
 
 .. currentmodule:: pennylane.tape
 
-Quantum tapes are a datastructure that can represent quantum circuits and measurement statistics in PennyLane.
-They are queuing contexts that can record and process quantum operations and measurements.
+This module is called ``tape`` to a former class ``QuantumTape`` that has now been removed in favor of :class:`~.QuantumScript`.
+:class:`~.QuantumScript` should be accessed from the ``core`` module now, but this module as left as a stub for convenience.
 
-In addition to being created internally by QNodes, quantum tapes can also be created,
-nested, expanded (via :meth:`~.QuantumTape.expand`), and executed manually.
+
+Quantum scripts are a datastructure that can represent quantum circuits and measurement statistics in PennyLane.
+
+In addition to being created internally by QNodes, quantum scripts can also be created  and executed manually.
 
 Finally, quantum tapes are fully compatible with autodifferentiating via Autograd, JAX, 
 and PyTorch.
@@ -35,41 +37,13 @@ via initialization. Once it is initialized, the contents should then remain immu
 >>> QuantumScript(ops, measurements, shots=10)
 <QuantumScript: wires=[0], params=0>
 
-A ``QuantumTape`` has additional queuing capabilities and also inherits from :class:`~.AnnotatedQueue`.  Its contents
-are set on exiting the context, rather than upon initialization. Since queuing requires interaction with the global singleton
-:class:`~pennylane.QueuingManager`, the ``QuantumTape`` requires a ``threading.RLock`` which complicates its use in distributed
-situations.
-
->>> from pennylane.tape import QuantumTape
->>> with QuantumTape(shots=10) as tape:
-...     qp.PauliX(0)
-...     qp.expval(qp.PauliZ(0))
->>> tape
-<QuantumTape: wires=[0], params=0>
-
-The ``QuantumTape`` also carries around the unprocessed queue in addition to the processed ``operations`` and ``measurements``, 
-resulting in a larger memory footprint.
-
->>> tape.items()
-((PauliX(wires=[0]), {}), (expval(PauliZ(wires=[0])), {}))
-
-To capture a quantum function, we instead recommend queuing a quantum function into an :class:`~.AnnotatedQueue`,
+To capture a quantum function, we recommend queuing a quantum function into an :class:`~.AnnotatedQueue`,
 and then processing that into a ``QuantumScript``.
 
->>> with qp.queuing.AnnotatedQueue() as q:
+>>> with qp.core.AnnotatedQueue() as q:
 ...     qfunc(*args, **kwargs)
 >>> QuantumScript.from_queue(q)
 <QuantumScript: wires=[0], params=0> 
-
-Since queuing is also sensitive to the "identity" of an operation, not just its contents, an operation has to be copied in
-order for it to be used multiple times in a ``QuantumTape``.  A ``QuantumScript`` can allow the same operation to be
-used many times in the circuit, potentially reducing its memory footprint.
-
->>> op = qp.T(0)
->>> QuantumScript([op] * 100, [qp.probs(wires=0)])
-
-Since users are familiar with the term ``QuantumTape``, that term should be used in documentation. For performance
-and a reduction in unintended side effects, ``QuantumScript`` is strictly used in PennyLane source code.
 
 
 Quantum Script
@@ -86,14 +60,3 @@ Quantum Script
     ~QuantumScriptOrBatch
     ~make_qscript
     ~process_queue
-
-Quantum tape
-~~~~~~~~~~~~
-
-.. currentmodule:: pennylane.tape
-
-.. autosummary::
-    :toctree: api
-
-    ~QuantumTape
-    ~QuantumTapeBatch

@@ -45,7 +45,7 @@ def eigvals(op: qp.operation.Operator, k=1, which="SA") -> TensorLike:
           for a molecular Hamiltonian might not always correspond to the neutral molecule.
 
     Args:
-        op (Operator or QNode or QuantumTape or Callable): A quantum operator or quantum circuit.
+        op (Operator or QNode or QuantumScript or Callable): A quantum operator or quantum circuit.
         k (int): The number of eigenvalues to be returned for a :class:`~.SparseHamiltonian`.
         which (str): Method for computing the eigenvalues of a :class:`~.SparseHamiltonian`. The
             possible methods are ``'LM'`` (largest in magnitude), ``'SM'`` (smallest in magnitude),
@@ -53,7 +53,7 @@ def eigvals(op: qp.operation.Operator, k=1, which="SA") -> TensorLike:
             from each end of the spectrum).
 
     Returns:
-        TensorLike or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+        TensorLike or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
 
         If an operator is provided as input, the eigenvalues are returned directly in the form of a tensor.
         Otherwise, the transformed circuit is returned as described in :func:`qp.transform <pennylane.transform>`.

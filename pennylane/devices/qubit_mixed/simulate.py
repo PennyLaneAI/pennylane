@@ -191,7 +191,7 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
 
 
 def simulate(
-    circuit: qp.tape.QuantumScript,
+    circuit: qp.core.qscript.QuantumScript,
     debugger=None,
     state_cache: dict | None = None,
     **execution_kwargs,

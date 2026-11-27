@@ -51,7 +51,7 @@ def _split_operations(ops, num_tapes):
 
 def null_postprocessing(results):
     """A postprocessing function returned by a transform that only converts the batch of results
-    into a result for a single ``QuantumTape``.
+    into a result for a single ``QuantumScript``.
     """
     return results[0]
 
@@ -66,10 +66,10 @@ def broadcast_expand(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
         Currently, not all templates have been updated to support broadcasting.
 
     Args:
-        tape (QNode or QuantumTape or Callable): Broadcasted tape to be expanded
+        tape (QNode or QuantumScript or Callable): Broadcasted tape to be expanded
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
 
         The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
@@ -121,7 +121,7 @@ def broadcast_expand(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
 
     >>> ops = [qp.RX(np.array([0.2, 0.6, 1.0]), wires=0)]
     >>> measurements = [qp.expval(qp.Z(0))]
-    >>> tape = qp.tape.QuantumTape(ops, measurements)
+    >>> tape = qp.core.QuantumScript(ops, measurements)
     >>> tapes, fn = qp.transforms.broadcast_expand(tape)
     >>> tapes
     (<QuantumScript: wires=[0], params=1>, <QuantumScript: wires=[0], params=1>, <QuantumScript: wires=[0], params=1>)

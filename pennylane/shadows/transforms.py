@@ -128,7 +128,7 @@ def shadow_state(
     the reconstructed state in a differentiable manner.
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit.
+        tape (QNode or QuantumScript or Callable): A quantum circuit.
         wires (list[int] or list[list[int]]): If a list of ints, this represents
             the wires over which to reconstruct the state. If a list of list of ints,
             a state is reconstructed for every element of the outer list, saving
@@ -139,7 +139,7 @@ def shadow_state(
             cost.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
 
         The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the reconstructed state in the form of a tensor.

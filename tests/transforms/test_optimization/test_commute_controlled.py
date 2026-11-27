@@ -438,7 +438,7 @@ with qp.queuing.AnnotatedQueue() as q:
     qp.PauliX(wires=1)
     qp.CRX(0.1, wires=[0, 1])
 
-tape_circuit = qp.tape.QuantumTape.from_queue(q)
+tape_circuit = qp.core.qscript.QuantumScript.from_queue(q)
 
 
 ### QFunc
