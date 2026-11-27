@@ -999,7 +999,7 @@ class TestExpandVector:
             ValueError,
             match="Invalid target subsystems provided in 'original_wires' argument",
         ):
-            expand_vector(TestExpandVector.VECTOR2, [-1, 5], 4)
+            expand_vector(TestExpandVector.VECTOR2, [4, 5], 4)
 
     def test_expand_vector_invalid_vector(self):
         """Test exception raised if incorrect sized vector provided."""

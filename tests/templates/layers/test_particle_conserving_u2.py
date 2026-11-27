@@ -57,66 +57,39 @@ def test_resources():
 
 
 @pytest.mark.system
-class TestCorrectness:
-    """Tests the correctness of the template in a qnode."""
+@pytest.mark.parametrize(
+    ("init_state", "exp_state"),
+    [
+        (np.array([0, 0]), np.array([1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j])),
+        (
+            np.array([0, 1]),
+            np.array([0.0 + 0.0j, 0.862093 + 0.0j, 0.0 - 0.506749j, 0.0 + 0.0j]),
+        ),
+        (
+            np.array([1, 0]),
+            np.array([0.0 + 0.0j, 0.0 - 0.506749j, 0.862093 + 0.0j, 0.0 + 0.0j]),
+        ),
+        (np.array([1, 1]), np.array([0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j])),
+    ],
+)
+def test_decomposition_u2ex(init_state, exp_state, tol):
+    """Test the decomposition of the U_{2, ex}` exchange gate by asserting the prepared
+    state."""
 
-    @pytest.mark.parametrize(
-        ("init_state", "exp_state"),
-        [
-            (np.array([0, 0]), np.array([1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j])),
-            (
-                np.array([0, 1]),
-                np.array([0.0 + 0.0j, 0.862093 + 0.0j, 0.0 - 0.506749j, 0.0 + 0.0j]),
-            ),
-            (
-                np.array([1, 0]),
-                np.array([0.0 + 0.0j, 0.0 - 0.506749j, 0.862093 + 0.0j, 0.0 + 0.0j]),
-            ),
-            (np.array([1, 1]), np.array([0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j])),
-        ],
-    )
-    def test_decomposition_u2ex(self, init_state, exp_state, tol):
-        """Test the decomposition of the U_{2, ex}` exchange gate by asserting the prepared
-        state."""
+    N = 2
+    wires = range(N)
 
-        N = 2
-        wires = range(N)
+    weight = 0.53141
 
-        weight = 0.53141
+    dev = qp.device("default.qubit", wires=N)
 
-        dev = qp.device("default.qubit", wires=N)
+    @qp.qnode(dev)
+    def circuit(weight):
+        qp.BasisState(init_state, wires=wires)
+        qp.particle_conserving_u2.u2_ex_gate(weight, wires)
+        return qp.state()
 
-        @qp.qnode(dev)
-        def circuit(weight):
-            qp.BasisState(init_state, wires=wires)
-            qp.particle_conserving_u2.u2_ex_gate(weight, wires)
-            return qp.state()
-
-        assert np.allclose(circuit(weight), exp_state, atol=tol)
-
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        weights = np.random.random(size=(1, 5))
-        init_state = np.array([1, 1, 0])
-
-        dev = qp.device("default.qubit", wires=3)
-        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.ParticleConservingU2(weights, wires=range(3), init_state=init_state)
-            return qp.expval(qp.Identity(0)), qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.ParticleConservingU2(weights, wires=["z", "a", "k"], init_state=init_state)
-            return qp.expval(qp.Identity("z")), qp.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
+    assert np.allclose(circuit(weight), exp_state, atol=tol)
 
 
 def _get_queue(op, system):

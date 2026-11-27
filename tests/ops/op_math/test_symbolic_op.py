@@ -48,7 +48,7 @@ class TempScalarCopy(ScalarSymbolicOp):
 
 def test_initialization():
     """Test initialization for a SymbolicOp"""
-    base = Operator("a")
+    base = Operator(6)
 
     op = SymbolicOp(base)
 
@@ -60,7 +60,7 @@ def test_initialization():
 def test_copy():
     """Test that a copy can be rebound independently of the original."""
     param1 = 1.234
-    base = Operator(param1, "a")
+    base = Operator(param1, 6)
     op = SymbolicOp(base)
 
     copied_op = copy(op)
@@ -98,7 +98,7 @@ class TestProperties:
         """Test that the data property for symbolic ops is read-only."""
         x = np.array(1.234)
 
-        base = Operator(x, "a")
+        base = Operator(x, 6)
         op = SymbolicOp(base)
 
         assert op.data == (x,)
@@ -111,7 +111,7 @@ class TestProperties:
     def test_parameters(self):
         """Test parameter property is a list of the base's trainable parameters."""
         x = np.array(9.876)
-        base = Operator(x, "b")
+        base = Operator(x, 7)
         op = SymbolicOp(base)
         assert op.parameters == [x]
 
@@ -129,7 +129,7 @@ class TestProperties:
         class DummyOp(Operator):
             has_matrix = has_mat
 
-        base = DummyOp("b")
+        base = DummyOp(7)
         op = SymbolicOp(base)
         assert op.has_matrix == has_mat
 
@@ -147,7 +147,7 @@ class TestProperties:
         class DummyOp(Operator):
             is_verified_hermitian = is_herm
 
-        base = DummyOp("b")
+        base = DummyOp(7)
         op = SymbolicOp(base)
         assert op.is_verified_hermitian == is_herm
 
@@ -171,7 +171,7 @@ class TestProperties:
 
     def test_pauli_rep(self):
         """Test that pauli_rep is None by default"""
-        base = Operator("a")
+        base = Operator(6)
         op = SymbolicOp(base)
         assert op.pauli_rep is None
 
@@ -191,7 +191,7 @@ class TestQueuing:
     def test_queuing(self):
         """Test symbolic op queues and updates base metadata."""
         with qp.queuing.AnnotatedQueue() as q:
-            base = Operator("a")
+            base = Operator(6)
             op = SymbolicOp(base)
 
         assert base not in q
@@ -201,7 +201,7 @@ class TestQueuing:
     def test_queuing_base_defined_outside(self):
         """Test symbolic op queues without adding base to the queue if it isn't already in the queue."""
 
-        base = Operator("b")
+        base = Operator(7)
         with qp.queuing.AnnotatedQueue() as q:
             op = SymbolicOp(base)
 

@@ -39,11 +39,8 @@ pauli_ops_and_prod = (qp.PauliX, qp.PauliY, qp.PauliZ, qp.Identity, qp.ops.Prod)
     scope="module",
     params=[
         None,
-        qp.wires.Wires(
-            list("ab") + [-3, 42] + ["xyz", "23", "wireX"] + [f"w{i}" for i in range(20)]
-        ),
+        qp.wires.Wires([10, 11, 3, 42, 20, 23, 30] + list(range(100, 120))),
         list(range(100, 120)),
-        {13 - i: "abcdefghijklmn"[i] for i in range(14)},
     ],
     name="custom_wires",
 )
@@ -458,10 +455,10 @@ def test_wires_not_covered_pennylane_to_openfermion():
         qp.qchem.convert._pennylane_to_openfermion(
             np.array([0.1, 0.2]),
             [
-                qp.prod(qp.PauliX(wires=["w0"])),
-                qp.prod(qp.PauliY(wires=["w0"]), qp.PauliZ(wires=["w2"])),
+                qp.prod(qp.PauliX(wires=[10])),
+                qp.prod(qp.PauliY(wires=[10]), qp.PauliZ(wires=[12])),
             ],
-            wires=qp.wires.Wires(["w0", "w1"]),
+            wires=qp.wires.Wires([10, 11]),
         )
 
 
@@ -497,30 +494,30 @@ of_pl_ops = (
         ),
         qp.Hamiltonian(
             [0.1, 0.2, 0.3, 0.4],
-            [qp.PauliX("w0"), qp.PauliY("w1"), qp.PauliZ("w2"), qp.Identity("w0")],
+            [qp.PauliX(10), qp.PauliY(11), qp.PauliZ(12), qp.Identity(10)],
         ),
         qp.sum(
-            qp.s_prod(0.1, qp.PauliX("w0")),
-            qp.s_prod(0.2, qp.PauliY("w1")),
-            qp.s_prod(0.3, qp.PauliZ("w2")),
-            qp.s_prod(0.4, qp.Identity("w0")),
+            qp.s_prod(0.1, qp.PauliX(10)),
+            qp.s_prod(0.2, qp.PauliY(11)),
+            qp.s_prod(0.3, qp.PauliZ(12)),
+            qp.s_prod(0.4, qp.Identity(10)),
         ),
-        ["w0", "w1", "w2"],
+        [10, 11, 12],
     ),
     (
         (0.1 * openfermion.QubitOperator("X0 Y1") + 0.2 * openfermion.QubitOperator("Z2")),
-        qp.Hamiltonian([0.1, 0.2], [qp.PauliX("w0") @ qp.PauliY("w1"), qp.PauliZ("w2")]),
+        qp.Hamiltonian([0.1, 0.2], [qp.PauliX(10) @ qp.PauliY(11), qp.PauliZ(12)]),
         qp.sum(
-            qp.s_prod(0.1, qp.prod(qp.PauliX("w0"), qp.PauliY("w1"))),
-            qp.s_prod(0.2, qp.PauliZ("w2")),
+            qp.s_prod(0.1, qp.prod(qp.PauliX(10), qp.PauliY(11))),
+            qp.s_prod(0.2, qp.PauliZ(12)),
         ),
-        ["w0", "w1", "w2"],
+        [10, 11, 12],
     ),
     (
         (0.1 * openfermion.QubitOperator("X0 Y1")),
-        qp.Hamiltonian([0.1], [qp.PauliX("w0") @ qp.PauliY("w1")]),
-        qp.s_prod(0.1, qp.prod(qp.PauliX("w0"), qp.PauliY("w1"))),
-        ["w0", "w1"],
+        qp.Hamiltonian([0.1], [qp.PauliX(10) @ qp.PauliY(11)]),
+        qp.s_prod(0.1, qp.prod(qp.PauliX(10), qp.PauliY(11))),
+        [10, 11],
     ),
 )
 
@@ -606,16 +603,14 @@ def test_singlewire_pennylane_to_openfermion():
 
 
 def test_pennylane_to_openfermion_no_decomp():
-    """Test the _pennylane_to_openfermion function with custom wires."""
+    """Test conversion without a decomposition using nonconsecutive integer wires."""
     coeffs = np.array([0.1, 0.2])
     ops = [
-        qp.prod(qp.PauliX(wires=["w0"])),
-        qp.prod(qp.PauliY(wires=["w0"]), qp.PauliZ(wires=["w2"])),
+        qp.prod(qp.PauliX(wires=[10])),
+        qp.prod(qp.PauliY(wires=[10]), qp.PauliZ(wires=[12])),
     ]
     op_str = str(
-        qp.qchem.convert._pennylane_to_openfermion(
-            coeffs, ops, wires=qp.wires.Wires(["w0", "w1", "w2"])
-        )
+        qp.qchem.convert._pennylane_to_openfermion(coeffs, ops, wires=qp.wires.Wires([10, 14, 12]))
     )
 
     # Remove new line characters

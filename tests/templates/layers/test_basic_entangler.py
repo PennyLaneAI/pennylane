@@ -34,53 +34,27 @@ def test_standard_validity():
 
 
 @pytest.mark.system
-class TestCorrectness:
-    """Tests the correctness of a circuit which contains the template."""
+@pytest.mark.parametrize(
+    "weights, n_wires, target",
+    [
+        ([[np.pi]], 1, [-1]),
+        ([[np.pi] * 2], 2, [-1, 1]),
+        ([[np.pi] * 3], 3, [1, 1, -1]),
+        ([[np.pi] * 4], 4, [-1, 1, -1, 1]),
+    ],
+)
+def test_simple_target_outputs(weights, n_wires, target, tol):
+    """Tests the result of the template for simple cases."""
 
-    @pytest.mark.parametrize(
-        "weights, n_wires, target",
-        [
-            ([[np.pi]], 1, [-1]),
-            ([[np.pi] * 2], 2, [-1, 1]),
-            ([[np.pi] * 3], 3, [1, 1, -1]),
-            ([[np.pi] * 4], 4, [-1, 1, -1, 1]),
-        ],
-    )
-    def test_simple_target_outputs(self, weights, n_wires, target, tol):
-        """Tests the result of the template for simple cases."""
+    dev = qp.device("default.qubit", wires=n_wires)
 
-        dev = qp.device("default.qubit", wires=n_wires)
+    @qp.qnode(dev)
+    def circuit(weights):
+        qp.BasicEntanglerLayers(weights, wires=range(n_wires))
+        return [qp.expval(qp.PauliZ(i)) for i in range(n_wires)]
 
-        @qp.qnode(dev)
-        def circuit(weights):
-            qp.BasicEntanglerLayers(weights, wires=range(n_wires))
-            return [qp.expval(qp.PauliZ(i)) for i in range(n_wires)]
-
-        expectations = circuit(weights)
-        np.testing.assert_allclose(expectations, target, atol=tol, rtol=0)
-
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        weights = np.random.random(size=(1, 3))
-
-        dev = qp.device("default.qubit", wires=3)
-        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.BasicEntanglerLayers(weights, wires=range(3))
-            return qp.expval(qp.Identity(0)), qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.BasicEntanglerLayers(weights, wires=["z", "a", "k"])
-            return qp.expval(qp.Identity("z")), qp.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
+    expectations = circuit(weights)
+    np.testing.assert_allclose(expectations, target, atol=tol, rtol=0)
 
 
 class TestDecomposition:

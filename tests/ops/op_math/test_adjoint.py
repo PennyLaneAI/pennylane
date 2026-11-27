@@ -430,7 +430,7 @@ class TestAdjointOperation:
             (qp.RX(1.234, wires=0), "X"),
             (qp.PauliY(5), "Y"),
             (qp.PhaseShift(4.56, wires=7), "Z"),
-            (qp.SX(-1), "X"),
+            (qp.SX(1), "X"),
         ),
     )
     def test_basis_property(self, base, basis):

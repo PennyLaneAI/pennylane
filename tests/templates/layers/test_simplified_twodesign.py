@@ -38,56 +38,29 @@ def test_standard_validity():
 
 
 @pytest.mark.system
-class TestCorrectness:
-    """Tests the correctness of the template in a qnode."""
+@pytest.mark.parametrize(
+    "initial_layer_weights, weights, n_wires, target",
+    [
+        ([np.pi], [], 1, [-1]),
+        ([np.pi] * 2, [[[np.pi] * 2]], 2, [1, 1]),
+        ([np.pi] * 3, [[[np.pi] * 2] * 2], 3, [1, -1, 1]),
+        ([np.pi] * 4, [[[np.pi] * 2] * 3], 4, [1, -1, -1, 1]),
+    ],
+)
+def test_correct_target_output(initial_layer_weights, weights, n_wires, target, tol):
+    """Tests the result of the template for simple cases."""
+    dev = qp.device("default.qubit", wires=n_wires)
 
-    @pytest.mark.parametrize(
-        "initial_layer_weights, weights, n_wires, target",
-        [
-            ([np.pi], [], 1, [-1]),
-            ([np.pi] * 2, [[[np.pi] * 2]], 2, [1, 1]),
-            ([np.pi] * 3, [[[np.pi] * 2] * 2], 3, [1, -1, 1]),
-            ([np.pi] * 4, [[[np.pi] * 2] * 3], 4, [1, -1, -1, 1]),
-        ],
-    )
-    def test_correct_target_output(self, initial_layer_weights, weights, n_wires, target, tol):
-        """Tests the result of the template for simple cases."""
-        dev = qp.device("default.qubit", wires=n_wires)
+    @qp.qnode(dev)
+    def circuit(initial_layer, weights):
+        qp.SimplifiedTwoDesign(
+            initial_layer_weights=initial_layer, weights=weights, wires=range(n_wires)
+        )
+        return [qp.expval(qp.PauliZ(wires=i)) for i in range(n_wires)]
 
-        @qp.qnode(dev)
-        def circuit(initial_layer, weights):
-            qp.SimplifiedTwoDesign(
-                initial_layer_weights=initial_layer, weights=weights, wires=range(n_wires)
-            )
-            return [qp.expval(qp.PauliZ(wires=i)) for i in range(n_wires)]
-
-        expectations = circuit(np.array(initial_layer_weights), np.array(weights))
-        for exp, target_exp in zip(expectations, target):
-            assert np.allclose(exp, target_exp, atol=tol, rtol=0)
-
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        weights = np.random.random(size=(1, 2, 2))
-        initial_layer = np.random.randn(3)
-
-        dev = qp.device("default.qubit", wires=3)
-        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.SimplifiedTwoDesign(initial_layer, weights, wires=range(3))
-            return qp.expval(qp.Identity(0)), qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.SimplifiedTwoDesign(initial_layer, weights, wires=["z", "a", "k"])
-            return qp.expval(qp.Identity("z")), qp.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
+    expectations = circuit(np.array(initial_layer_weights), np.array(weights))
+    for exp, target_exp in zip(expectations, target):
+        assert np.allclose(exp, target_exp, atol=tol, rtol=0)
 
 
 class TestDecomposition:

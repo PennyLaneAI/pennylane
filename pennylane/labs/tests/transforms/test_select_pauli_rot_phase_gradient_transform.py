@@ -37,11 +37,11 @@ def test_units_select_pauli_rot_phase_gradient(p):
         (0 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
     ]
 
-    wire = "targ"
-    control_wires = qp.wires.Wires([f"control_{i}" for i in range(2)])
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+    wire = 9
+    control_wires = qp.wires.Wires(range(2))
+    angle_wires = qp.wires.Wires(range(100, 100 + p))
+    phase_grad_wires = qp.wires.Wires(range(100 + p, 100 + 2 * p))
+    work_wires = qp.wires.Wires(range(100 + 2 * p, 100 + 3 * p - 1))
 
     op = _select_pauli_rot_phase_gradient(
         phis,
@@ -70,9 +70,9 @@ def test_wire_validation():
 
     circ = qp.tape.QuantumScript([qp.SelectPauliRot([0.2, -0.4], [0], 1)])
 
-    angle_wires = qp.wires.Wires([f"angle_{i}" for i in range(3)])
-    phase_grad_wires = qp.wires.Wires([f"phg_{i}" for i in range(2)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(2)])
+    angle_wires = qp.wires.Wires(range(100, 103))
+    phase_grad_wires = qp.wires.Wires(range(103, 105))
+    work_wires = qp.wires.Wires(range(105, 107))
 
     with pytest.raises(
         ValueError, match="phase_grad_wires needs to be at least as large as angle_wires"
@@ -123,10 +123,10 @@ def test_correctness_select_pauli_rot_phase_gradient(phis, rot_axis):
     """Test that decomposition produce the correct solution"""
 
     precision = 4
-    wire = "targ"
-    angle_wires = [f"ang_{i}" for i in range(precision)]
-    phase_grad_wires = [f"phg_{i}" for i in range(precision)]
-    work_wires = [f"work_{i}" for i in range(precision - 1)]
+    wire = 9
+    angle_wires = list(range(100, 100 + precision))
+    phase_grad_wires = list(range(100 + precision, 100 + 2 * precision))
+    work_wires = list(range(100 + 2 * precision, 100 + 3 * precision - 1))
 
     @partial(
         select_pauli_rot_phase_gradient,

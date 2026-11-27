@@ -97,7 +97,7 @@ obs_permuted_lst = [
     qp.X(1) @ qp.Y(2) @ qp.Z(0),
 ]
 
-label_maps = [[0, 1, 2], ["a", "b", "c"], ["beta", "alpha", "gamma"], [3, "beta", "a"]]
+label_maps = [[0, 1, 2], [10, 11, 12], [20, 21, 22], [3, 20, 10]]
 
 
 def sub_routine(label_map):

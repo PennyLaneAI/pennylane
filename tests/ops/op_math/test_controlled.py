@@ -1300,7 +1300,7 @@ class TestControlledSupportsBroadcasting:
 
         # Provide up to 6 wires and take as many as the class requires
         # This assumes that the class does *not* have `num_wires=None`
-        wires = [44, 5, 41, 48, -1, 9][: cls.num_wires]
+        wires = [44, 5, 41, 48, 1, 9][: cls.num_wires]
         base = cls(par, wires=wires)
         op = Controlled(base, 45)
 

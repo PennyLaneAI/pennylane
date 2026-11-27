@@ -457,7 +457,7 @@ class TestDecomposeTransformations:
     def test_valdiate_measurements_non_commuting_measurements(self, validation_transform):
         """Test that validate_measurements and validate_observables works when non commuting measurements exist in the circuit."""
 
-        qs = QuantumScript([NoMatOp("a")], [qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliY(0))])
+        qs = QuantumScript([NoMatOp(1)], [qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliY(0))])
 
         new_qs, _ = validation_transform(qs, lambda obj: True)
         new_qs = new_qs[0]

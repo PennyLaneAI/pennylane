@@ -108,7 +108,7 @@ BROADCASTED_OPERATIONS = [
         wires=[0, 1],
     ),
     qp.QubitUnitary(1j * np.array([[[1, 0], [0, -1]], [[0, 1], [1, 0]]]), wires=0),
-    qp.PSWAP(np.array([0.123, -0.63, 0.235]), wires=[13, -1]),
+    qp.PSWAP(np.array([0.123, -0.63, 0.235]), wires=[13, 1]),
     qp.DiagonalQubitUnitary(np.array([[1.0, 1.0j], [1.0j, 1.0j]]), wires=1),
 ]
 

@@ -34,11 +34,11 @@ from pennylane.ops.op_math.condition import Conditional
 terminal_meas = [
     qp.probs(wires=[1, 0]),
     qp.expval(qp.PauliZ(0)),
-    qp.expval(qp.PauliZ(6) @ qp.PauliZ(3) @ qp.PauliZ(-1)),
+    qp.expval(qp.PauliZ(6) @ qp.PauliZ(3) @ qp.PauliZ(4)),
     qp.var(qp.PauliX(7)),
     qp.state(),
     qp.density_matrix(wires=[2, 3]),
-    qp.density_matrix(wires=[7, -231]),
+    qp.density_matrix(wires=[7, 231]),
 ]
 
 

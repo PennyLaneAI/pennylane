@@ -26,14 +26,14 @@ class TestHadamard:
 
     ctrl_data = (
         (
-            ["c1"],
+            [10],
             [1],
             [
                 GateCount(qre.CH.resource_rep(), 1),
             ],
         ),
         (
-            ["c1"],
+            [10],
             [0],
             [
                 GateCount(qre.CH.resource_rep(), 1),
@@ -41,7 +41,7 @@ class TestHadamard:
             ],
         ),
         (
-            ["c1", "c2"],
+            [10, 11],
             [1, 1],
             [
                 qre.Allocate(1),
@@ -55,7 +55,7 @@ class TestHadamard:
             ],
         ),
         (
-            ["c1", "c2", "c3"],
+            [10, 11, 12],
             [1, 0, 0],
             [
                 qre.Allocate(1),
@@ -91,7 +91,7 @@ class TestHadamard:
 
     ctrl_data = (
         (
-            ["c1"],
+            [10],
             [1],
             qre.Resources(
                 zeroed_wires=0,
@@ -110,7 +110,7 @@ class TestHadamard:
             ),
         ),
         (
-            ["c1"],
+            [10],
             [0],
             qre.Resources(
                 zeroed_wires=0,
@@ -149,7 +149,7 @@ class TestHadamard:
 
     ctrl_data = (
         (
-            ["c1"],
+            [10],
             [1],
             [
                 qre.Allocate(1),
@@ -164,7 +164,7 @@ class TestHadamard:
             ],
         ),
         (
-            ["c1"],
+            [10],
             [0],
             [
                 qre.Allocate(1),
@@ -179,7 +179,7 @@ class TestHadamard:
             ],
         ),
         (
-            ["c1", "c2"],
+            [10, 11],
             [1, 1],
             [
                 qre.Allocate(1),
@@ -199,7 +199,7 @@ class TestHadamard:
             ],
         ),
         (
-            ["c1", "c2", "c3"],
+            [10, 11, 12],
             [1, 0, 0],
             [
                 qre.Allocate(1),

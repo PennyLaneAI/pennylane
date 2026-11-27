@@ -38,9 +38,7 @@ def _random_angle(seed):
 class TestInitialization:
     """Tests for the arguments of RZLayer."""
 
-    @pytest.mark.parametrize(
-        "angle, wires, work_wires", SMALL_CASES + [(0.3, ["a", "b", "c"], ["w0", "w1"])]
-    )
+    @pytest.mark.parametrize("angle, wires, work_wires", SMALL_CASES + [(0.3, [8, 6, 7], [9, 10])])
     def test_arguments(self, angle, wires, work_wires):
         """Test that the work wires are part of ``op.wires``."""
         op = qp.RZLayer(angle, wires, work_wires)

@@ -130,7 +130,7 @@ class TestIndicesMPS:
         ],
     )
     def test_indices_output(self, wires, n_block_wires, offset, expected_indices):
-        """Verifies the indices are correct for both integer and string wire labels."""
+        """Verifies the indices for consecutive and nonconsecutive integer wire labels."""
         indices = compute_indices_MPS(wires, n_block_wires, offset)
         assert indices == expected_indices
 

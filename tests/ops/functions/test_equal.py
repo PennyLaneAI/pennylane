@@ -273,7 +273,7 @@ class TestEqual:  # pylint: disable=too-many-public-methods
     def test_identity_equal(self):
         """Test that comparing two Identities always returns True regardless of wires"""
         I1 = qp.Identity()
-        I2 = qp.Identity(wires=[-1])
+        I2 = qp.Identity(wires=[4])
         I3 = qp.Identity(wires=[0, 1, 2, 3])
         I4 = qp.Identity(wires=[11, 12])
 

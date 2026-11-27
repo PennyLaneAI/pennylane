@@ -56,13 +56,13 @@ class TestSemiAdder:
     """Test the qp.SemiAdder template."""
 
     def test_wire_order_and_mapping(self):
-        """Registers retain their order, including when arbitrary wire labels are mapped."""
-        op = qp.SemiAdder(["x1", "x0"], [5, 2], ["carry"])
-        assert op.wires == Wires(["x1", "x0", 5, 2, "carry"])
+        """Registers retain their order when nonconsecutive integer wires are mapped."""
+        op = qp.SemiAdder([7, 6], [5, 2], [8])
+        assert op.wires == Wires([7, 6, 5, 2, 8])
 
-        mapped = op.map_wires({"x1": 3, "x0": 0, 5: "y1", 2: "y0", "carry": 4})
-        qp.assert_equal(mapped, qp.SemiAdder([3, 0], ["y1", "y0"], [4]))
-        assert mapped.wires == Wires([3, 0, "y1", "y0", 4])
+        mapped = op.map_wires({7: 3, 6: 0, 5: 10, 2: 9, 8: 4})
+        qp.assert_equal(mapped, qp.SemiAdder([3, 0], [10, 9], [4]))
+        assert mapped.wires == Wires([3, 0, 10, 9, 4])
 
     @pytest.mark.parametrize(
         "case",

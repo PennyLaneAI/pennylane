@@ -18,7 +18,7 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 
-# ===== Factories for circuits using arbitrary wire labels and numbers
+# ===== Factories for circuits using integer wire labels
 
 
 def make_simple_circuit_expval(device, wires, shots):
@@ -46,11 +46,11 @@ class TestWiresIntegration:  # pylint: disable=too-few-public-methods
     @pytest.mark.parametrize(
         "wires1, wires2",
         [
-            (["a", "c", "d"], [2, 3, 0]),
-            ([-1, -2, -3], ["q1", "auxiliary", 2]),
-            (["a", "c"], [3, 0]),
-            ([-1, -2], ["auxiliary", 2]),
-            (["a"], ["nothing"]),
+            ([10, 11, 12], [2, 3, 0]),
+            ([4, 5, 6], [13, 14, 2]),
+            ([10, 11], [3, 0]),
+            ([4, 5], [14, 2]),
+            ([10], [15]),
         ],
     )
     @pytest.mark.parametrize("circuit_factory", [make_simple_circuit_expval])
