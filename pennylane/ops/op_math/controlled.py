@@ -50,7 +50,6 @@ from pennylane.typing import AbstractArray, AbstractWires, Bool
 from pennylane.wires import Wires, WiresLike
 
 from .controlled2 import Controlled2, ControlledOp2
-from .decompositions.controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
 from .symbolicop import SymbolicOp
 
 
@@ -905,6 +904,9 @@ class Controlled(SymbolicOp):  # pylint: disable=too-many-public-methods
         if self.compute_decomposition is not Operator.compute_decomposition:
             return self.compute_decomposition(*self.data, self.wires)
 
+        # pylint: disable-next=import-outside-toplevel
+        from pennylane.decomposition_rules.op_math.controlled import _decompose_no_control_values
+
         if all(self.control_values):
             decomp = _decompose_no_control_values(self)
             if decomp is None:
@@ -1047,36 +1049,6 @@ def _decompose_custom_ops(op: Controlled) -> list[Operator] | None:
         qp.QueuingManager.remove(result)
 
     return None
-
-
-def _decompose_no_control_values(op: Controlled) -> list[Operator] | None:
-    """Decompose without considering control values. Returns None if no decomposition."""
-
-    decomp = _decompose_custom_ops(op)
-    if decomp is not None:
-        return decomp
-
-    is_su2 = _is_single_qubit_special_unitary(op.base)
-    if not math.is_tracer(is_su2) and is_su2:
-        if len(op.control_wires) >= 2 and math.get_interface(*op.data) == "numpy":
-            return ctrl_decomp_bisect(op.base, op.control_wires)
-        return ctrl_decomp_zyz(
-            op.base,
-            control_wires=op.control_wires,
-            work_wires=op.work_wires,
-            work_wire_type=op.work_wire_type,
-        )
-
-    if not op.base.has_decomposition:
-        return None
-
-    with qp.QueuingManager.stop_recording():
-        base_decomp = op.base.decomposition()
-
-    return [
-        ctrl(newop, op.control_wires, work_wires=op.work_wires, work_wire_type=op.work_wire_type)
-        for newop in base_decomp
-    ]
 
 
 class ControlledOp(Controlled, Operation):

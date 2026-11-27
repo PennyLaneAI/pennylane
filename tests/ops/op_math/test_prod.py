@@ -1712,7 +1712,7 @@ class TestDecomposition:
         - _controlled_product_with_one_work_wire
 
         Mirrors the pattern used in
-        ``tests/ops/op_math/test_controlled_decompositions.py::TestMCXDecomposition::test_mcx_qjit``
+        ``tests/decomposition_rules/op_math/test_multi_controlled_x.py::TestMCXDecomposition::test_mcx_qjit``
         so that the ``TemporaryAND`` ladder inside the ``C(Prod)`` rule is exercised
         under the Catalyst compiler without ``control_values`` being traced (they
         are treated as static so that ``flip_zero_control`` can branch on them).

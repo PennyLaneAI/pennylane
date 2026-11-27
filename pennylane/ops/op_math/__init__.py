@@ -95,17 +95,6 @@ Decompositions
     ~sk_decomposition
     ~rs_decomposition
 
-Control Decompositions
-~~~~~~~~~~~~~~~~~~~~~~
-
-.. currentmodule:: pennylane.ops.op_math
-
-.. autosummary::
-    :toctree: api
-
-    ~ctrl_decomp_zyz
-    ~ctrl_decomp_bisect
-
 """
 
 from .adjoint import Adjoint, adjoint
@@ -135,8 +124,6 @@ from .controlled_ops import (
 from .decompositions import (
     sk_decomposition,
     rs_decomposition,
-    ctrl_decomp_bisect,
-    ctrl_decomp_zyz,
 )
 from .evolution import Evolution
 from .exp import Exp, exp

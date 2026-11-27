@@ -767,12 +767,13 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     >>> qp.list_decomps(qp.CRX)['to_paulirot']
     DecompositionRule(name=to_paulirot)
     >>> print(qp.list_decomps(qp.CRX)[0])
-    @register_resources(_crx_to_rx_cz_resources, name="to_rx_cz")
-    def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike):
-        qp.RX(phi / 2, wires=wires[1])
-        qp.CZ(wires=wires)
-        qp.RX(-phi / 2, wires=wires[1])
-        qp.CZ(wires=wires)
+    @register_resources({ops.RX: 2, CZ: 2}, name="to_rx_cz")
+    def crx_to_rx_cz(phi: TensorLike, wires: WiresLike):
+        \"\"\"Decompose ``CRX`` using the ``to_rx_cz`` strategy.\"\"\"
+        ops.RX(phi / 2, wires=wires[1])
+        CZ(wires=wires)
+        ops.RX(-phi / 2, wires=wires[1])
+        CZ(wires=wires)
     >>> print(qp.draw(qp.list_decomps(qp.CRX)[0])(0.5, wires=[0, 1]))
     0: ───────────╭●────────────╭●─┤
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
