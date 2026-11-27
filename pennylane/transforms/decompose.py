@@ -624,7 +624,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
                 "To disable this warning, add GlobalPhase to the gate set, or "
                 "assign a decomposition rule to GlobalPhase via the fixed_decomps keyword "
                 "argument. To make GlobalPhase decompose to nothing, you can import null_decomp "
-                "from pennylane.decomposition, and assign it to GlobalPhase."
+                "from pennylane.decomposition_rules, and assign it to GlobalPhase."
             )
             yield op
 

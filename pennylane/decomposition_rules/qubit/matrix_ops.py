@@ -12,23 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module defines decomposition functions for unitary matrices."""
+"""Built-in decomposition rules for qubit.matrix_ops."""
 
 import warnings
 from itertools import product
 
 import jax
 import numpy as np
+import scipy as sp
 from scipy import sparse
 from scipy.linalg import cossin
 
-from pennylane import capture, compiler, math, ops, templates
+from pennylane import allocation, capture, compiler, math, ops, templates
 from pennylane.core import queuing
 from pennylane.core.apply import apply
-from pennylane.decomposition.decomposition_rule import (
-    register_condition,
-    register_resources,
-)
+from pennylane.core.operator import abstractify
+from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition.symbolic_decomposition import is_integer
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.math.decomposition import (
     xyx_rotation_angles,
@@ -36,8 +36,9 @@ from pennylane.math.decomposition import (
     zxz_rotation_angles,
     zyz_rotation_angles,
 )
-from pennylane.typing import Complex, Float, Wire
-from pennylane.wires import Wires
+from pennylane.ops.qubit.matrix_ops import DiagonalQubitUnitary, QubitUnitary
+from pennylane.typing import Bool, Complex, Float, Wire
+from pennylane.wires import Wires, concatenate_wires
 
 #: Maximum tolerated error for a valid real SO(4) decomposition.
 _SO4_DECOMP_ERROR_THRESHOLD = 1e-5
@@ -66,13 +67,13 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
 
     >>> from pprint import pprint
     >>> U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)  # Hadamard
-    >>> decomp = qp.ops.one_qubit_decomposition(U, 0, rotations='ZYZ', return_global_phase=True)
+    >>> decomp = qp.decomposition_rules.one_qubit_decomposition(U, 0, rotations='ZYZ', return_global_phase=True)
     >>> pprint(decomp)
     [RZ(3.14159..., wires=[0]),
      RY(1.57079..., wires=[0]),
      RZ(0.0, wires=[0]),
      GlobalPhase(-1.57079...)]
-    >>> decomp = qp.ops.one_qubit_decomposition(U, 0, rotations='XZX', return_global_phase=True)
+    >>> decomp = qp.decomposition_rules.one_qubit_decomposition(U, 0, rotations='XZX', return_global_phase=True)
     >>> pprint(decomp)
     [RX(1.57079..., wires=[0]),
      RZ(1.57079..., wires=[0]),
@@ -175,7 +176,7 @@ def two_qubit_decomposition(U, wires):
     We can compute its decompositon like so:
 
     >>> from pprint import pprint
-    >>> decomp = qp.ops.two_qubit_decomposition(np.array(U), wires=[0, 1])
+    >>> decomp = qp.decomposition_rules.two_qubit_decomposition(np.array(U), wires=[0, 1])
     >>> pprint(decomp) # doctest: +SKIP
     [QubitUnitary(array([[ 0.35935497-0.35945703j, -0.81150079+0.28830732j],
            [ 0.81150079+0.28830732j,  0.35935497+0.35945703j]]), wires=[0]),
@@ -268,7 +269,7 @@ def multi_qubit_decomposition(U, wires):
     .. code-block:: pycon
 
         >>> matrix_target = qp.matrix(qp.QFT([0,1,2]))
-        >>> ops = qp.ops.multi_qubit_decomposition(matrix_target, [0,1,2])
+        >>> ops = qp.decomposition_rules.multi_qubit_decomposition(matrix_target, [0,1,2])
         >>> matrix_decomposition = qp.matrix(qp.prod(*ops[::-1]), wire_order = [0,1,2])
         >>> print([op.name for op in ops])
         ['QubitUnitary', 'SelectPauliRot', 'QubitUnitary', 'SelectPauliRot', 'QubitUnitary', 'SelectPauliRot', 'QubitUnitary']
@@ -277,7 +278,7 @@ def multi_qubit_decomposition(U, wires):
     """
 
     with queuing.AnnotatedQueue() as q:
-        _qubit_unitary_multi_qubit(U, wires)
+        qubit_unitary_multi_qubit(U, wires)
 
     # If there is an active queuing context, queue the decomposition so that expand works
     if queuing.QueuingManager.recording():
@@ -292,17 +293,14 @@ def multi_qubit_decomposition(U, wires):
 #######################
 
 
-def make_one_qubit_unitary_decomposition(su2_rule, su2_resource, name=""):
+def make_one_qubit_unitary_rule(su2_rule, su2_resources, name=""):
     """Wrapper around a naive one-qubit decomposition rule that adds a global phase."""
-
-    def _resource_fn(*_, **__):
-        return su2_resource() | {ops.GlobalPhase: 1}
 
     name = name or su2_rule.name
 
     # Resources are not exact because the global phase or rotations might be skipped
     @register_condition(lambda U, wires, **_: len(wires) == 1)
-    @register_resources(_resource_fn, exact=False, name=name)
+    @register_resources(su2_resources | {ops.GlobalPhase: 1}, exact=False, name=name)
     def _impl(U, wires, **__):
         if sparse.issparse(U):
             U = U.todense()
@@ -313,13 +311,6 @@ def make_one_qubit_unitary_decomposition(su2_rule, su2_resource, name=""):
             ops.cond(math.logical_not(math.allclose(phase, 0)), ops.GlobalPhase)(-phase)
 
     return _impl
-
-
-def _su2_rot_resource():
-    return {
-        ops.Rot: 1,
-        ops.RZ: 1,  # RZ is produced in a special case, which has to be accounted for.
-    }
 
 
 def _su2_rot_decomp(U, wires, **__):
@@ -335,8 +326,8 @@ def _su2_rot_decomp(U, wires, **__):
     return alpha
 
 
-def _su2_zyz_resource():
-    return {ops.RZ: 2, ops.RY: 1}
+# RZ is produced in a special case, which has to be accounted for.
+rot_decomp_rule = make_one_qubit_unitary_rule(_su2_rot_decomp, {ops.Rot: 1, ops.RZ: 1}, "rot")
 
 
 def _su2_zyz_decomp(U, wires, **__):
@@ -347,8 +338,7 @@ def _su2_zyz_decomp(U, wires, **__):
     return alpha
 
 
-def _su2_xyx_resource():
-    return {ops.RX: 2, ops.RY: 1}
+zyz_decomp_rule = make_one_qubit_unitary_rule(_su2_zyz_decomp, {ops.RZ: 2, ops.RY: 1}, "zyz")
 
 
 def _su2_xyx_decomp(U, wires, **__):
@@ -360,8 +350,7 @@ def _su2_xyx_decomp(U, wires, **__):
     return alpha
 
 
-def _su2_xzx_resource():
-    return {ops.RX: 2, ops.RZ: 1}
+xyx_decomp_rule = make_one_qubit_unitary_rule(_su2_xyx_decomp, {ops.RX: 2, ops.RY: 1}, "xyx")
 
 
 def _su2_xzx_decomp(U, wires, **__):
@@ -372,8 +361,7 @@ def _su2_xzx_decomp(U, wires, **__):
     return alpha
 
 
-def _su2_zxz_resource():
-    return {ops.RZ: 2, ops.RX: 1}
+xzx_decomp_rule = make_one_qubit_unitary_rule(_su2_xzx_decomp, {ops.RX: 2, ops.RZ: 1}, "xzx")
 
 
 def _su2_zxz_decomp(U, wires, **__):
@@ -384,27 +372,23 @@ def _su2_zxz_decomp(U, wires, **__):
     return alpha
 
 
-rot_decomp_rule = make_one_qubit_unitary_decomposition(_su2_rot_decomp, _su2_rot_resource, "rot")
-zyz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zyz_decomp, _su2_zyz_resource, "zyz")
-xyx_decomp_rule = make_one_qubit_unitary_decomposition(_su2_xyx_decomp, _su2_xyx_resource, "xyx")
-xzx_decomp_rule = make_one_qubit_unitary_decomposition(_su2_xzx_decomp, _su2_xzx_resource, "xzx")
-zxz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zxz_decomp, _su2_zxz_resource, "zxz")
+zxz_decomp_rule = make_one_qubit_unitary_rule(_su2_zxz_decomp, {ops.RZ: 2, ops.RX: 1}, "zxz")
 
 
-def _qubit_unitary_two_qubit_resources(*_, **__):
-    """A worst-case over-estimate for the resources of two-qubit unitary decomposition."""
-    return {
-        ops.QubitUnitary(Complex[2, 2], wires=Wire[1]): 4,
+# Worst-case resource estimate for the two-qubit unitary decomposition.
+@register_condition(lambda U, wires, **_: len(wires) == 2)
+@register_resources(
+    {
+        QubitUnitary(Complex[2, 2], wires=Wire[1]): 4,
         ops.CNOT: 3,
         ops.RZ: 1,
         ops.RY: 2,
         ops.GlobalPhase: 1,
-    }
-
-
-@register_condition(lambda U, wires, **_: len(wires) == 2)
-@register_resources(_qubit_unitary_two_qubit_resources, exact=False, name="two_qubit")
-def _qubit_unitary_two_qubit(U, wires, **_):
+    },
+    exact=False,
+    name="two_qubit",
+)
+def qubit_unitary_two_qubit(U, wires, **_):
     """The decomposition rule for a two-qubit unitary."""
 
     U, initial_phase = math.convert_to_su4(U)
@@ -451,7 +435,7 @@ def _qubit_unitary_multi_qubit_resources(U, wires, **_):  # pylint: disable=unus
 
 @register_condition(lambda U, wires, **_: len(wires) > 2)
 @register_resources(_qubit_unitary_multi_qubit_resources, name="multi_qubit")
-def _qubit_unitary_multi_qubit(U, wires, **__):
+def qubit_unitary_multi_qubit(U, wires, **__):
     """The decomposition rule for a multi-qubit unitary."""
 
     # Combining the two equalities in Fig. 14 [https://arxiv.org/pdf/quant-ph/0504100], we can express
@@ -1175,3 +1159,169 @@ def _cossin_decomposition(U, p):
 def _is_jax_jit(U):
     """Assume jax-jit if U is abstract and not in a capture or qjit context."""
     return math.is_tracer(U) and not (capture.enabled() or compiler.active())
+
+
+add_decomps(
+    QubitUnitary,
+    zyz_decomp_rule,
+    zxz_decomp_rule,
+    xzx_decomp_rule,
+    xyx_decomp_rule,
+    rot_decomp_rule,
+    qubit_unitary_two_qubit,
+    qubit_unitary_multi_qubit,
+)
+
+
+@register_resources(lambda base: {abstractify(base): 1}, name="conjugate_transpose")
+def adjoint_qubit_unitary_standard(base):
+    """Decompose ``Adjoint(QubitUnitary)`` using the ``conjugate_transpose`` strategy."""
+    U = base.U
+    U = U.conjugate().transpose() if sp.sparse.issparse(U) else math.moveaxis(math.conj(U), -2, -1)
+    QubitUnitary(U, wires=base.wires)
+
+
+add_decomps("Adjoint(QubitUnitary)", adjoint_qubit_unitary_standard)
+
+
+def _matrix_pow(U, z):
+    if sp.sparse.issparse(U):
+        return sp.sparse.linalg.matrix_power(U, z)
+    if is_integer(z):
+        return math.linalg.matrix_power(U, z)
+    eigs, vecs = math.linalg.eig(U)
+    return vecs @ math.diag(eigs**z) @ math.linalg.inv(vecs)
+
+
+@register_resources(lambda base, z: {abstractify(base): 1}, name="matrix_power")
+def pow_qubit_unitary_standard(base, z):
+    """Decompose ``Pow(QubitUnitary)`` using the ``matrix_power`` strategy."""
+    QubitUnitary(_matrix_pow(base.U, z), wires=base.wires)
+
+
+add_decomps("Pow(QubitUnitary)", pow_qubit_unitary_standard)
+
+
+def _cqu_standard_resources(  # pylint: disable=unused-argument
+    base,
+    control_wires,
+    control_values,
+    work_wires,
+    work_wire_type,
+):
+    num_target_wires = len(base.wires)
+    num_control_wires = len(control_wires)
+    return {
+        ops.ControlledQubitUnitary(
+            Complex[2**num_target_wires, 2**num_target_wires],
+            wires=Wire[num_control_wires + num_target_wires],
+            control_values=Bool[num_control_wires],
+            work_wires=Wire[len(work_wires)],
+            work_wire_type=work_wire_type,
+        ): 1
+    }
+
+
+@register_resources(_cqu_standard_resources, name="to_controlled_qubit_unitary")
+def controlled_qubit_unitary_standard(
+    base, control_wires, control_values, work_wires, work_wire_type
+):
+    """Decompose ``C(QubitUnitary)`` using the ``to_controlled_qubit_unitary`` strategy."""
+    ops.ControlledQubitUnitary(
+        base.U,
+        concatenate_wires(control_wires, base.wires),
+        control_values=control_values,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+
+
+add_decomps("C(QubitUnitary)", controlled_qubit_unitary_standard)
+
+
+def _diagonal_qubit_unitary_recursive_resources(D, wires):  # pylint: disable=unused-argument
+    num_wires = len(wires)
+    if num_wires == 1:
+        return {ops.RZ: 1, ops.GlobalPhase: 1}
+
+    return {
+        DiagonalQubitUnitary(Complex[2 ** (num_wires - 1)], wires=Wire[num_wires - 1]): 1,
+        templates.SelectPauliRot(
+            Float[2 ** (num_wires - 1)],
+            control_wires=Wire[num_wires - 1],
+            target_wire=Wire[1],
+            rot_axis="Z",
+        ): 1,
+    }
+
+
+@register_resources(_diagonal_qubit_unitary_recursive_resources, name="recursive")
+def diagonal_qubit_unitary_recursive(D, wires):
+    """Decompose ``DiagonalQubitUnitary`` using the ``recursive`` strategy."""
+    angles = math.angle(D)
+    diff = angles[..., 1::2] - angles[..., ::2]
+    mean = (angles[..., ::2] + angles[..., 1::2]) / 2
+    if len(wires) == 1:
+        ops.GlobalPhase(-math.squeeze(mean, axis=-1))
+        ops.RZ(math.squeeze(diff, axis=-1), wires=wires)
+    else:
+        DiagonalQubitUnitary(math.exp(1j * mean), wires=wires[:-1])
+        templates.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1])
+
+
+def _diagonal_qu_auxiliary_resources(D, wires):  # pylint: disable=unused-argument
+    num_wires = len(wires)
+    return {
+        templates.SelectPauliRot(
+            Float[2**num_wires],
+            control_wires=Wire[num_wires],
+            target_wire=Wire[1],
+            rot_axis="Z",
+        ): 1
+    }
+
+
+@register_resources(_diagonal_qu_auxiliary_resources, work_wires={"zeroed": 1}, name="auxiliary")
+def diagonal_qubit_unitary_auxiliary(D, wires, **_):
+    """Decompose ``DiagonalQubitUnitary`` using the ``auxiliary`` strategy."""
+    angles = -2 * math.angle(D)
+    with allocation.allocate(1, "zero", restored=True) as aux_wire:
+        templates.SelectPauliRot(angles, control_wires=wires, target_wire=aux_wire)
+
+
+add_decomps(
+    DiagonalQubitUnitary,
+    diagonal_qubit_unitary_recursive,
+    diagonal_qubit_unitary_auxiliary,
+)
+
+
+@register_resources(lambda base: {abstractify(base): 1}, name="conjugate_diagonal")
+def adjoint_diagonal_unitary_standard(base):
+    """Decompose ``Adjoint(DiagonalQubitUnitary)`` using the ``conjugate_diagonal`` strategy."""
+    DiagonalQubitUnitary(math.conj(base.D), wires=base.wires)
+
+
+add_decomps("Adjoint(DiagonalQubitUnitary)", adjoint_diagonal_unitary_standard)
+
+
+@register_resources(lambda base, z: {abstractify(base): 1}, name="power_diagonal")
+def pow_diagonal_unitary_standard(base, z):
+    """Decompose ``Pow(DiagonalQubitUnitary)`` using the ``power_diagonal`` strategy."""
+    DiagonalQubitUnitary(math.cast(base.D, np.complex128) ** z, wires=base.wires)
+
+
+add_decomps("Pow(DiagonalQubitUnitary)", pow_diagonal_unitary_standard)
+
+
+def _adjoint_block_encode_standard_resources(base):
+    return {abstractify(base.adjoint()): 1}
+
+
+@register_resources(_adjoint_block_encode_standard_resources, name="adjoint_matrix")
+def adjoint_block_encode_standard(base):
+    """Decompose ``Adjoint(BlockEncode)`` using the ``adjoint_matrix`` strategy."""
+    base.adjoint()
+
+
+add_decomps("Adjoint(BlockEncode)", adjoint_block_encode_standard)

@@ -390,33 +390,16 @@ class TestIntegerComparator:
         assert op.label() == label
         assert op.label(decimals=2) == label
 
-    @pytest.mark.parametrize(
-        "value,wires,geq,expected_error_message",
-        [
-            (4.20, [0, 1, 2], False, "The compared value must be an int. Got <class 'float'>."),
-            (2, None, True, "Must specify the wires that the operation acts on."),
-            (
-                2,
-                [0],
-                False,
-                r"IntegerComparator: wrong number of wires. 1 wire\(s\) given. Need at least 2.",
-            ),
-        ],
-    )
-    def test_invalid_args_compute_decomposition(self, value, wires, geq, expected_error_message):
-        """Test if compute_matrix properly handles invalid arguments."""
-        with pytest.raises(ValueError, match=expected_error_message):
-            qp.IntegerComparator.compute_decomposition(value, wires=wires, geq=geq)
-
     @pytest.mark.parametrize("geq", [True, False])
     @pytest.mark.parametrize("value", list(range(9)))
     @pytest.mark.parametrize("initial_state", list(itertools.product([0, 1], repeat=3)))
     def test_decomposition(self, value, geq, initial_state):
         """Tests the decomposition of the IntegerComparator operator."""
 
+        op = qp.IntegerComparator(value, wires=[0, 1, 2, 3], geq=geq)
         with qp.queuing.AnnotatedQueue() as q:
             qp.Projector(initial_state, wires=[0, 1, 2])
-            qp.IntegerComparator.compute_decomposition(value, wires=[0, 1, 2, 3], geq=geq)
+            op.decomposition()
         tape = qp.tape.QuantumScript.from_queue(q)
 
         with qp.queuing.AnnotatedQueue() as q:
@@ -453,16 +436,18 @@ class TestIntegerComparator:
         assert qp.math.allclose(mat, expected_mat)
 
     def test_decomposition_extraneous_value(self):
-        """Test operator's ``compute_decomposition()`` method when ``value`` is such that
+        """Test operator's ``decomposition()`` method when ``value`` is such that
         decomposition is the identity matrix."""
 
+        op = qp.IntegerComparator(10, wires=[0, 1, 2])
         with qp.queuing.AnnotatedQueue() as q1:
-            qp.IntegerComparator.compute_decomposition(10, wires=[0, 1, 2])
+            op.decomposition()
         tape1 = qp.tape.QuantumScript.from_queue(q1)
         assert all(isinstance(op, qp.Identity) for op in tape1.operations)
 
+        op = qp.IntegerComparator(0, wires=[0, 1, 2], geq=False)
         with qp.queuing.AnnotatedQueue() as q2:
-            qp.IntegerComparator.compute_decomposition(0, wires=[0, 1, 2], geq=False)
+            op.decomposition()
         tape2 = qp.tape.QuantumScript.from_queue(q2)
         assert all(isinstance(op, qp.Identity) for op in tape2.operations)
 

@@ -181,6 +181,7 @@ from pennylane.shadows import ClassicalShadow
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 from pennylane import gradients
 from pennylane.drawer import draw, draw_mpl
+from pennylane import decomposition_rules
 
 from pennylane.io import (
     from_qasm,

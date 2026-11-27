@@ -23,7 +23,6 @@ from typing import Literal
 import pennylane as qp
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.core.operator import Operation, Operator2
-from pennylane.decomposition.decomposition_rule import add_decomps, null_decomp
 from pennylane.typing import Wire
 from pennylane.wires import WiresLike
 
@@ -82,9 +81,6 @@ class Barrier(Operator2):
 
     def simplify(self):
         return self
-
-
-add_decomps(Barrier, null_decomp)
 
 
 class Snapshot(Operation):
