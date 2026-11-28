@@ -524,6 +524,18 @@ class TestMapToStandardWires:
         wire_map = tape._get_standard_wire_map()
         assert wire_map == expected
 
+    def test_trainable_params_are_kept(self):
+        """Test that remapping the wires keeps the trainable parameters of the original
+        script instead of marking every parameter (e.g. observable coefficients) trainable."""
+        H = qp.Hamiltonian([1.0, 0.5], [qp.Z("a"), qp.X("b")])
+        tape = QuantumScript([qp.RY(0.7, "a"), qp.RY(0.4, "b")], [qp.expval(H)])
+        tape.trainable_params = [0, 1]
+
+        new_tape = tape.map_to_standard_wires()
+        assert new_tape.wires == qp.wires.Wires([0, 1])
+        assert new_tape.trainable_params == [0, 1]
+        assert new_tape.get_parameters() == [0.7, 0.4]
+
 
 class TestIteration:
     """Test the capabilities related to iterating over quantum script."""
