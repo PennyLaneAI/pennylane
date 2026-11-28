@@ -90,14 +90,6 @@ def test_interface_data_supported():
     """Test that convert_to_numpy_parameters transform is not added for these cases."""
     config = ExecutionConfig(interface="autograd", gradient_method="backprop")
 
-    device = qp.device("default.mixed", wires=1)
-
-    _, inner_tp = _setup_transform_program(device, config)
-
-    assert qp.transforms.convert_to_numpy_parameters not in inner_tp
-
-    config = ExecutionConfig(interface="autograd", gradient_method="backprop")
-
     device = qp.device("default.qubit")
 
     _, inner_tp = _setup_transform_program(device, config)

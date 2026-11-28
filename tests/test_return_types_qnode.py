@@ -21,7 +21,7 @@ import pytest
 import pennylane as qp
 
 test_wires = [2, 3, 4]
-devices = ["default.qubit", "lightning.qubit", "default.mixed"]
+devices = ["default.qubit", "lightning.qubit"]
 
 
 def qubit_ansatz(x):
@@ -45,21 +45,6 @@ class TestIntegrationSingleReturn:
         res = qnode(0.5)
 
         assert res.shape == (2**wires,)
-        assert isinstance(res, (np.ndarray, np.float64))
-
-    @pytest.mark.parametrize("wires", test_wires)
-    def test_state_mixed(self, wires):
-        """Return state with default.mixed."""
-        dev = qp.device("default.mixed", wires=wires)
-
-        def circuit(x):
-            qubit_ansatz(x)
-            return qp.state()
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(0.5)
-
-        assert res.shape == (2**wires, 2**wires)
         assert isinstance(res, (np.ndarray, np.float64))
 
     @pytest.mark.parametrize("device", devices)
@@ -267,12 +252,6 @@ class TestIntegrationSingleReturn:
         assert sum(res.values()) == shots
 
 
-devices = ["default.mixed"]
-
-
-devices = ["default.mixed"]
-
-
 @pytest.mark.torch
 class TestIntegrationSingleReturnTorch:
     """Test that single measurements return behavior does not change for Torch device."""
@@ -295,31 +274,12 @@ class TestIntegrationSingleReturnTorch:
         assert res.shape == (2**wires,)
         assert isinstance(res, torch.Tensor)
 
-    @pytest.mark.parametrize("wires", test_wires)
-    def test_state_mixed(self, wires):
-        """Return state with default.mixed."""
-        import torch
-
-        dev = qp.device("default.mixed", wires=wires)
-
-        def circuit(x):
-            qp.Hadamard(wires=[0])
-            qp.CRX(x, wires=[0, 1])
-            return qp.state()
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(torch.tensor(0.5, requires_grad=True))
-
-        assert res.shape == (2**wires, 2**wires)
-        assert isinstance(res, torch.Tensor)
-
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("d_wires", test_wires)
-    def test_density_matrix(self, d_wires, device):
+    def test_density_matrix(self, d_wires):
         """Return density matrix."""
         import torch
 
-        dev = qp.device(device, wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -332,12 +292,11 @@ class TestIntegrationSingleReturnTorch:
         assert res.shape == (2**d_wires, 2**d_wires)
         assert isinstance(res, torch.Tensor)
 
-    @pytest.mark.parametrize("device", devices)
-    def test_expval(self, device):
+    def test_expval(self):
         """Return a single expval."""
         import torch
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -350,12 +309,11 @@ class TestIntegrationSingleReturnTorch:
         assert res.shape == ()
         assert isinstance(res, torch.Tensor)
 
-    @pytest.mark.parametrize("device", devices)
-    def test_var(self, device):
+    def test_var(self):
         """Return a single var."""
         import torch
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -368,12 +326,11 @@ class TestIntegrationSingleReturnTorch:
         assert res.shape == ()
         assert isinstance(res, torch.Tensor)
 
-    @pytest.mark.parametrize("device", devices)
-    def test_vn_entropy(self, device):
+    def test_vn_entropy(self):
         """Return a single vn entropy."""
         import torch
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -386,12 +343,11 @@ class TestIntegrationSingleReturnTorch:
         assert res.shape == ()
         assert isinstance(res, torch.Tensor)
 
-    @pytest.mark.parametrize("device", devices)
-    def test_mutual_info(self, device):
+    def test_mutual_info(self):
         """Return a single mutual information."""
         import torch
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -412,13 +368,12 @@ class TestIntegrationSingleReturnTorch:
         (qp.Hermitian(herm, wires=[1, 0]), None),
     ]
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op,wires", probs_data)
-    def test_probs(self, op, wires, device):
+    def test_probs(self, op, wires):
         """Return a single prob."""
         import torch
 
-        dev = qp.device(device, wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -434,18 +389,14 @@ class TestIntegrationSingleReturnTorch:
         assert res.shape == (2 ** len(wires),)
         assert isinstance(res, torch.Tensor)
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize(
         "measurement", [qp.sample(qp.PauliZ(0)), qp.sample(wires=[0]), qp.sample(wires=[0, 1])]
     )
-    def test_sample(self, measurement, device, shots=100):
+    def test_sample(self, measurement, shots=100):
         """Test the sample measurement."""
         import torch
 
-        if device in ["default.mixed", "default.qubit"]:
-            pytest.skip("Sample need to be rewritten for Torch.")
-
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -457,21 +408,17 @@ class TestIntegrationSingleReturnTorch:
 
         assert isinstance(res, torch.Tensor)
 
-        if measurement.wires.tolist() != [0, 1]:
+        if measurement.obs is not None:
             assert res.shape == (shots,)
         else:
-            assert res.shape == (shots, 2)
+            assert res.shape == (shots, len(measurement.wires))
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("measurement", [qp.counts(qp.PauliZ(0)), qp.counts(wires=[0])])
-    def test_counts(self, measurement, device, shots=100):
+    def test_counts(self, measurement, shots=100):
         """Test the counts measurement."""
         import torch
 
-        if device == "default.mixed":
-            pytest.skip("Counts need to be rewritten for Torch and default mixed.")
-
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -483,9 +430,6 @@ class TestIntegrationSingleReturnTorch:
 
         assert isinstance(res, dict)
         assert sum(res.values()) == shots
-
-
-devices = ["default.mixed"]
 
 
 @pytest.mark.jax
@@ -511,31 +455,12 @@ class TestIntegrationSingleReturnJax:
         assert res.shape == (2**wires,)
         assert isinstance(res, jax.numpy.ndarray)
 
-    @pytest.mark.parametrize("wires", test_wires)
-    def test_state_mixed(self, wires):
-        """Return state with default.mixed."""
-        import jax
-
-        dev = qp.device("default.mixed", wires=wires)
-
-        def circuit(x):
-            qp.Hadamard(wires=[0])
-            qp.CRX(x, wires=[0, 1])
-            return qp.state()
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(jax.numpy.array(0.5))
-
-        assert res.shape == (2**wires, 2**wires)
-        assert isinstance(res, jax.numpy.ndarray)
-
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("d_wires", test_wires)
-    def test_density_matrix(self, d_wires, device):
+    def test_density_matrix(self, d_wires):
         """Return density matrix."""
         import jax
 
-        dev = qp.device(device, wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -548,12 +473,11 @@ class TestIntegrationSingleReturnJax:
         assert res.shape == (2**d_wires, 2**d_wires)
         assert isinstance(res, jax.numpy.ndarray)
 
-    @pytest.mark.parametrize("device", devices)
-    def test_expval(self, device):
+    def test_expval(self):
         """Return a single expval."""
         import jax
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -566,12 +490,11 @@ class TestIntegrationSingleReturnJax:
         assert res.shape == ()
         assert isinstance(res, jax.numpy.ndarray)
 
-    @pytest.mark.parametrize("device", devices)
-    def test_var(self, device):
+    def test_var(self):
         """Return a single var."""
         import jax
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -584,12 +507,11 @@ class TestIntegrationSingleReturnJax:
         assert res.shape == ()
         assert isinstance(res, jax.numpy.ndarray)
 
-    @pytest.mark.parametrize("device", devices)
-    def test_vn_entropy(self, device):
+    def test_vn_entropy(self):
         """Return a single vn entropy."""
         import jax
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -602,12 +524,11 @@ class TestIntegrationSingleReturnJax:
         assert res.shape == ()
         assert isinstance(res, jax.numpy.ndarray)
 
-    @pytest.mark.parametrize("device", devices)
-    def test_mutual_info(self, device):
+    def test_mutual_info(self):
         """Return a single mutual information."""
         import jax
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -628,13 +549,12 @@ class TestIntegrationSingleReturnJax:
         (qp.Hermitian(herm, wires=[1, 0]), None),
     ]
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op,wires", probs_data)
-    def test_probs(self, op, wires, device):
+    def test_probs(self, op, wires):
         """Return a single prob."""
         import jax
 
-        dev = qp.device(device, wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -650,18 +570,14 @@ class TestIntegrationSingleReturnJax:
         assert res.shape == (2 ** len(wires),)
         assert isinstance(res, jax.numpy.ndarray)
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize(
         "measurement", [qp.sample(qp.PauliZ(0)), qp.sample(wires=[0]), qp.sample(wires=[0, 1])]
     )
-    def test_sample(self, measurement, device, shots=100):
+    def test_sample(self, measurement, shots=100):
         """Test the sample measurement."""
         import jax
 
-        if device == "default.mixed":
-            pytest.skip("Sample need to be rewritten for each interface in default mixed.")
-
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -673,20 +589,19 @@ class TestIntegrationSingleReturnJax:
 
         assert isinstance(res, jax.numpy.ndarray)
 
-        if measurement.wires.tolist() != [0, 1]:
+        if measurement.obs is not None:
             assert res.shape == (shots,)
         else:
-            assert res.shape == (shots, 2)
+            assert res.shape == (shots, len(measurement.wires))
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize(
         "measurement", [qp.counts(qp.PauliZ(0)), qp.counts(wires=[0]), qp.counts(wires=[0, 1])]
     )
-    def test_counts(self, measurement, device, shots=100):
+    def test_counts(self, measurement, shots=100):
         """Test the counts measurement."""
         import jax
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -702,7 +617,7 @@ class TestIntegrationSingleReturnJax:
 
 multi_return_wires = [([0], [1]), ([1], [0]), ([0], [0]), ([1], [1])]
 
-devices = ["default.qubit", "lightning.qubit", "default.mixed"]
+devices = ["default.qubit", "lightning.qubit"]
 
 
 class TestIntegrationMultipleReturns:
@@ -961,24 +876,17 @@ class TestIntegrationMultipleReturns:
         assert res[2].shape == (2,)
 
 
-devices = ["default.mixed"]
-
-
-devices = ["default.mixed"]
-
-
 @pytest.mark.torch
 class TestIntegrationMultipleReturnsTorch:
     """Test the new return types for multiple measurements, it should always return a tuple containing the single
     measurements.
     """
 
-    @pytest.mark.parametrize("device", devices)
-    def test_multiple_expval(self, device):
+    def test_multiple_expval(self):
         """Return multiple expvals."""
         import torch
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -997,12 +905,11 @@ class TestIntegrationMultipleReturnsTorch:
         assert isinstance(res[1], torch.Tensor)
         assert res[1].shape == ()
 
-    @pytest.mark.parametrize("device", devices)
-    def test_multiple_var(self, device):
+    def test_multiple_var(self):
         """Return multiple vars."""
         import torch
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -1033,13 +940,12 @@ class TestIntegrationMultipleReturnsTorch:
         (qp.PauliZ(1), None, qp.PauliZ(0), None),
     ]
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
-    def test_multiple_prob(self, op1, op2, wires1, wires2, device):
+    def test_multiple_prob(self, op1, op2, wires1, wires2):
         """Return multiple probs."""
         import torch
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -1064,15 +970,14 @@ class TestIntegrationMultipleReturnsTorch:
         assert isinstance(res[1], torch.Tensor)
         assert res[1].shape == (2 ** len(wires2),)
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     @pytest.mark.parametrize("wires3, wires4", multi_return_wires)
     # pylint: disable-next=too-many-arguments
-    def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):
+    def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4):
         """Return multiple different measurements."""
         import torch
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -1108,16 +1013,12 @@ class TestIntegrationMultipleReturnsTorch:
         assert isinstance(res[3], torch.Tensor)
         assert res[3].shape == ()
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("measurement", [qp.sample(qp.PauliZ(0)), qp.sample(wires=[0])])
-    def test_expval_sample(self, measurement, device, shots=100):
+    def test_expval_sample(self, measurement, shots=100):
         """Test the expval and sample measurements together."""
         import torch
 
-        if device in ["default.mixed", "default.qubit"]:
-            pytest.skip("Sample need to be rewritten for interfaces.")
-
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -1133,18 +1034,17 @@ class TestIntegrationMultipleReturnsTorch:
 
         # Sample
         assert isinstance(res[1], torch.Tensor)
-        assert res[1].shape == (shots,)
+        expected_shape = (
+            (shots,) if measurement.obs is not None else (shots, len(measurement.wires))
+        )
+        assert res[1].shape == expected_shape
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("measurement", [qp.counts(qp.PauliZ(0)), qp.counts(wires=[0])])
-    def test_expval_counts(self, measurement, device, shots=100):
+    def test_expval_counts(self, measurement, shots=100):
         """Test the expval and counts measurements together."""
         import torch
 
-        if device == "default.mixed":
-            pytest.skip("Counts need to be rewritten for interfaces.")
-
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -1164,13 +1064,12 @@ class TestIntegrationMultipleReturnsTorch:
 
     wires = [2, 3, 4, 5]
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("wires", wires)
-    def test_list_one_expval(self, wires, device):
+    def test_list_one_expval(self, wires):
         """Return a comprehension list of one expvals."""
         import torch
 
-        dev = qp.device(device, wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -1187,18 +1086,14 @@ class TestIntegrationMultipleReturnsTorch:
 
     shot_vectors = [None, [10, 1000], [1, 10, 10, 1000], [1, (10, 2), 1000]]
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("wires", wires)
     @pytest.mark.parametrize("shot_vector", shot_vectors)
     @pytest.mark.filterwarnings("ignore:The use of `x.T` on tensors of dimension")
-    def test_list_multiple_expval(self, wires, device, shot_vector):
+    def test_list_multiple_expval(self, wires, shot_vector):
         """Return a comprehension list of multiple expvals."""
         import torch
 
-        if device == "default.mixed" and shot_vector:
-            pytest.skip("No support for shot vector and mixed device with Torch.")
-
-        dev = qp.device(device, wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -1225,21 +1120,17 @@ class TestIntegrationMultipleReturnsTorch:
                     assert t.shape == ()
 
 
-devices = ["default.mixed"]
-
-
 @pytest.mark.jax
 class TestIntegrationMultipleReturnJax:
     """Test the new return types for multiple measurements, it should always return a tuple containing the single
     measurements.
     """
 
-    @pytest.mark.parametrize("device", devices)
-    def test_multiple_expval(self, device):
+    def test_multiple_expval(self):
         """Return multiple expvals."""
         import jax
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -1258,12 +1149,11 @@ class TestIntegrationMultipleReturnJax:
         assert isinstance(res[1], jax.numpy.ndarray)
         assert res[1].shape == ()
 
-    @pytest.mark.parametrize("device", devices)
-    def test_multiple_var(self, device):
+    def test_multiple_var(self):
         """Return multiple vars."""
         import jax
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -1294,13 +1184,12 @@ class TestIntegrationMultipleReturnJax:
         (qp.PauliZ(1), None, qp.PauliZ(0), None),
     ]
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
-    def test_multiple_prob(self, op1, op2, wires1, wires2, device):
+    def test_multiple_prob(self, op1, op2, wires1, wires2):
         """Return multiple probs."""
         import jax
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -1325,15 +1214,14 @@ class TestIntegrationMultipleReturnJax:
         assert isinstance(res[1], jax.numpy.ndarray)
         assert res[1].shape == (2 ** len(wires2),)
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     @pytest.mark.parametrize("wires3, wires4", multi_return_wires)
     # pylint: disable-next=too-many-arguments
-    def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):
+    def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4):
         """Return multiple different measurements."""
         import jax
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -1369,16 +1257,12 @@ class TestIntegrationMultipleReturnJax:
         assert isinstance(res[3], jax.numpy.ndarray)
         assert res[3].shape == ()
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("measurement", [qp.sample(qp.PauliZ(0)), qp.sample(wires=[0])])
-    def test_expval_sample(self, measurement, device, shots=100):
+    def test_expval_sample(self, measurement, shots=100):
         """Test the expval and sample measurements together."""
         import jax
 
-        if device == "default.mixed":
-            pytest.skip("Sample need to be rewritten for interfaces.")
-
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -1394,18 +1278,17 @@ class TestIntegrationMultipleReturnJax:
 
         # Sample
         assert isinstance(res[1], jax.numpy.ndarray)
-        assert res[1].shape == (shots,)
+        expected_shape = (
+            (shots,) if measurement.obs is not None else (shots, len(measurement.wires))
+        )
+        assert res[1].shape == expected_shape
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("measurement", [qp.counts(qp.PauliZ(0)), qp.counts(wires=[0])])
-    def test_expval_counts(self, measurement, device, shots=100):
+    def test_expval_counts(self, measurement, shots=100):
         """Test the expval and counts measurements together."""
         import jax
 
-        if device == "default.mixed":
-            pytest.skip("Counts need to be rewritten for interfaces and mixed device.")
-
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -1425,13 +1308,12 @@ class TestIntegrationMultipleReturnJax:
 
     wires = [2, 3, 4, 5]
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("wires", wires)
-    def test_list_one_expval(self, wires, device):
+    def test_list_one_expval(self, wires):
         """Return a comprehension list of one expvals."""
         import jax
 
-        dev = qp.device(device, wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -1448,17 +1330,13 @@ class TestIntegrationMultipleReturnJax:
 
     shot_vectors = [None, [10, 1000], [1, 10, 10, 1000], [1, (10, 2), 1000]]
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("wires", wires)
     @pytest.mark.parametrize("shot_vector", shot_vectors)
-    def test_list_multiple_expval(self, wires, device, shot_vector):
+    def test_list_multiple_expval(self, wires, shot_vector):
         """Return a comprehension list of multiple expvals."""
         import jax
 
-        if device == "default.mixed" and shot_vector:
-            pytest.skip("No support for shot vector and mixed device with Jax")
-
-        dev = qp.device(device, wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -1510,18 +1388,15 @@ probs_data = [
 
 shot_vectors = [[10, 1000], [1, 10, 10, 1000], [1, (10, 2), 1000]]
 
-devices = ["default.qubit", "default.mixed"]
 
-
-@pytest.mark.parametrize("device", devices)
 @pytest.mark.parametrize("shot_vector", shot_vectors)
 class TestIntegrationShotVectors:
     """Test the support for QNodes with single measurements using a device with shot vectors."""
 
     @pytest.mark.parametrize("measurement", single_scalar_output_measurements)
-    def test_scalar(self, shot_vector, measurement, device):
+    def test_scalar(self, shot_vector, measurement):
         """Test a single scalar-valued measurement."""
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -1538,7 +1413,7 @@ class TestIntegrationShotVectors:
         assert all(r.shape == () for r in res)
 
     @pytest.mark.parametrize("op,wires", probs_data)
-    def test_probs(self, shot_vector, op, wires, device):  # pylint: disable=unused-argument
+    def test_probs(self, shot_vector, op, wires):
         """Test a single probability measurement."""
         dev = qp.device("default.qubit", wires=2)
         shot_vector = qp.measurements.Shots(shot_vector)
@@ -1562,9 +1437,9 @@ class TestIntegrationShotVectors:
         assert all(r.shape == (2 ** len(wires_to_use),) for r in res)
 
     @pytest.mark.parametrize("measurement", [qp.sample(qp.PauliZ(0)), qp.sample(wires=[0])])
-    def test_samples(self, shot_vector, measurement, device):
+    def test_samples(self, shot_vector, measurement):
         """Test the sample measurement."""
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
         shot_vector = qp.measurements.Shots(shot_vector)
 
         def circuit(x):
@@ -1583,9 +1458,9 @@ class TestIntegrationShotVectors:
             assert r.shape == (shots,) if measurement.obs else (shots, 1)
 
     @pytest.mark.parametrize("measurement", [qp.counts(qp.PauliZ(0)), qp.counts(wires=[0])])
-    def test_counts(self, shot_vector, measurement, device):
+    def test_counts(self, shot_vector, measurement):
         """Test the counts measurement."""
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
         shot_vector = qp.measurements.Shots(shot_vector)
 
         def circuit(x):
@@ -1605,14 +1480,13 @@ class TestIntegrationShotVectors:
 
 
 @pytest.mark.parametrize("shot_vector", shot_vectors)
-@pytest.mark.parametrize("device", devices)
 class TestIntegrationSameMeasurementShotVector:
     """Test the support for executing QNodes with the same type of measurement multiple times using a device with
     shot vectors"""
 
-    def test_scalar(self, shot_vector, device):
+    def test_scalar(self, shot_vector):
         """Test multiple scalar-valued measurements."""
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
         shot_vector = qp.measurements.Shots(shot_vector)
 
         def circuit(x):
@@ -1640,10 +1514,9 @@ class TestIntegrationSameMeasurementShotVector:
 
     @pytest.mark.parametrize("op1,wires1", probs_data)
     @pytest.mark.parametrize("op2,wires2", list(reversed(probs_data2)))
-    # pylint: disable-next=too-many-arguments
-    def test_probs(self, shot_vector, op1, wires1, op2, wires2, device):
+    def test_probs(self, shot_vector, op1, wires1, op2, wires2):
         """Test multiple probability measurements."""
-        dev = qp.device(device, wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -1667,9 +1540,9 @@ class TestIntegrationSameMeasurementShotVector:
 
     @pytest.mark.parametrize("measurement1", [qp.sample(qp.PauliZ(0)), qp.sample(wires=[0])])
     @pytest.mark.parametrize("measurement2", [qp.sample(qp.PauliX(1)), qp.sample(wires=[1])])
-    def test_samples(self, shot_vector, measurement1, measurement2, device):
+    def test_samples(self, shot_vector, measurement1, measurement2):
         """Test multiple sample measurements."""
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -1688,9 +1561,9 @@ class TestIntegrationSameMeasurementShotVector:
 
     @pytest.mark.parametrize("measurement1", [qp.counts(qp.PauliZ(0)), qp.counts(wires=[0])])
     @pytest.mark.parametrize("measurement2", [qp.counts(qp.PauliZ(0)), qp.counts(wires=[0])])
-    def test_counts(self, shot_vector, measurement1, measurement2, device):
+    def test_counts(self, shot_vector, measurement1, measurement2):
         """Test multiple counts measurements."""
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -1773,14 +1646,13 @@ scalar_counts_no_obs_multi = [
 
 
 @pytest.mark.parametrize("shot_vector", shot_vectors)
-@pytest.mark.parametrize("device", devices)
 class TestIntegrationMultipleMeasurementsShotVector:
     """Test the support for executing QNodes with multiple different measurements using a device with shot vectors"""
 
     @pytest.mark.parametrize("meas1,meas2", scalar_probs_multi)
-    def test_scalar_probs(self, shot_vector, meas1, meas2, device):
+    def test_scalar_probs(self, shot_vector, meas1, meas2):
         """Test scalar-valued and probability measurements"""
-        dev = qp.device(device, wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -1812,10 +1684,10 @@ class TestIntegrationMultipleMeasurementsShotVector:
                     assert np.allclose(sum(r), 1)
 
     @pytest.mark.parametrize("meas1,meas2", scalar_sample_multi)
-    def test_scalar_sample_with_obs(self, shot_vector, meas1, meas2, device):
+    def test_scalar_sample_with_obs(self, shot_vector, meas1, meas2):
         """Test scalar-valued and sample measurements where sample takes an
         observable."""
-        dev = qp.device(device, wires=3)
+        dev = qp.device("default.qubit", wires=3)
         raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
@@ -1848,9 +1720,9 @@ class TestIntegrationMultipleMeasurementsShotVector:
 
     @pytest.mark.parametrize("meas1,meas2", scalar_sample_no_obs_multi)
     @pytest.mark.xfail
-    def test_scalar_sample_no_obs(self, shot_vector, meas1, meas2, device):
+    def test_scalar_sample_no_obs(self, shot_vector, meas1, meas2):
         """Test scalar-valued and computational basis sample measurements."""
-        dev = qp.device(device, wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
         def circuit(x):
             qp.Hadamard(wires=[0])
@@ -1882,10 +1754,10 @@ class TestIntegrationMultipleMeasurementsShotVector:
                         assert r.shape == (shot_tuple.shots,)
 
     @pytest.mark.parametrize("meas1,meas2", scalar_counts_multi)
-    def test_scalar_counts_with_obs(self, shot_vector, meas1, meas2, device):
+    def test_scalar_counts_with_obs(self, shot_vector, meas1, meas2):
         """Test scalar-valued and counts measurements where counts takes an
         observable."""
-        dev = qp.device(device, wires=3)
+        dev = qp.device("default.qubit", wires=3)
         raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
@@ -1921,9 +1793,9 @@ class TestIntegrationMultipleMeasurementsShotVector:
 
     @pytest.mark.parametrize("meas1,meas2", scalar_counts_no_obs_multi)
     @pytest.mark.xfail
-    def test_scalar_counts_no_obs(self, shot_vector, meas1, meas2, device):
+    def test_scalar_counts_no_obs(self, shot_vector, meas1, meas2):
         """Test scalar-valued and computational basis counts measurements."""
-        dev = qp.device(device, wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
         raw_shot_vector = _get_all_shot_copies(shot_vector)
 
@@ -1956,9 +1828,9 @@ class TestIntegrationMultipleMeasurementsShotVector:
                     assert r.shape == (shots,)
 
     @pytest.mark.parametrize("sample_obs", [qp.PauliZ, None])
-    def test_probs_sample(self, shot_vector, sample_obs, device):
+    def test_probs_sample(self, shot_vector, sample_obs):
         """Test probs and sample measurements."""
-        dev = qp.device(device, wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
         raw_shot_vector = _get_all_shot_copies(shot_vector)
 
@@ -2002,9 +1874,9 @@ class TestIntegrationMultipleMeasurementsShotVector:
                     assert r.shape == expected
 
     @pytest.mark.parametrize("sample_obs", [qp.PauliZ, None])
-    def test_probs_counts(self, shot_vector, sample_obs, device):
+    def test_probs_counts(self, shot_vector, sample_obs):
         """Test probs and counts measurements."""
-        dev = qp.device(device, wires=3)
+        dev = qp.device("default.qubit", wires=3)
         raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         meas1_wires = [0, 1]
@@ -2049,10 +1921,10 @@ class TestIntegrationMultipleMeasurementsShotVector:
 
     @pytest.mark.parametrize("sample_wires", [[1], [0, 2]])
     @pytest.mark.parametrize("counts_wires", [[4], [3, 5]])
-    def test_sample_counts(self, shot_vector, sample_wires, counts_wires, device):
+    def test_sample_counts(self, shot_vector, sample_wires, counts_wires):
         """Test sample and counts measurements, each measurement with custom
         samples or computational basis state samples."""
-        dev = qp.device(device, wires=6)
+        dev = qp.device("default.qubit", wires=6)
         raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
@@ -2102,10 +1974,10 @@ class TestIntegrationMultipleMeasurementsShotVector:
                     assert isinstance(r, dict)
 
     @pytest.mark.parametrize("meas1,meas2", scalar_probs_multi)
-    def test_scalar_probs_sample_counts(self, shot_vector, meas1, meas2, device):
+    def test_scalar_probs_sample_counts(self, shot_vector, meas1, meas2):
         """Test scalar-valued, probability, sample and counts measurements all
         in a single qfunc."""
-        dev = qp.device(device, wires=5)
+        dev = qp.device("default.qubit", wires=5)
         raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
@@ -2154,11 +2026,10 @@ class TestIntegrationMultipleMeasurementsShotVector:
 class TestIntegrationJacobianBackpropMultipleReturns:
     """Test the new return types for the Jacobian of multiple measurements, with backprop."""
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("interface", ["auto", "autograd"])
-    def test_multiple_expval_autograd(self, interface, device):
+    def test_multiple_expval_autograd(self, interface):
         """Return Jacobian of multiple expvals."""
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, interface=interface)
         def circuit(a):
@@ -2179,13 +2050,12 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert res.shape == (2, 3)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("interface", ["auto", "torch"])
-    def test_multiple_expval_torch(self, interface, device):
+    def test_multiple_expval_torch(self, interface):
         """Return Jacobian of multiple expvals."""
         import torch
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, interface=interface)
         def circuit(a):
@@ -2206,13 +2076,12 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             assert elem.shape == (3,)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("interface", ["auto", "jax"])
-    def test_multiple_expval_jax(self, interface, device):
+    def test_multiple_expval_jax(self, interface):
         """Return Jacobian of multiple expvals."""
         import jax
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, interface=interface)
         def circuit(a):
@@ -2232,13 +2101,12 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             assert elem.shape == (3,)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("interface", ["auto", "jax"])
-    def test_multiple_expval_jax_jit(self, interface, device):
+    def test_multiple_expval_jax_jit(self, interface):
         """Return Jacobian of multiple expvals with Jitting."""
         import jax
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, interface=interface)
         def circuit(a):
@@ -2257,11 +2125,10 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             assert isinstance(elem, jax.numpy.ndarray)
             assert elem.shape == (3,)
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("interface", ["auto", "autograd"])
-    def test_multiple_probs_autograd(self, interface, device):
+    def test_multiple_probs_autograd(self, interface):
         """Return Jacobian of multiple probs."""
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, interface=interface)
         def circuit(a):
@@ -2282,13 +2149,12 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert res.shape == (2, 2, 3)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("interface", ["auto", "torch"])
-    def test_multiple_probs_torch(self, interface, device):
+    def test_multiple_probs_torch(self, interface):
         """Return Jacobian of multiple probs."""
         import torch
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, interface=interface)
         def circuit(a):
@@ -2309,13 +2175,12 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             assert elem.shape == (2, 3)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("interface", ["auto", "jax"])
-    def test_multiple_probs_jax(self, interface, device):
+    def test_multiple_probs_jax(self, interface):
         """Return Jacobian of multiple probs."""
         import jax
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, interface=interface)
         def circuit(a):
@@ -2336,13 +2201,12 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             assert elem.shape == (2, 3)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("interface", ["auto", "jax"])
-    def test_multiple_probs_jax_jit(self, interface, device):
+    def test_multiple_probs_jax_jit(self, interface):
         """Return Jacobian of multiple probs with Jax jit."""
         import jax
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, interface=interface)
         def circuit(a):
@@ -2362,11 +2226,10 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             assert isinstance(elem, jax.numpy.ndarray)
             assert elem.shape == (2, 3)
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("interface", ["auto", "autograd"])
-    def test_multiple_meas_autograd(self, interface, device):
+    def test_multiple_meas_autograd(self, interface):
         """Return Jacobian of multiple measurements."""
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, interface=interface)
         def circuit(a):
@@ -2387,13 +2250,12 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert res.shape == (6, 3)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("interface", ["auto", "torch"])
-    def test_multiple_meas_torch(self, interface, device):
+    def test_multiple_meas_torch(self, interface):
         """Return Jacobian of multiple measurements."""
         import torch
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, interface=interface)
         def circuit(a):
@@ -2419,13 +2281,12 @@ class TestIntegrationJacobianBackpropMultipleReturns:
                 assert elem.shape == (3,)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("interface", ["auto", "jax"])
-    def test_multiple_meas_jax(self, interface, device):
+    def test_multiple_meas_jax(self, interface):
         """Return Jacobian of multiple measurements."""
         import jax
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, interface=interface)
         def circuit(a):
@@ -2451,13 +2312,12 @@ class TestIntegrationJacobianBackpropMultipleReturns:
                 assert elem.shape == (3,)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("interface", ["auto", "jax"])
-    def test_multiple_meas_jax_jit(self, interface, device):
+    def test_multiple_meas_jax_jit(self, interface):
         """Return Jacobian of multiple measurements with Jax jit."""
         import jax
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, interface=interface)
         def circuit(a):

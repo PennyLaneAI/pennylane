@@ -147,7 +147,7 @@ class TestCircuitGraphHash:
     @pytest.mark.parametrize("obs, expected_string", numeric_observable_queue)
     def test_serialize_numeric_arguments_observables_density_mat(self, obs, expected_string):
         """Tests the hashes density matrix (state) return types"""
-        dev = qp.device("default.mixed", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit1():
             return obs(wires=[0, 1])

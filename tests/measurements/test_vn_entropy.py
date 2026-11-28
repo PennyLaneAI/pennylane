@@ -159,7 +159,7 @@ class TestIntegration:
 
     parameters = np.linspace(0, 2 * np.pi, 10)
 
-    devices = ["default.qubit", "default.mixed", "lightning.qubit"]
+    devices = ["default.qubit", "lightning.qubit"]
 
     single_wires_list = [
         [0],

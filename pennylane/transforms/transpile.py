@@ -44,14 +44,11 @@ def state_transposition(results, mps, new_wire_order, original_wire_order):
     return tuple(new_results)
 
 
-def _process_measurements(expanded_tape, device_wires, is_default_mixed):
+def _process_measurements(expanded_tape, device_wires):
     measurements = expanded_tape.measurements.copy()
     if device_wires:
         for i, m in enumerate(measurements):
-            if isinstance(m, qp.measurements.StateMP):
-                if is_default_mixed:
-                    measurements[i] = qp.density_matrix(wires=device_wires)
-            elif not m.wires:
+            if not isinstance(m, qp.measurements.StateMP) and not m.wires:
                 measurements[i] = type(m)(wires=device_wires)
 
     return measurements
@@ -125,10 +122,8 @@ def transpile(
     """
     if device:
         device_wires = device.wires
-        is_default_mixed = device.name == "default.mixed"
     else:
         device_wires = None
-        is_default_mixed = False
     # init connectivity graph
     import networkx as nx  # pylint: disable=import-outside-toplevel
 
@@ -171,7 +166,7 @@ def transpile(
         # make copy of ops
         list_op_copy = expanded_tape.operations.copy()
         wire_order = device_wires or tape.wires
-        measurements = _process_measurements(expanded_tape, device_wires, is_default_mixed)
+        measurements = _process_measurements(expanded_tape, device_wires)
 
         gates = []
 

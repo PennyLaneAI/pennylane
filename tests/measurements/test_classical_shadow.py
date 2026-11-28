@@ -464,13 +464,12 @@ class TestClassicalShadow:
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("seed", seed_recipes_list)
     @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
-    def test_format(self, wires, shots, seed, interface, device):
+    def test_format(self, wires, shots, seed, interface):
         """Test that the format of the returned classical shadow
         measurement is correct"""
         import torch
 
-        circuit = get_circuit(wires, shots, seed, interface, device)
+        circuit = get_circuit(wires, shots, seed, interface)
         shadow = circuit()
 
         # test shape is correct
@@ -918,13 +917,12 @@ class TestExpvalBackward:
         assert qp.math.allclose(actual, qp.math.stack(expected), atol=1e-1)
 
 
-# pylint: disable-next=too-many-arguments
-def get_basis_circuit(wires, shots, basis, interface="autograd", device="default.mixed", seed=None):
+def get_basis_circuit(wires, shots, basis, interface="autograd", seed=None):
     """
     Return a QNode that prepares a state in a given computational basis
     and performs a classical shadow measurement
     """
-    dev = qp.device(device or "default.mixed", wires=wires, seed=seed)
+    dev = qp.device("default.qubit", wires=wires, seed=seed)
 
     @qp.set_shots(shots)
     @qp.qnode(dev, interface=interface)
@@ -941,51 +939,6 @@ def get_basis_circuit(wires, shots, basis, interface="autograd", device="default
 
 
 wires_list = [1, 3]
-
-
-@pytest.mark.parametrize("wires", [1, 3])
-@pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
-@pytest.mark.parametrize("circuit_basis, basis_recipe", [("x", 0), ("y", 1), ("z", 2)])
-def test_return_distribution(wires, interface, circuit_basis, basis_recipe, seed):
-    """Test that the distribution of the bits and recipes are correct for a circuit
-    that prepares all qubits in a Pauli basis"""
-    # high number of shots to prevent true negatives
-    shots = 1000
-
-    device = "default.mixed"
-
-    circuit = get_basis_circuit(
-        wires, basis=circuit_basis, shots=shots, interface=interface, device=device, seed=seed
-    )
-    bits, recipes = circuit()
-    new_bits, new_recipes = circuit()
-
-    # test that the recipes follow a rough uniform distribution
-    ratios = np.unique(recipes, return_counts=True)[1] / (wires * shots)
-    assert np.allclose(ratios, 1 / 3, atol=1e-1)
-    new_ratios = np.unique(new_recipes, return_counts=True)[1] / (wires * shots)
-    assert np.allclose(new_ratios, 1 / 3, atol=1e-1)
-
-    # test that the bit is 0 for all X measurements
-    assert qp.math.allequal(bits[recipes == basis_recipe], 0)
-    assert qp.math.allequal(new_bits[new_recipes == basis_recipe], 0)
-
-    # test that the bits are uniformly distributed for all Y and Z measurements
-    bits1 = bits[recipes == (basis_recipe + 1) % 3]
-    ratios1 = np.unique(bits1, return_counts=True)[1] / bits1.shape[0]
-    assert np.allclose(ratios1, 1 / 2, atol=1e-1)
-    new_bits1 = new_bits[new_recipes == (basis_recipe + 1) % 3]
-    new_ratios1 = np.unique(new_bits1, return_counts=True)[1] / new_bits1.shape[0]
-    assert np.allclose(new_ratios1, 1 / 2, atol=1e-1)
-
-    bits2 = bits[recipes == (basis_recipe + 2) % 3]
-    ratios2 = np.unique(bits2, return_counts=True)[1] / bits2.shape[0]
-    assert np.allclose(ratios2, 1 / 2, atol=1e-1)
-
-    new_bits2 = new_bits[new_recipes == (basis_recipe + 2) % 3]
-    new_ratios2 = np.unique(new_bits2, return_counts=True)[1] / new_bits2.shape[0]
-    assert np.allclose(new_ratios2, 1 / 2, atol=1e-1)
 
 
 @pytest.mark.parametrize("wires", [1, 3])
@@ -1072,46 +1025,15 @@ def test_hadamard_expval_legacy(k=1, obs=obs_hadamard, expected=expected_hadamar
     assert qp.math.allclose(new_actual, expected, atol=1e-1)
 
 
-def hadamard_circuit_mixed(wires, shots=10000, interface="autograd"):
-    dev = qp.device("default.mixed", wires=wires)
-
-    @qp.set_shots(shots)
-    @qp.qnode(dev, interface=interface)
-    def circuit(obs, k=1):
-        for i in range(wires):
-            qp.Hadamard(wires=i)
-        return qp.shadow_expval(obs, k=k)
-
-    return circuit
-
-
-@pytest.mark.slow
-# pylint: disable-next=dangerous-default-value
-def test_hadamard_expval_mixed(k=1, obs=obs_hadamard, expected=expected_hadamard):
-    """Test that the expval estimation is correct for a uniform
-    superposition of qubits"""
-    circuit = hadamard_circuit_mixed(3, shots=50000)
-    actual = circuit(obs, k=k)
-    new_actual = circuit(obs, k=k)
-
-    assert actual.shape == (len(obs_hadamard),)
-    assert actual.dtype == np.float64
-    assert qp.math.allclose(actual, expected, atol=1e-1)
-    assert qp.math.allclose(new_actual, expected, atol=1e-1)
-
-
 @pytest.mark.all_interfaces
 @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch"])
 @pytest.mark.parametrize("circuit_basis", ["x", "y", "z"])
 def test_partitioned_shots(interface, circuit_basis):
-    """Test that mixed device works for partitioned shots"""
+    """Test that classical shadows support partitioned shots"""
     wires = 3
     shot = 100
     shots = (shot, shot)
 
-    device = "default.mixed"
-    circuit = get_basis_circuit(
-        wires, basis=circuit_basis, shots=shots, interface=interface, device=device
-    )
+    circuit = get_basis_circuit(wires, basis=circuit_basis, shots=shots, interface=interface)
     bits, recipes = circuit()
     assert bits.shape == recipes.shape == (2, shot, 3)

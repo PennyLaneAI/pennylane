@@ -15,6 +15,7 @@
 
 import numpy as np
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qp
 from pennylane.devices import DefaultQubit
@@ -48,7 +49,7 @@ def test_caching(diff_method):
 def test_execute_legacy_device():
     """Test that qp.execute works when passed a legacy device class."""
 
-    dev = qp.devices.DefaultMixed(wires=2)
+    dev = DefaultQubitLegacy(wires=2)
 
     tape = qp.tape.QuantumScript([qp.RX(0.1, 0)], [qp.expval(qp.Z(0))])
 

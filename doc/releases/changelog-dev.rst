@@ -2060,6 +2060,28 @@ Breaking changes 💔
   ``pennylane.core.queuing``. The ``qp.apply`` path is unchanged.
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
 
+* The ``default.mixed`` device, ``pennylane.devices.DefaultMixed``, and the internal
+  ``pennylane.devices.qubit_mixed`` simulation tools have been removed. PennyLane no longer
+  includes a device that can apply noise channels or :class:`~.QubitDensityMatrix`.
+  ``default.qubit`` can still return reduced density matrices of pure-state circuits.
+  `(#10504) <https://github.com/PennyLaneAI/pennylane/pull/10504>`__
+
+  .. code-block:: python
+
+      dev = qp.device("default.qubit", wires=2)
+
+      @qp.qnode(dev)
+      def reduced_state():
+          qp.Hadamard(0)
+          qp.CNOT([0, 1])
+          return qp.density_matrix([0])
+
+  .. code-block:: pycon
+
+      >>> reduced_state()
+      array([[0.5+0.j, 0. +0.j],
+             [0. +0.j, 0.5+0.j]])
+
 * :func:`~.change_op_basis` now preserves the basis-change operator during program capture.
   With program capture enabled, inputs must be operator instances; callables remain supported
   when capture is disabled. For capture, convert quantum functions into operators

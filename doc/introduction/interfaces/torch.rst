@@ -56,8 +56,7 @@ PyTorch-capable QNodes can also be created using the
 
 .. code-block:: python
 
-    dev1 = qp.device('default.qubit', wires=2)
-    dev2 = qp.device('default.mixed', wires=2)
+    dev = qp.device('default.qubit', wires=2)
 
     def circuit1(phi, theta):
         qp.RX(phi[0], wires=0)
@@ -66,8 +65,8 @@ PyTorch-capable QNodes can also be created using the
         qp.PhaseShift(theta, wires=0)
         return qp.expval(qp.PauliZ(0)), qp.expval(qp.Hadamard(1))
 
-    qnode1 = qp.QNode(circuit1, dev1)
-    qnode2 = qp.QNode(circuit1, dev2, interface='torch')
+    qnode1 = qp.QNode(circuit1, dev)
+    qnode2 = qp.QNode(circuit1, dev, interface='torch')
 
 ``qnode1()`` detects the interface from the parameters of each call, while ``qnode2()`` is a strictly a PyTorch-capable
 QNode:

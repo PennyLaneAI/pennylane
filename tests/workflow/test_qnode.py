@@ -864,7 +864,6 @@ class TestIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize(
@@ -879,12 +878,12 @@ class TestIntegration:
         ],
     )
     def test_defer_meas_if_mcm_unsupported(  # pylint: disable=too-many-arguments
-        self, dev_name, first_par, sec_par, return_type, mv_return, mv_res, mocker
+        self, first_par, sec_par, return_type, mv_return, mv_res, mocker
     ):
         """Tests that the transform using the deferred measurement principle is
         applied if the device doesn't support mid-circuit measurements
         natively."""
-        dev = qp.device(dev_name, wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
         @qp.qnode(dev)
         def cry_qnode(x, y):
