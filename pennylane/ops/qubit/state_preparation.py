@@ -594,8 +594,9 @@ class QubitDensityMatrix(Operation):
     .. details::
         :title: Usage Details
 
-        This operation requires a device with native density-matrix preparation support.
-        Construct it with a mixed-state density matrix:
+        No device included with PennyLane can execute this operation, since it has no
+        decomposition and requires native density-matrix support. It can still be constructed
+        with a mixed-state density matrix:
 
         .. code-block:: python
 

@@ -455,12 +455,11 @@ class TestDensityMatrix:
     """Tests for the density matrix function"""
 
     @pytest.mark.parametrize("wires", range(2, 5))
-    @pytest.mark.parametrize("dev_name", ["default.qubit"])
-    def test_density_matrix_shape_and_dtype(self, dev_name, wires):
+    def test_density_matrix_shape_and_dtype(self, wires):
         """Test that the density matrix is of correct size and dtype for a
         trivial circuit"""
 
-        dev = qp.device(dev_name, wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
         @qp.qnode(dev)
         def circuit():
@@ -471,11 +470,10 @@ class TestDensityMatrix:
         assert state_val.shape == (2, 2)
         assert state_val.dtype == np.complex128
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit"])
-    def test_return_type_is_state(self, dev_name):
+    def test_return_type_is_state(self):
         """Test that the return type of the observable is State"""
 
-        dev = qp.device(dev_name, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev)
         def func():
@@ -488,11 +486,10 @@ class TestDensityMatrix:
         assert isinstance(obs[0], StateMP)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     @pytest.mark.parametrize("diff_method", [None, "backprop"])
-    def test_correct_density_matrix_torch(self, dev_name, diff_method):
+    def test_correct_density_matrix_torch(self, diff_method):
         """Test that the correct density matrix is returned using torch interface."""
-        dev = qp.device(dev_name, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, interface="torch", diff_method=diff_method)
         def func():
@@ -504,11 +501,10 @@ class TestDensityMatrix:
         assert np.allclose(expected, density_mat)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     @pytest.mark.parametrize("diff_method", [None, "backprop"])
-    def test_correct_density_matrix_jax(self, dev_name, diff_method):
+    def test_correct_density_matrix_jax(self, diff_method):
         """Test that the correct density matrix is returned using JAX interface."""
-        dev = qp.device(dev_name, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, interface="jax", diff_method=diff_method)
         def func():
@@ -616,12 +612,11 @@ class TestDensityMatrix:
             qp.density_matrix(wires=[0, 1]).process_state(state=dev_state, wire_order=dev.wires),
         )
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit"])
-    def test_correct_density_matrix_three_wires_last_two(self, dev_name):
+    def test_correct_density_matrix_three_wires_last_two(self):
         """Test that the correct density matrix is returned for an example with three wires,
         and tracing out the first wire."""
 
-        dev = qp.device(dev_name, wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
         @qp.qnode(dev)
         def func():
@@ -682,11 +677,10 @@ class TestDensityMatrix:
             ),
         )
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit"])
-    def test_correct_density_matrix_mixed_state(self, dev_name):
+    def test_correct_density_matrix_mixed_state(self):
         """Test that the correct density matrix for an example with a mixed state"""
 
-        dev = qp.device(dev_name, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev)
         def func():
@@ -775,12 +769,11 @@ class TestDensityMatrix:
                 func()
 
     @pytest.mark.parametrize("wires", [[0, 2]])
-    @pytest.mark.parametrize("dev_name", ["default.qubit"])
-    def test_custom_wire_labels(self, wires, dev_name):
+    def test_custom_wire_labels(self, wires):
         """Test that the correct density matrix for an example with a mixed
         state when using custom wires"""
 
-        dev = qp.device(dev_name, wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
         @qp.qnode(dev)
         def func():
@@ -794,11 +787,10 @@ class TestDensityMatrix:
         assert np.allclose(expected, density)
 
     @pytest.mark.parametrize("wires", [[3, 1]])
-    @pytest.mark.parametrize("dev_name", ["default.qubit"])
-    def test_custom_wire_labels_all_wires(self, wires, dev_name):
+    def test_custom_wire_labels_all_wires(self, wires):
         """Test that the correct density matrix for an example with a mixed
         state when using custom wires"""
-        dev = qp.device(dev_name, wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
         @qp.qnode(dev)
         def func():

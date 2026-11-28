@@ -119,7 +119,6 @@ class TestPurityIntegration:
     """Test the purity meausrement with qnodes and devices."""
 
     devices = ["default.qubit", "lightning.qubit"]
-    grad_supported_devices = ["default.qubit"]
 
     diff_methods = ["backprop", "finite-diff"]
 
@@ -144,14 +143,13 @@ class TestPurityIntegration:
         expected_purity = expected_purity_ising_xx(param) if is_partial else 1
         assert qp.math.allclose(purity, expected_purity)
 
-    @pytest.mark.parametrize("device", grad_supported_devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_IsingXX_qnode_purity_grad(self, device, param, wires, is_partial, diff_method):
+    def test_IsingXX_qnode_purity_grad(self, param, wires, is_partial, diff_method):
         """Tests purity for a qnode"""
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, diff_method=diff_method)
         def circuit(x):
@@ -184,19 +182,16 @@ class TestPurityIntegration:
         assert qp.math.allclose(purity, expected_purity)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("device", grad_supported_devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
     @pytest.mark.parametrize("interface", ["jax"])
-    def test_IsingXX_qnode_purity_grad_jax(  # pylint: disable=too-many-arguments
-        self, device, param, wires, is_partial, diff_method, interface
-    ):
+    def test_IsingXX_qnode_purity_grad_jax(self, param, wires, is_partial, diff_method, interface):
         """Test purity for a QNode gradient with Jax."""
 
         import jax
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(x):
@@ -231,19 +226,18 @@ class TestPurityIntegration:
         assert qp.math.allclose(purity, expected_purity)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("device", grad_supported_devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
     @pytest.mark.parametrize("interface", ["jax-jit"])
-    def test_IsingXX_qnode_purity_grad_jax_jit(  # pylint: disable=too-many-arguments
-        self, device, param, wires, is_partial, diff_method, interface
+    def test_IsingXX_qnode_purity_grad_jax_jit(
+        self, param, wires, is_partial, diff_method, interface
     ):
         """Test purity for a QNode gradient with Jax."""
 
         import jax
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(x):
@@ -277,19 +271,18 @@ class TestPurityIntegration:
         assert qp.math.allclose(purity, expected_purity)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("device", grad_supported_devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
     @pytest.mark.parametrize("interface", ["torch"])
-    def test_IsingXX_qnode_purity_grad_torch(  # pylint: disable=too-many-arguments
-        self, device, param, wires, is_partial, diff_method, interface
+    def test_IsingXX_qnode_purity_grad_torch(
+        self, param, wires, is_partial, diff_method, interface
     ):
         """Test purity for a QNode gradient with torch."""
 
         import torch
 
-        dev = qp.device(device, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(x):

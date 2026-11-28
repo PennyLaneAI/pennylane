@@ -464,13 +464,12 @@ class TestClassicalShadow:
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("seed", seed_recipes_list)
     @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
-    @pytest.mark.parametrize("device", ["default.qubit"])
-    def test_format(self, wires, shots, seed, interface, device):
+    def test_format(self, wires, shots, seed, interface):
         """Test that the format of the returned classical shadow
         measurement is correct"""
         import torch
 
-        circuit = get_circuit(wires, shots, seed, interface, device)
+        circuit = get_circuit(wires, shots, seed, interface)
         shadow = circuit()
 
         # test shape is correct
