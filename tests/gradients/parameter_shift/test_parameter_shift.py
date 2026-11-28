@@ -2044,6 +2044,32 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
         assert gradA[1] == pytest.approx(expected, abs=tol)
         assert gradF[1] == pytest.approx(expected, abs=tol)
 
+    @pytest.mark.parametrize(
+        "H",
+        [
+            # H^2 = 1.25 I + Z(0) X(1) is not a multiple of the identity
+            qp.Hamiltonian([0.5, 1.0], [qp.Z(0), qp.X(1)]),
+            0.5 * qp.Z(0) + qp.X(1),
+            # anticommuting terms: H^2 = I, so H is involutory
+            qp.Hamiltonian([0.6, 0.8], [qp.Z(0), qp.X(0)]),
+        ],
+    )
+    def test_variance_of_sum_observable(self, H):
+        """Tests the variance gradient of a Hamiltonian / Sum observable, which is
+        only involutory if its square is a multiple of the identity."""
+        dev = qp.device("default.qubit", wires=2)
+        x = np.array([0.4, 1.1])
+
+        tape = qp.tape.QuantumScript([qp.RY(x[0], 1), qp.IsingZZ(x[1], [0, 1])], [qp.var(H)])
+        tape.trainable_params = {0, 1}
+
+        tapes, fn = qp.gradients.param_shift(tape)
+        gradA = fn(dev.execute(tapes))
+        tapes, fn = qp.gradients.finite_diff(tape, approx_order=2)
+        gradF = fn(dev.execute(tapes))
+
+        assert np.allclose(gradA, gradF, atol=1e-6, rtol=0)
+
     def test_involutory_and_noninvolutory_variance_single_param(self, tol, seed):
         """Tests a qubit Hermitian observable that is not involutory alongside
         an involutory observable when there's a single trainable parameter."""
@@ -3363,7 +3389,8 @@ class TestHamiltonianExpvalGradients:
         tape.trainable_params = {0, 1}  # different from previous test
 
         tapes, _ = qp.gradients.param_shift(tape, broadcast=broadcast)
-        assert len(tapes) == (3 if broadcast else 5)
+        # H^2 is not a multiple of the identity, so d<H^2>/dp tapes are also needed
+        assert len(tapes) == (5 if broadcast else 9)
 
     def test_no_trainable_coeffs(self, tol, broadcast):
         """Test no trainable Hamiltonian coefficients"""

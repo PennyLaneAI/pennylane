@@ -87,16 +87,30 @@ of that observable.
 """
 
 
+def _has_nonconstant_pauli_square(obs):
+    """Whether ``obs`` has a Pauli representation whose square is not a multiple of the identity
+    (e.g. ``0.5 * Z(0) + X(1)``). Such observables are not involutory."""
+    pr = obs.pauli_rep
+    if pr is None:
+        return False
+    sq = pr @ pr
+    sq.prune()
+    return any(len(pw) > 0 for pw in sq)
+
+
 def _square_observable(obs):
     """Returns the square of an observable."""
 
-    if isinstance(obs, Prod):
+    if obs.name in NONINVOLUTORY_OBS:
+        return NONINVOLUTORY_OBS[obs.name](obs)
+
+    if isinstance(obs, Prod) and any(o.name in NONINVOLUTORY_OBS for o in obs):
         components_squared = [
             NONINVOLUTORY_OBS[o.name](o) for o in obs if o.name in NONINVOLUTORY_OBS
         ]
         return prod(*components_squared)
 
-    return NONINVOLUTORY_OBS[obs.name](obs)
+    return prod(obs, obs).simplify()
 
 
 def _process_op_recipe(op, p_idx, order):
@@ -667,10 +681,12 @@ def _get_non_involuntory_indices(tape, var_indices):
         obs = tape.measurements[i].obs
 
         if isinstance(tape.measurements[i].obs, Prod):
-            if any(o.name in NONINVOLUTORY_OBS for o in tape.measurements[i].obs):
+            if any(
+                o.name in NONINVOLUTORY_OBS for o in tape.measurements[i].obs
+            ) or _has_nonconstant_pauli_square(obs):
                 non_involutory_indices.append(i)
 
-        elif obs.name in NONINVOLUTORY_OBS:
+        elif obs.name in NONINVOLUTORY_OBS or _has_nonconstant_pauli_square(obs):
             non_involutory_indices.append(i)
 
     return non_involutory_indices
