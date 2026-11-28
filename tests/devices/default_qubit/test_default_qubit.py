@@ -1067,6 +1067,22 @@ class TestAdjointDifferentiation:
         assert np.isclose(actual_grad[0], expected_grad[0])
         assert np.isclose(actual_grad[1], expected_grad[1])
 
+    def test_derivatives_non_standard_wires_with_coefficients(self, max_workers, config):
+        """Test that adjoint derivatives are attributed to the right parameters when the
+        wires are remapped and the observable carries non-trainable coefficients."""
+        dev = DefaultQubit(max_workers=max_workers)
+        x, y = np.array(0.7), np.array(0.4)
+        H = qp.Hamiltonian([1.0, 0.5], [qp.Z("a"), qp.X("b")])
+        qs = qp.tape.QuantumScript([qp.RY(x, "a"), qp.RY(y, "b")], [qp.expval(H)])
+        qs.trainable_params = [0, 1]
+
+        program, new_ec = dev.preprocess(config)
+        circuits, _ = program([qs])
+        actual_grad = dev.compute_derivatives(circuits, new_ec)
+
+        expected_grad = (-np.sin(x), 0.5 * np.cos(y))
+        assert qp.math.allclose(actual_grad[0], expected_grad)
+
 
 class TestRandomSeed:
     """Test that the device behaves correctly when provided with a random seed"""

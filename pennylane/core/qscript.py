@@ -1021,7 +1021,9 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
             return self
         new_ops = [op.map_wires(wire_map) for op in self.operations]
         new_mps = [mp.map_wires(wire_map) for mp in self.measurements]
-        return self.copy(operations=new_ops, measurements=new_mps)
+        return self.copy(
+            operations=new_ops, measurements=new_mps, trainable_params=self.trainable_params
+        )
 
     def _get_standard_wire_map(self) -> dict:
         """Helper function to produce the wire map for map_to_standard_wires."""

@@ -2699,6 +2699,11 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed adjoint differentiation returning zero or misattributed gradients for circuits on
+  non-standard wires whose measured observable has coefficients, by keeping the trainable
+  parameters in :meth:`~.QuantumScript.map_to_standard_wires`.
+  `(#10618) <https://github.com/PennyLaneAI/pennylane/pull/10618>`__
+
 * Fixed :func:`~.ctrl` to return the original operator or callable when the control wires are empty.
   `(#10595) <https://github.com/PennyLaneAI/pennylane/pull/10595>`__
 
