@@ -2699,6 +2699,10 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed :func:`~.gradients.param_shift` returning incorrect gradients of :func:`~.var` for
+  ``Sum`` / ``Hamiltonian`` observables whose square is not a multiple of the identity.
+  `(#10619) <https://github.com/PennyLaneAI/pennylane/pull/10619>`__
+
 * Fixed :func:`~.ctrl` to return the original operator or callable when the control wires are empty.
   `(#10595) <https://github.com/PennyLaneAI/pennylane/pull/10595>`__
 
